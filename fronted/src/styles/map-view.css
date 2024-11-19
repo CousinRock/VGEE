@@ -1,0 +1,188 @@
+.map-container {
+    flex-grow: 1;
+    height: 100%;
+    position: relative;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+/* 地图工具栏样式 */
+.map-tools {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+}
+
+.tool-group {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    padding: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.tool-button {
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin: 2px 0;
+    transition: all 0.2s ease;
+}
+
+.tool-button:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.tool-button.active {
+    background: #4a90e2;
+}
+
+.tool-button.active i {
+    color: white;
+}
+
+.tool-button i {
+    font-size: 16px;
+    color: #555;
+}
+
+/* 图层控制面板样式 */
+.layer-control {
+    position: absolute;
+    top: 50px;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 4px;
+    padding: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    width: 200px;
+}
+
+.layer-item {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+    padding: 4px;
+}
+
+.layer-item:last-child {
+    margin-bottom: 0;
+}
+
+.layer-item label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.layer-item input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.layer-item i {
+    margin-right: 6px;
+    color: #666;
+    width: 16px;
+}
+
+.layer-item span {
+    font-size: 14px;
+    color: #333;
+}
+
+.opacity-slider {
+    width: calc(100% - 24px);
+    margin-top: 8px;
+    margin-left: 24px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    -webkit-appearance: none;
+}
+
+.opacity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #4a90e2;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* 工具提示 */
+.tool-button:hover::after {
+    content: attr(title);
+    position: absolute;
+    right: 100%;
+    margin-right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* 图层控制面板中的样式 */
+.layer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.layer-header label {
+    flex: 1;
+    margin-right: 8px;
+}
+
+.remove-layer {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+}
+
+.remove-layer:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #ff4444;
+}
+
+.layer-item {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 8px 0;
+}
+
+.layer-item:last-child {
+    border-bottom: none;
+}
+
+/* 确保复选框、标签和删除按钮在同一行 */
+.layer-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.layer-header input[type="checkbox"] {
+    margin: 0;
+}

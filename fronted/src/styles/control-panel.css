@@ -1,0 +1,124 @@
+.control-panel {
+    height: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.control-panel h3 {
+    margin: 0 0 20px 0;
+    color: #333;
+    font-size: 20px;
+    font-weight: 500;
+    text-align: center;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.control-section {
+    margin-bottom: 25px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.control-section h4 {
+    margin: 0 0 15px 0;
+    color: #555;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.control-item {
+    margin-bottom: 12px;
+}
+
+.control-item label {
+    display: block;
+    margin-bottom: 6px;
+    color: #666;
+    font-size: 14px;
+}
+
+.control-item select,
+.control-item input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    transition: border-color 0.3s;
+}
+
+.control-item select:hover,
+.control-item input:hover {
+    border-color: #b4b4b4;
+}
+
+.control-item select:focus,
+.control-item input:focus {
+    border-color: #4a90e2;
+    outline: none;
+}
+
+/* 范围滑块容器 */
+.range-container {
+    position: relative;
+    padding: 10px 0;
+}
+
+.range-container input[type="range"] {
+    width: 100%;
+    margin: 0;
+}
+
+.range-value {
+    position: absolute;
+    right: 0;
+    top: -20px;
+    color: #666;
+    font-size: 14px;
+}
+
+.layer-name-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.layer-name-input:focus {
+    border-color: #4a90e2;
+    outline: none;
+}
+
+.add-layer-btn {
+    width: 100%;
+    padding: 10px;
+    background: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.3s;
+}
+
+.add-layer-btn:hover {
+    background: #357abd;
+}
+
+.add-layer-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.add-layer-btn i {
+    font-size: 14px;
+}
