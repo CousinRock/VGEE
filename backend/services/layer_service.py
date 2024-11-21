@@ -1,0 +1,73 @@
+import ee
+
+def get_layer_info_service(satellite):
+    """获取图层信息服务"""
+    try:
+        if satellite == 'LANDSAT':
+            dataset = ee.ImageCollection('LANDSAT/LC08/C02/T1_TOA').first()
+            band_names = dataset.bandNames().getInfo()
+            band_stats = {band: {'min': 0, 'max': 1} for band in band_names}
+            
+        elif satellite == 'SENTINEL':
+            dataset = ee.ImageCollection('COPERNICUS/S2_SR').first()
+            band_names = dataset.bandNames().getInfo()
+            band_stats = {band: {'min': 0, 'max': 4000} for band in band_names}
+            
+        else:  # MODIS
+            dataset = ee.ImageCollection('MODIS/006/MOD13A2').first()
+            band_names = dataset.bandNames().getInfo()
+            band_stats = {band: {'min': -2000, 'max': 10000} for band in band_names}
+            
+        return {
+            'bands': band_names,
+            'bandStats': band_stats
+        }
+        
+    except Exception as e:
+        raise Exception(f"Error in get_layer_info_service: {str(e)}")
+
+def update_vis_params_service(data):
+    """更新可视化参数服务"""
+    try:
+        satellite = data.get('satellite')
+        vis_params = data.get('visParams')
+        
+        if satellite == 'MODIS':
+            dataset = ee.ImageCollection('MODIS/006/MOD13A2')
+            image = dataset.first()
+        elif satellite == 'LANDSAT':
+            dataset = ee.ImageCollection('LANDSAT/LC08/C02/T1_TOA')
+            image = dataset.median()
+        elif satellite == 'SENTINEL':
+            dataset = ee.ImageCollection('COPERNICUS/S2_SR')
+            image = dataset.median()
+
+        # 获取选择的波段
+        selected_bands = vis_params.get('bands', [])
+        
+        # 如果是单波段且提供了调色板
+        if len(selected_bands) == 1 and vis_params.get('palette'):
+            # 单波段显示时，使用调色板但不使用 gamma
+            vis_params = {
+                'bands': selected_bands,
+                'min': float(vis_params.get('min', 0)),
+                'max': float(vis_params.get('max', 10000)),
+                'palette': [color.replace('#', '') if isinstance(color, str) and color.startswith('#') else color 
+                          for color in vis_params['palette']]
+            }
+        else:
+            # 多波段显示或没有调色板时，使用 gamma
+            vis_params = {
+                'bands': selected_bands,
+                'min': float(vis_params.get('min', 0)),
+                'max': float(vis_params.get('max', 10000)),
+                'gamma': float(vis_params.get('gamma', 1.4))
+            }
+        
+        map_id = image.getMapId(vis_params)
+        return {
+            'tileUrl': map_id['tile_fetcher'].url_format
+        }
+            
+    except Exception as e:
+        raise Exception(f"Error in update_vis_params_service: {str(e)}") 

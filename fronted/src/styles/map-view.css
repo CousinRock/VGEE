@@ -71,10 +71,12 @@
     flex-direction: column;
     margin-bottom: 12px;
     padding: 4px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .layer-item:last-child {
     margin-bottom: 0;
+    border-bottom: none;
 }
 
 .layer-item label {
@@ -139,11 +141,38 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
+    gap: 8px;
 }
 
 .layer-header label {
     flex: 1;
     margin-right: 8px;
+}
+
+.layer-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.layer-settings {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+}
+
+.layer-settings:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #409EFF;
 }
 
 .remove-layer {
@@ -167,22 +196,92 @@
     color: #ff4444;
 }
 
-.layer-item {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    padding: 8px 0;
+/* 设置对话框样式 */
+.setting-item {
+    margin-bottom: 20px;
 }
 
-.layer-item:last-child {
-    border-bottom: none;
+.setting-item label {
+    display: block;
+    margin-bottom: 8px;
+    color: #606266;
+    font-size: 14px;
 }
 
-/* 确保复选框、标签和删除按钮在同一行 */
-.layer-header {
+.zoom-range {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
-.layer-header input[type="checkbox"] {
-    margin: 0;
+/* Element Plus 对话框自定义样式 */
+:deep(.el-dialog) {
+    border-radius: 8px;
+}
+
+:deep(.el-dialog__header) {
+    margin-right: 0;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+:deep(.el-dialog__body) {
+    padding: 20px;
+}
+
+:deep(.el-select) {
+    width: 100%;
+}
+
+/* 调色板预览样式 */
+.palette-preview {
+    display: inline-block;
+    width: 100px;
+    height: 20px;
+    margin-right: 10px;
+    border: 1px solid #dcdfe6;
+}
+
+.palette-preview.default {
+    background: linear-gradient(to right, #FFFFFF, #CE7E45, #DF923D, #F1B555, #FCD163,
+            #99B718, #74A901, #66A000, #529400, #3E8601, #207401,
+            #056201, #004C00);
+}
+
+.palette-preview.grayscale {
+    background: linear-gradient(to right, black, white);
+}
+
+.palette-preview.rdylgn {
+    background: linear-gradient(to right, #d73027, #f46d43, #fdae61, #fee08b, #ffffbf,
+            #d9ef8b, #a6d96a, #66bd63, #1a9850);
+}
+
+.palette-preview.rdylbu {
+    background: linear-gradient(to right, #d73027, #f46d43, #fdae61, #fee090, #ffffbf,
+            #e0f3f8, #abd9e9, #74add1, #4575b4);
+}
+
+.palette-preview.spectral {
+    background: linear-gradient(to right, #9e0142, #d53e4f, #f46d43, #fdae61, #fee08b,
+            #ffffbf, #e6f598, #abdda4, #66c2a5, #3288bd, #5e4fa2);
+}
+
+/* 下拉选项样式 */
+.el-select-dropdown__item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+}
+
+/* 调色板选择器容器样式 */
+.palette-select {
+    margin-top: 10px;
+}
+
+.palette-select label {
+    display: block;
+    margin-bottom: 8px;
+    color: #606266;
+    font-size: 14px;
 }
