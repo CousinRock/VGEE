@@ -12,6 +12,7 @@ def get_map_data():
         end_date = request.args.get('endDate', '2023-12-31')
         cloud_cover = float(request.args.get('cloudCover', 20))
         
+        print(f"Received satellite: {satellite}, startDate: {start_date}, endDate: {end_date}, cloudCover: {cloud_cover}")
         result = get_map_data_service(satellite, start_date, end_date, cloud_cover)
         return jsonify(result)
         

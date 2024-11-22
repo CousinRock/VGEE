@@ -320,15 +320,16 @@ const removeLayer = (layerId, layerName) => {
 
     let mapLayers = Object.values(map._layers);
 
-    mapLayers.forEach((layer) => {
+    mapLayers.forEach((mapLayer) => {
         // 检查是否是我们要删除的图层且不是底图
         //确保删除的是瓦片图层的实例
-        if (layer instanceof L.TileLayer && layer !== baseLayer) {
-
+        if (mapLayer instanceof L.TileLayer &&
+            mapLayer !== baseLayer &&
+            mapLayer._leaflet_id === layers.value.find(l => l.id === layerId)?.leafletLayer._leaflet_id) {
             // 禁用动画
-            layer.options.zoomAnimation = false;
+            mapLayer.options.zoomAnimation = false;
             // 移除图层
-            map.removeLayer(layer);
+            map.removeLayer(mapLayer);
         }
     });
 
@@ -346,7 +347,7 @@ const getSliderStep = (satelliteType) => {
 
     switch (satelliteType) {
         case 'LANDSAT':
-            return 0.001;  // Landsat 数据范围通常在 0-1 之间，需要更精细的控制
+            return 0.001;  // Landsat 数据范围通常在 0-1 ，需要���精细的控制
         case 'SENTINEL':
             return 1;      // Sentinel 数据范围较大，使用整数步长
         case 'MODIS':
@@ -381,21 +382,28 @@ watch(layers, (newLayers) => {
                 layer.leafletLayer.setOpacity(layer.opacity)
 
                 if (layer.visible) {
+                    // 如果图层应该可见，直接使用 layer.leafletLayer
                     if (!map.hasLayer(layer.leafletLayer)) {
                         layer.leafletLayer.addTo(map)
                     }
                     layer.leafletLayer.setZIndex(1000 + newLayers.indexOf(layer))
                 } else {
-                    if (map.hasLayer(layer.leafletLayer)) {
-                        map.removeLayer(layer.leafletLayer)
-                    }
+                    // 如果图层应该隐藏，遍历查找并移除
+                    let mapLayers = Object.values(map._layers);
+                    mapLayers.forEach((mapLayer) => {
+                        if (mapLayer instanceof L.TileLayer &&
+                            mapLayer !== baseLayer &&
+                            mapLayer._leaflet_id === layer.leafletLayer._leaflet_id) {
+                            map.removeLayer(mapLayer)
+                        }
+                    });
                 }
             }
         })
     })
 }, { deep: true })
 
-// 监听底图可见性
+// 听底图可见
 watch(baseLayerVisible, (newValue) => {
     nextTick(() => {
         if (baseLayer) {
@@ -426,7 +434,7 @@ onMounted(async () => {
             // 添加投影相关配置
             crs: L.CRS.EPSG3857,  // 明确指定投影系统
             continuousWorld: true, // 确保连续的世界地图
-            worldCopyJump: true,   // 允许在经度方向��环
+            worldCopyJump: true,   // 允许在经度方向环
             maxBounds: L.latLngBounds(L.latLng(-85.06, -180), L.latLng(85.06, 180)), // 限制范围
             minZoom: 1,
             maxZoom: 20
@@ -679,7 +687,6 @@ const applyVisParams = async () => {
                 visParams: updatedVisParams
             })
         })
-        console.log(response);
 
         const data = await response.json()
 
@@ -688,11 +695,21 @@ const applyVisParams = async () => {
             if (layer) {
                 // 先移除旧图层
                 if (layer.leafletLayer) {
-                    if (map.hasLayer(layer.leafletLayer)) {
-                        map.removeLayer(layer.leafletLayer)
-                    }
-                    layer.leafletLayer.off()
-                    layer.leafletLayer = null
+                    let mapLayers = Object.values(map._layers);
+
+                    mapLayers.forEach((mapLayer) => {
+                        // 检查是否是我们要删除的图层且不是底图
+                        // 确保删除的是瓦片图层的实例且是当前正在修改的图层
+                        if (mapLayer instanceof L.TileLayer &&
+                            mapLayer !== baseLayer &&
+                            mapLayer._url === layer.leafletLayer._url) {  // 通过URL匹配确保是同一个图层
+
+                            // 禁用动画
+                            mapLayer.options.zoomAnimation = false;
+                            // 移除图层
+                            map.removeLayer(mapLayer);
+                        }
+                    });
                 }
 
                 // 创建新图层
