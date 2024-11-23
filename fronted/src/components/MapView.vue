@@ -186,6 +186,8 @@ import { onMounted, ref, watch, nextTick, reactive, onUnmounted } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import '@fortawesome/fontawesome-free/css/all.css'
+import 'leaflet-draw'
+import 'leaflet-draw/dist/leaflet.draw.css'
 
 const props = defineProps({
     mapData: {
@@ -234,6 +236,11 @@ const palettes = {
         '#ffffbf', '#e6f598', '#abdda4', '#66c2a5', '#3288bd', '#5e4fa2']
 }
 
+// 添加绘制控制相关的状态
+const showDrawControl = ref(false)
+const drawnItems = ref(null)
+const drawControl = ref(null)
+
 // 切换图层控制面板显示
 const toggleLayerControl = () => {
     showLayerControl.value = !showLayerControl.value
@@ -247,7 +254,7 @@ const addNewLayer = async (layerName, mapData) => {
             return
         }
 
-        // 预先获取波段信息并缓存
+        // 预取波段信息并缓存
         const response = await fetch(`http://localhost:5000/layer-info?satellite=${mapData.satellite}`)
         const layerInfo = await response.json()
         console.log('Layer info:', layerInfo)
@@ -270,7 +277,7 @@ const addNewLayer = async (layerName, mapData) => {
 
         mapData.overlayLayers.forEach(layerData => {
             const newLayer = {
-                id: `layer-${Date.now()}`,
+                id: `layer-${layerInfo.index}-${layerInfo.satellite}`,
                 name: layerName,
                 icon: 'fas fa-satellite',
                 visible: true,
@@ -347,7 +354,7 @@ const getSliderStep = (satelliteType) => {
 
     switch (satelliteType) {
         case 'LANDSAT':
-            return 0.001;  // Landsat 数据范围通常在 0-1 ，需要���精细的控制
+            return 0.001;  // Landsat 数据范围通常在 0-1 ，需要精细的控制
         case 'SENTINEL':
             return 1;      // Sentinel 数据范围较大，使用整数步长
         case 'MODIS':
@@ -357,7 +364,7 @@ const getSliderStep = (satelliteType) => {
     }
 };
 
-// 格式化显示值
+// 格式化显示
 const formatSliderValue = (value) => {
     if (!currentLayer.value) return value.toFixed(1);
 
@@ -388,7 +395,7 @@ watch(layers, (newLayers) => {
                     }
                     layer.leafletLayer.setZIndex(1000 + newLayers.indexOf(layer))
                 } else {
-                    // 如果图层应该隐藏，遍历查找并移除
+                    // 如果图层应该隐藏���遍历查找并移除
                     let mapLayers = Object.values(map._layers);
                     mapLayers.forEach((mapLayer) => {
                         if (mapLayer instanceof L.TileLayer &&
@@ -417,15 +424,49 @@ watch(baseLayerVisible, (newValue) => {
     })
 })
 
-// 初始化地图
+// 将 changeBaseMap 函数移到 onMounted 外面
+const changeBaseMap = () => {
+    if (baseLayer) {
+        map.removeLayer(baseLayer)
+    }
+    const selectedMap = baseMaps.find(m => m.id === selectedBaseMap.value)
+    if (selectedMap) {
+        baseLayer = L.tileLayer(selectedMap.url, {
+            subdomains: selectedMap.subdomains || 'abc',
+            attribution: selectedMap.attribution,
+            maxZoom: 20,
+            maxNativeZoom: 20,
+            tileSize: 256,
+            zIndex: 0,
+            // 添加投影相关配置
+            continuousWorld: true,
+            noWrap: false,
+            bounds: L.latLngBounds(L.latLng(-85.06, -180), L.latLng(85.06, 180)),
+            crs: L.CRS.EPSG3857
+        })
+
+        if (baseLayerVisible.value) {
+            baseLayer.addTo(map)
+        }
+    }
+}
+
+// 监听底图类型变化
+watch(selectedBaseMap, () => {
+    if (map) {
+        changeBaseMap()
+    }
+})
+
+// 在 onMounted 中只需要调用这个函数
 onMounted(async () => {
     try {
-        const response = await fetch(`http://localhost:5000/map-data`)
-        const mapData = await response.json()
+        // const response = await fetch(`http://localhost:5000/map-data`)
+        // const mapData = await response.json()
 
         map = L.map('map', {
-            center: mapData.center,
-            zoom: mapData.zoom,
+            center: [20, 0],
+            zoom: 3,
             zoomAnimation: true,
             fadeAnimation: true,
             preferCanvas: true,
@@ -440,99 +481,72 @@ onMounted(async () => {
             maxZoom: 20
         })
 
-        // 修改底图配置
-        const changeBaseMap = () => {
-            if (baseLayer) {
-                map.removeLayer(baseLayer)
-            }
-            const selectedMap = baseMaps.find(m => m.id === selectedBaseMap.value)
-            if (selectedMap) {
-                baseLayer = L.tileLayer(selectedMap.url, {
-                    subdomains: selectedMap.subdomains || 'abc',
-                    attribution: selectedMap.attribution,
-                    maxZoom: 20,
-                    maxNativeZoom: 20,
-                    tileSize: 256,
-                    zIndex: 0,
-                    // 添加投影相关配置
-                    continuousWorld: true,
-                    noWrap: false,
-                    bounds: L.latLngBounds(L.latLng(-85.06, -180), L.latLng(85.06, 180)),
-                    crs: L.CRS.EPSG3857
-                })
-
-                if (baseLayerVisible.value) {
-                    baseLayer.addTo(map)
-                }
-            }
-        }
-
-        // 优化缩放事件处理
-        let zoomAnimationInProgress = false
-
-        map.on('zoomstart', () => {
-            zoomAnimationInProgress = true
-
-            // 确保地图投影系统在缩放过程中保持稳定
-            if (map && map.options.crs) {
-                const currentZoom = map.getZoom()
-                const scale = map.options.crs.scale(currentZoom)
-                if (!scale) {
-                    console.warn('Invalid zoom scale')
-                    return
-                }
-            }
-
-            layers.value.forEach(layer => {
-                if (layer.leafletLayer && layer.visible) {
-                    layer.leafletLayer.options.zoomAnimation = false
-                    if (typeof layer.leafletLayer._removeAllTiles === 'function') {
-                        layer.leafletLayer._removeAllTiles()
-                    }
-                }
-            })
-        })
-
-        map.on('zoomend', () => {
-            // 使用 setTimeout 确保在动画完全结束后再启用新的瓦片加载
-            setTimeout(() => {
-                zoomAnimationInProgress = false
-
-                layers.value.forEach(layer => {
-                    if (layer.leafletLayer && layer.visible) {
-
-                        layer.leafletLayer.options.zoomAnimation = true
-                        // 重新请求瓦片
-                        layer.leafletLayer.redraw()
-                    }
-                })
-            }, 250) // 添加适当的延迟
-        })
-
-        // 添加移动开始事件处理
-        map.on('movestart', () => {
-            if (!zoomAnimationInProgress) {
-                layers.value.forEach(layer => {
-                    if (layer.leafletLayer && layer.visible) {
-                        layer.leafletLayer.options.zoomAnimation = false
-                    }
-                })
-            }
-        })
-
-        // 添加移动结束事件处理
-        map.on('moveend', () => {
-            if (!zoomAnimationInProgress) {
-                layers.value.forEach(layer => {
-                    if (layer.leafletLayer && layer.visible) {
-                        layer.leafletLayer.options.zoomAnimation = true
-                    }
-                })
-            }
-        })
-
         // 初始化底图
         changeBaseMap()
+
+        // 初始化绘制控件
+        initDrawControl()
+
+        // 添加绘制完成事件监听
+        map.on(L.Draw.Event.CREATED, async (event) => {
+            const layer = event.layer;
+            drawnItems.value.addLayer(layer);
+
+            // 获取绘制图形的坐标
+            let coordinates;
+            if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
+                coordinates = {
+                    type: 'Polygon',
+                    coordinates: [layer.getLatLngs()[0].map(latLng => [latLng.lng, latLng.lat])]
+                };
+            }
+
+            try {
+                // 发送绘制的区域到后端
+                const response = await fetch('http://localhost:5000/filter-by-geometry', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        geometry: coordinates,
+                    })
+                });
+                console.log('Response:', response);
+            } catch (error) {
+                console.error('Error filtering images:', error);
+            }
+        });
+
+        // 添加删除事件监听
+        map.on(L.Draw.Event.DELETED, async (event) => {
+            const layers = event.layers;
+
+            // 获取被删除图层的坐标
+            const deletedCoordinates = [];
+            layers.eachLayer((layer) => {
+                if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
+                    deletedCoordinates.push(
+                        layer.getLatLngs()[0].map(latLng => [latLng.lng, latLng.lat])
+                    );
+                }
+            });
+
+            try {
+                // 发送删除的区域到后端
+                const response = await fetch('http://localhost:5000/remove-geometry', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        coordinates: deletedCoordinates
+                    })
+                });
+            } catch (error) {
+                console.error('Error removing geometries:', error);
+            }
+        });
 
     } catch (error) {
         console.error('Error loading map:', error)
@@ -665,6 +679,13 @@ const applyVisParams = async () => {
     try {
         if (!currentLayer.value || !map) return;
 
+        // 添加加载状态
+        const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
+        if (applyButton) {
+            applyButton.disabled = true
+            applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 应用中...'
+        }
+
         const updatedVisParams = {
             bands: visParams.bands,
             min: visParams.range[0],
@@ -684,7 +705,8 @@ const applyVisParams = async () => {
             },
             body: JSON.stringify({
                 satellite: currentLayer.value.satellite,
-                visParams: updatedVisParams
+                visParams: updatedVisParams,
+                layerId: currentLayer.value.id
             })
         })
 
@@ -738,6 +760,14 @@ const applyVisParams = async () => {
         }
     } catch (error) {
         console.error('Error updating vis params:', error)
+        ElMessage.error('更新图层样式失败')
+    } finally {
+        // 恢复按钮状态
+        const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
+        if (applyButton) {
+            applyButton.disabled = false
+            applyButton.innerHTML = 'Apply'
+        }
     }
 }
 
@@ -805,7 +835,83 @@ onUnmounted(() => {
         map.remove()
         map = null
     }
+
+    // 清理绘制相关的内容
+    if (drawnItems.value) {
+        map.removeLayer(drawnItems.value)
+    }
+    if (drawControl.value) {
+        map.removeControl(drawControl.value)
+    }
 })
+
+// 初始化绘制控件
+const initDrawControl = () => {
+    // 创建绘制图层组
+    drawnItems.value = new L.FeatureGroup()
+    map.addLayer(drawnItems.value)
+
+    // 配置绘制控件
+    const drawOptions = {
+        // position 可选值: 'topleft', 'topright', 'bottomleft', 'bottomright'
+        position: 'topleft',
+        draw: {
+            // 明确设置每个工具的启用/禁用状态
+            polyline: true,
+            polygon: true,
+            circle: false,      // 明确禁用圆形
+            circlemarker: false, // 明确禁用圆形标记
+            rectangle: true,
+            marker: true,
+        },
+        edit: {
+            featureGroup: drawnItems.value,
+            remove: true
+        }
+    };
+
+    // 单独配置每个绘制工具
+    drawOptions.draw.polyline = {
+        shapeOptions: {
+            color: '#f357a1',
+            weight: 3
+        }
+    };
+
+    drawOptions.draw.polygon = {
+        allowIntersection: false,
+        drawError: {
+            color: '#e1e100',
+            message: '<strong>错误：</strong>多边形不能自相交！'
+        },
+        shapeOptions: {
+            color: '#bada55',
+            fillOpacity: 0.5
+        }
+    };
+
+    drawOptions.draw.rectangle = {
+        showArea: false,
+        shapeOptions: {
+            color: '#4a80f5',
+            fill: false,
+            weight: 5,
+            clickable: true
+        },
+        repeatMode: false,
+        metric: false
+    };
+
+    drawOptions.draw.marker = {
+        icon: new L.Icon.Default(),
+        repeatMode: true
+    };
+
+    // 创建绘制控件
+    drawControl.value = new L.Control.Draw(drawOptions);
+
+    map.addControl(drawControl.value)
+}
 </script>
 
 <style src="../styles/map-view.css"></style>

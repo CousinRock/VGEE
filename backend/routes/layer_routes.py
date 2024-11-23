@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from services.layer_service import get_layer_info_service, update_vis_params_service
+from services.map_service import get_dataset  # 导入函数而不是变量
 
 layer_bp = Blueprint('layer', __name__)
 
@@ -17,10 +18,17 @@ def get_layer_info():
 def update_vis_params():
     try:
         data = request.json
-        result = update_vis_params_service(data)
+        print(f"Received data: {data}")
+        layer_id = data.get('layerId')  # 从请求中获取图层ID
+        
+        # 获取对应图层的 dataset
+        current_dataset = get_dataset(layer_id)
+        if not current_dataset:
+            raise Exception(f"No dataset found for layer {layer_id}")
+        
+        # 传入当前的 dataset
+        result = update_vis_params_service(data, current_dataset)
         return jsonify(result)
     except Exception as e:
         print(f"Error in update_vis_params: {str(e)}")
-        import traceback
-        traceback.print_exc()
         return jsonify({'error': str(e)}), 500 

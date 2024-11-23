@@ -285,3 +285,12 @@
     color: #606266;
     font-size: 14px;
 }
+
+/* 绘制工具的容器定位 */
+.leaflet-draw.leaflet-control {
+    position: absolute;
+    left: 0px;
+    top: 50%;
+    transform: translateY(150%);
+    z-index: 1000;
+}

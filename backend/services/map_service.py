@@ -1,14 +1,33 @@
 import ee
 
-def get_map_data_service(satellite, start_date, end_date, cloud_cover):
+# 使用字典存储每个图层的 dataset
+datasets = {}
+index = 0
+
+def get_dataset(layer_id):
+    print('datasets: ', datasets)
+    return datasets.get(layer_id)
+
+def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=None):
     """获取地图数据服务"""
     try:
+        global index
+        # 生成唯一的图层ID
+        index += 1
+        layer_id = f"layer-{index}-{satellite}"
+        print(f"Generated layer ID: {layer_id}")
+        
         # 根据不同的卫星类型返回不同的数据
         if satellite == 'LANDSAT':
             dataset = ee.ImageCollection('LANDSAT/LC08/C02/T1_TOA') \
                 .filterDate(start_date, end_date) \
-                .filter(ee.Filter.lt('CLOUD_COVER', cloud_cover)) \
-                .median()
+                .filter(ee.Filter.lt('CLOUD_COVER', cloud_cover))
+            
+            dataset = dataset.median()
+            
+            if region:
+                dataset = dataset.clip(region)
+                
             vis_params = {
                 'bands': ['B4', 'B3', 'B2'],
                 'min': 0,
@@ -19,8 +38,13 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover):
         elif satellite == 'SENTINEL':
             dataset = ee.ImageCollection('COPERNICUS/S2_SR') \
                 .filterDate(start_date, end_date) \
-                .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_cover)) \
-                .median()
+                .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_cover))
+                
+            dataset = dataset.median()
+            
+            if region:
+                dataset = dataset.clip(region)
+                
             vis_params = {
                 'bands': ['B4', 'B3', 'B2'],
                 'min': 0,
@@ -29,10 +53,14 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover):
             layer_name = f'Sentinel-2 ({start_date} to {end_date})'
             
         else:  # MODIS
-            # MODIS 数据不需要云量过滤
             dataset = ee.ImageCollection('MODIS/006/MOD13A2') \
-                .filterDate(start_date, end_date) \
-                .first()
+                .filterDate(start_date, end_date)
+                
+            dataset = dataset.first()
+            
+            if region:
+                dataset = dataset.clip(region)
+                
             vis_params = {
                 'min': -2000,
                 'max': 10000,
@@ -43,6 +71,9 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover):
                            '011D01', '011301']
             }
             layer_name = f'MODIS NDVI ({start_date} to {end_date})'
+
+        # 存储 dataset
+        datasets[layer_id] = dataset
 
         map_id = dataset.getMapId(vis_params)
         tile_url = map_id['tile_fetcher'].url_format
@@ -59,7 +90,8 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover):
                 'name': layer_name,
                 'url': tile_url,
                 'visible': True,
-                'opacity': 1.0
+                'opacity': 1.0,
+                'id': layer_id  # 返回图层ID
             }],
             'satellite': satellite,
             'visParams': vis_params

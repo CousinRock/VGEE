@@ -5,7 +5,7 @@
         <div class="control-section">
             <h4>数据源选择</h4>
             <div class="control-item">
-                <select v-model="selectedImage" @change="changeImage">
+                <select v-model="selectedImage">
                     <option value="LANDSAT">Landsat 8</option>
                     <option value="SENTINEL">Sentinel 2</option>
                     <option value="MODIS">MODIS</option>
@@ -17,12 +17,12 @@
             <h4>时间范围</h4>
             <div class="control-item">
                 <label>开始日期</label>
-                <input type="date" v-model="startDate" :min="minDate" :max="endDate" @change="changeImage">
+                <input type="date" v-model="startDate" :min="minDate" :max="endDate">
             </div>
 
             <div class="control-item">
                 <label>结束日期</label>
-                <input type="date" v-model="endDate" :min="startDate" :max="maxDate" @change="changeImage">
+                <input type="date" v-model="endDate" :min="startDate" :max="maxDate">
             </div>
         </div>
 
@@ -30,7 +30,7 @@
             <h4>云量设置</h4>
             <div class="control-item">
                 <div class="range-container">
-                    <input type="range" v-model="cloudCover" min="0" max="100" step="5" @change="changeImage">
+                    <input type="range" v-model="cloudCover" min="0" max="100" step="5">
                     <span class="range-value">{{ cloudCover }}%</span>
                 </div>
             </div>
@@ -55,6 +55,9 @@
 <script setup>
 import { ref } from 'vue'
 
+// 定义emit事件 'add-layer' 用于向父组件 Map.vue 发送添加新图层的事件
+// 当用户点击添加图层按钮时,会触发此事件并传递图层名称和地图数据
+// Map.vue 中的 handleAddLayer 方法会接收这些数据并调用 MapView 组件的 addNewLayer 方法来实际添加图层
 const emit = defineEmits(['add-layer'])
 
 // 日期控制
@@ -68,16 +71,29 @@ const endDate = ref(`${currentYear}-12-31`)
 const selectedImage = ref('LANDSAT')
 const cloudCover = ref(20)
 const layerName = ref('')
-let currentMapData = null
 
-// 获取影像数据
-const changeImage = async () => {
+// 添加新图层
+const addNewLayer = async () => {
+    if (!layerName.value || !layerName.value.trim()) {
+        alert('请输入图层名称')
+        return
+    }
+
     try {
+        // 添加加载状态
+        const addButton = document.querySelector('.add-layer-btn')
+        if (addButton) {
+            addButton.disabled = true
+            addButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 添加中...'
+        }
+
+        // 每次添加图层时都重新获取地图数据
         const params = new URLSearchParams({
             satellite: selectedImage.value,
             startDate: startDate.value,
             endDate: endDate.value,
-            cloudCover: cloudCover.value
+            cloudCover: cloudCover.value,
+            _t: Date.now()
         })
 
         const response = await fetch(`http://localhost:5000/map-data?${params}`)
@@ -88,26 +104,23 @@ const changeImage = async () => {
             return
         }
 
-        currentMapData = mapData
+        emit('add-layer', {
+            layerName: layerName.value,
+            mapData: mapData
+        })
+        layerName.value = ''
 
     } catch (error) {
-        console.error('Error changing image:', error)
-        alert('获取影像数据失败，请重试')
+        console.error('Error adding layer:', error)
+        alert('添加图层失败，请重试')
+    } finally {
+        // 恢复按钮状态
+        const addButton = document.querySelector('.add-layer-btn')
+        if (addButton) {
+            addButton.disabled = false
+            addButton.innerHTML = '<i class="fas fa-plus"></i> 添加图层'
+        }
     }
-}
-
-// 添加新图层
-const addNewLayer = () => {
-    if (!currentMapData) {
-        alert('请先查询影像数据')
-        return
-    }
-
-    emit('add-layer', {
-        layerName: layerName.value,
-        mapData: currentMapData
-    })
-    layerName.value = ''
 }
 </script>
 

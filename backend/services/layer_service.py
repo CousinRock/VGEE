@@ -1,8 +1,10 @@
 import ee
 
-def get_layer_info_service(satellite):
+index = 0
+def  get_layer_info_service(satellite):
     """获取图层信息服务"""
     try:
+        global index
         if satellite == 'LANDSAT':
             dataset = ee.ImageCollection('LANDSAT/LC08/C02/T1_TOA').first()
             band_names = dataset.bandNames().getInfo()
@@ -18,29 +20,25 @@ def get_layer_info_service(satellite):
             band_names = dataset.bandNames().getInfo()
             band_stats = {band: {'min': -2000, 'max': 10000} for band in band_names}
             
+        index += 1
+            
         return {
             'bands': band_names,
-            'bandStats': band_stats
+            'bandStats': band_stats,
+            'satellite': satellite,
+            'index': index
         }
         
     except Exception as e:
         raise Exception(f"Error in get_layer_info_service: {str(e)}")
 
-def update_vis_params_service(data):
+def update_vis_params_service(data, current_dataset):
     """更新可视化参数服务"""
     try:
-        satellite = data.get('satellite')
         vis_params = data.get('visParams')
         
-        if satellite == 'MODIS':
-            dataset = ee.ImageCollection('MODIS/006/MOD13A2')
-            image = dataset.first()
-        elif satellite == 'LANDSAT':
-            dataset = ee.ImageCollection('LANDSAT/LC08/C02/T1_TOA')
-            image = dataset.median()
-        elif satellite == 'SENTINEL':
-            dataset = ee.ImageCollection('COPERNICUS/S2_SR')
-            image = dataset.median()
+        if current_dataset is None:
+            raise Exception("No dataset available")
 
         # 获取选择的波段
         selected_bands = vis_params.get('bands', [])
@@ -64,7 +62,7 @@ def update_vis_params_service(data):
                 'gamma': float(vis_params.get('gamma', 1.4))
             }
         
-        map_id = image.getMapId(vis_params)
+        map_id = current_dataset.getMapId(vis_params)
         return {
             'tileUrl': map_id['tile_fetcher'].url_format
         }
