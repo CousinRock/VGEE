@@ -1,0 +1,130 @@
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: #2c3e50;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    width: 100vw;
+    box-sizing: border-box;
+}
+
+.nav-menu {
+    display: flex;
+    gap: 30px;
+    width: 100%;
+}
+
+.nav-item {
+    position: relative;
+    padding: 12px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-size: 15px;
+}
+
+.nav-item:hover,
+.nav-item.active {
+    background-color: #34495e;
+}
+
+.nav-item i {
+    font-size: 12px;
+    margin-left: 4px;
+}
+
+.submenu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    min-width: 150px;
+    margin-top: 5px;
+    color: #333;
+}
+
+.submenu-item {
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background-color 0.2s;
+    position: relative;
+}
+
+.submenu-item:hover {
+    background-color: #f5f5f5;
+}
+
+.submenu-item i {
+    width: 16px;
+    color: #666;
+}
+
+/* 添加小三角形 */
+.submenu::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 20px;
+    width: 10px;
+    height: 10px;
+    background-color: white;
+    transform: rotate(45deg);
+    box-shadow: -2px -2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* 二级菜单样式 */
+.submenu-item.has-children {
+    position: relative;
+}
+
+.submenu-item.has-children:after {
+    content: '›';
+    position: absolute;
+    right: 10px;
+    font-size: 18px;
+}
+
+/* 三级菜单样式 */
+.submenu-item .submenu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: 2px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    min-width: 150px;
+    color: #333;
+}
+
+/* 添加小三角形指示器 */
+.submenu-item .submenu::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: -5px;
+    width: 10px;
+    height: 10px;
+    background-color: white;
+    transform: rotate(45deg);
+    box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* 悬停时显示子菜单 */
+.submenu-item:hover>.submenu {
+    display: block;
+}

@@ -1,27 +1,30 @@
 .container {
-    display: flex;
+    position: relative;
     width: 100vw;
-    height: 100vh;
+    height: calc(100vh - 90px);
+    display: flex;
+    margin-top: 70px;
+    box-sizing: border-box;
     overflow: hidden;
 }
 
 .sidebar-left {
-    width: 0;
-    background: #fff;
+    height: 100%;
+    background-color: white;
+    transition: width 0.3s ease;
 }
 
 .sidebar-right {
-    width: 350px;
-    background: #fff;
-    border-left: 1px solid #e0e0e0;
-    overflow-y: auto;
-    flex-shrink: 0;
+    width: 250px;
+    height: 100%;
+    background-color: white;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
 }
 
 /* 响应式设计 */
 @media (max-width: 1200px) {
     .sidebar-right {
-        width: 300px;
+        width: 250px;
     }
 }
 

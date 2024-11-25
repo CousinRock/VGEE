@@ -1,5 +1,8 @@
 <template>
     <div class="container">
+        <!-- 添加顶部导航栏 -->
+        <Header />
+
         <!-- 左侧边栏预留 -->
         <div class="sidebar-left"></div>
 
@@ -17,6 +20,7 @@
 import { ref } from 'vue'
 import MapView from './MapView.vue'
 import ControlPanel from './ControlPanel.vue'
+import Header from './Header.vue'
 
 const mapView = ref(null)
 

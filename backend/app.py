@@ -4,6 +4,7 @@ import ee
 
 from routes.map_routes import map_bp
 from routes.layer_routes import layer_bp
+from routes.tool_routes import tool_bp
 from config import init_earth_engine
 
 app = Flask(__name__)
@@ -15,6 +16,7 @@ init_earth_engine()
 # 注册路由蓝图
 app.register_blueprint(map_bp)
 app.register_blueprint(layer_bp)
+app.register_blueprint(tool_bp, url_prefix='/tools')
 
 if __name__ == '__main__':
     app.run(debug=True)

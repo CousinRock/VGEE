@@ -15,8 +15,10 @@ def get_map_data():
         start_date = request.args.get('startDate', '2023-01-01')
         end_date = request.args.get('endDate', '2023-12-31')
         cloud_cover = float(request.args.get('cloudCover', 20))
+        layerName = request.args.get('layerName',None)
         
-        print(f"Received satellite: {satellite}, startDate: {start_date}, endDate: {end_date}, cloudCover: {cloud_cover}")
+        print(f"Received satellite: {satellite}, startDate: {start_date}," +
+              f"endDate: {end_date}, cloudCover: {cloud_cover}, layerName:{layerName}")
         
         # 如果有多个研究区域，将它们合并成一个多边形
         merged_area = None
@@ -25,7 +27,8 @@ def get_map_data():
             merged_area = ee.Geometry.MultiPolygon(study_areas)
             
         # 传入合并后的研究区域进行筛选和裁剪
-        result = get_map_data_service(satellite, start_date, end_date, cloud_cover, merged_area)
+        result = get_map_data_service(satellite, start_date, end_date, 
+                                      cloud_cover, merged_area,layerName)
         return jsonify(result)
         
     except Exception as e:

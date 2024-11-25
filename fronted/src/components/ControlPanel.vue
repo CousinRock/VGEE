@@ -93,6 +93,7 @@ const addNewLayer = async () => {
             startDate: startDate.value,
             endDate: endDate.value,
             cloudCover: cloudCover.value,
+            layerName: layerName.value,
             _t: Date.now()
         })
 

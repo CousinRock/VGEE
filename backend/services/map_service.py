@@ -2,13 +2,17 @@ import ee
 
 # 使用字典存储每个图层的 dataset
 datasets = {}
+datasetsNames  ={}
 index = 0
 
 def get_dataset(layer_id):
     print('datasets: ', datasets)
     return datasets.get(layer_id)
 
-def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=None):
+def get_all_datasets():
+    return datasets,datasetsNames
+
+def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=None,layerName=None):
     """获取地图数据服务"""
     try:
         global index
@@ -28,6 +32,7 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
             if region:
                 dataset = dataset.clip(region)
                 
+                
             vis_params = {
                 'bands': ['B4', 'B3', 'B2'],
                 'min': 0,
@@ -44,6 +49,7 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
             
             if region:
                 dataset = dataset.clip(region)
+                
                 
             vis_params = {
                 'bands': ['B4', 'B3', 'B2'],
@@ -74,6 +80,7 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
 
         # 存储 dataset
         datasets[layer_id] = dataset
+        datasetsNames[layer_id] = layerName
 
         map_id = dataset.getMapId(vis_params)
         tile_url = map_id['tile_fetcher'].url_format

@@ -379,8 +379,19 @@ const formatSliderValue = (value) => {
     }
 };
 
-// 监听图层变化
-watch(layers, (newLayers) => {
+// 添加防抖函数
+const debounce = (fn, delay) => {
+    let timer = null;
+    return function (...args) {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+            fn.apply(this, args);
+        }, delay);
+    };
+};
+
+// 监听图层变化时使用防抖
+watch(layers, debounce((newLayers) => {
     if (!map) return;
 
     nextTick(() => {
@@ -395,7 +406,7 @@ watch(layers, (newLayers) => {
                     }
                     layer.leafletLayer.setZIndex(1000 + newLayers.indexOf(layer))
                 } else {
-                    // 如果图层应该隐藏���遍历查找并移除
+                    // 如果图层应该隐藏遍历查找并移除
                     let mapLayers = Object.values(map._layers);
                     mapLayers.forEach((mapLayer) => {
                         if (mapLayer instanceof L.TileLayer &&
@@ -408,7 +419,7 @@ watch(layers, (newLayers) => {
             }
         })
     })
-}, { deep: true })
+}, 100), { deep: true })
 
 // 听底图可见
 watch(baseLayerVisible, (newValue) => {
@@ -458,12 +469,9 @@ watch(selectedBaseMap, () => {
     }
 })
 
-// 在 onMounted 中只需要调用这个函数
+// 在 onMounted 中只需要调用这个函��
 onMounted(async () => {
     try {
-        // const response = await fetch(`http://localhost:5000/map-data`)
-        // const mapData = await response.json()
-
         map = L.map('map', {
             center: [20, 0],
             zoom: 3,
@@ -486,6 +494,27 @@ onMounted(async () => {
 
         // 初始化绘制控件
         initDrawControl()
+
+        // 添加滚动优化
+        map.on('zoomstart', () => {
+            // 禁用所有图层的动画
+            layers.value.forEach(layer => {
+                if (layer.leafletLayer) {
+                    layer.leafletLayer.options.zoomAnimation = false;
+                }
+            });
+        });
+
+        map.on('zoomend', () => {
+            // 重新启用动画
+            setTimeout(() => {
+                layers.value.forEach(layer => {
+                    if (layer.leafletLayer) {
+                        layer.leafletLayer.options.zoomAnimation = true;
+                    }
+                });
+            }, 250);
+        });
 
         // 添加绘制完成事件监听
         map.on(L.Draw.Event.CREATED, async (event) => {
@@ -518,22 +547,27 @@ onMounted(async () => {
             }
         });
 
-        // 添加删除事件监听
+        // 修改删除事件监听
         map.on(L.Draw.Event.DELETED, async (event) => {
-            const layers = event.layers;
-
-            // 获取被删除图层的坐标
-            const deletedCoordinates = [];
-            layers.eachLayer((layer) => {
-                if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
-                    deletedCoordinates.push(
-                        layer.getLatLngs()[0].map(latLng => [latLng.lng, latLng.lat])
-                    );
-                }
-            });
-
             try {
-                // 发送删除的区域到后端
+                const layers = event.layers;
+
+                // 获取被删除图层的坐标
+                const deletedCoordinates = [];
+                layers.eachLayer((layer) => {
+                    if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
+                        deletedCoordinates.push(
+                            layer.getLatLngs()[0].map(latLng => [latLng.lng, latLng.lat])
+                        );
+                    }
+                });
+
+                // 先清理本地图层
+                if (drawnItems.value) {
+                    drawnItems.value.clearLayers();
+                }
+
+                // 然后再发送请求到后端
                 const response = await fetch('http://localhost:5000/remove-geometry', {
                     method: 'POST',
                     headers: {
@@ -543,6 +577,10 @@ onMounted(async () => {
                         coordinates: deletedCoordinates
                     })
                 });
+
+                // 等待后端响应后再进行其他操作
+                await response.json();
+
             } catch (error) {
                 console.error('Error removing geometries:', error);
             }
@@ -912,6 +950,8 @@ const initDrawControl = () => {
 
     map.addControl(drawControl.value)
 }
+
+
 </script>
 
 <style src="../styles/map-view.css"></style>
