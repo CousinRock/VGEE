@@ -46,8 +46,32 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+
+const layers = ref([])
+let map = ref(null)
+
+// 修改 props 定义
+const props = defineProps({
+    mapView: {
+        type: Object,
+        required: true
+    }
+})
+
+// 监听 mapView 的变化
+watch(() => props.mapView, (newMapView) => {
+    if (newMapView) {
+        console.log('Header received mapView:', {
+            instance: newMapView,
+            layers: newMapView.layers,
+            map: newMapView.map
+        })
+        layers.value = newMapView.layers
+        console.log('newMapView:', newMapView.layers);
+    }
+}, { immediate: true })
 
 // 定义菜单项
 const menuItems = [
@@ -215,6 +239,25 @@ const handleLayerSelect = async () => {
     }
 
     try {
+        const mapViewInstance = layers
+        if (!mapViewInstance) {
+            console.error('Layers not available')
+            ElMessage.error('图层未初始化')
+            return
+        }
+
+        // 获取地图实例
+        const mapRef = props.mapView  // 正确访问响应式的 map 实例
+        if (!mapRef) {
+            console.error('Map not available')
+            ElMessage.error('地图未初始化')
+            return
+        }
+
+        console.log('Map instance:', mapRef)
+        console.log('Current layers:', mapViewInstance.value)
+        console.log('Selected layer ID:', selectedLayerName.value[0])
+
         const result = await fetch('http://localhost:5000/tools/cloud-removal', {
             method: 'POST',
             headers: {
@@ -225,15 +268,53 @@ const handleLayerSelect = async () => {
             })
         })
 
-        console.log('selectedLayerName.value:', selectedLayerName.value[0])
-
         const data = await result.json()
-        if (data.success) {
+        if (data.success && data.tileUrl) {
+            // 找到要更新的图层
+            const layer = mapViewInstance.value.find(l => l.id === selectedLayerName.value[0])
+            if (layer) {
+                console.log('Layer found:', layer)
+                // 移除旧图层
+                if (layer.leafletLayer) {
+                    // 确保 _layers 存在
+                    if (mapRef._layers) {
+                        let mapLayers = Object.values(mapRef._layers);
+                        console.log('mapLayers:', mapLayers);
+
+                        mapLayers.forEach((mapLayer) => {
+                            if (mapLayer instanceof L.TileLayer &&
+                                mapLayer._url === layer.leafletLayer._url) {
+                                mapLayer.options.zoomAnimation = false;
+                                mapRef.removeLayer(mapLayer);
+                            }
+                        });
+                    }
+                }
+
+                // 创建新图层
+                const newLeafletLayer = L.tileLayer(data.tileUrl, {
+                    opacity: layer.opacity,
+                    maxZoom: 20,
+                    maxNativeZoom: 20,
+                    tileSize: 256,
+                    updateWhenIdle: false,
+                    updateWhenZooming: false,
+                    keepBuffer: 2,
+                    zIndex: layer.zIndex
+                })
+
+                // 更新图层引用
+                layer.leafletLayer = newLeafletLayer
+
+                // 如果图层是可见的，则添加到地图
+                if (layer.visible) {
+                    newLeafletLayer.addTo(mapRef)
+                    newLeafletLayer.setZIndex(layer.zIndex)
+                }
+            }
             ElMessage.success(data.message)
             showLayerSelect.value = false
             selectedLayerName.value = []
-        } else {
-            ElMessage.error(data.error || '操作失败')
         }
     } catch (error) {
         console.error('Error processing layers:', error)

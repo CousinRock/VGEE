@@ -9,10 +9,21 @@ datasets = None
 def cloud_removal():
     try:
         data = request.json
-        print(data.get('layer_id'))
-        result = ToolService.cloud_removal(datasets[data.get('layer_id')])
+        layer_id = data.get('layer_id')
+        print(layer_id)
+        
+        if not layer_id or layer_id not in datasets:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid layer ID'
+            }), 400
+            
+        # 获取图层数据并进行除云处理
+        result = ToolService.cloud_removal(datasets[layer_id])
         return jsonify(result)
+        
     except Exception as e:
+        print(f"Error in cloud_removal: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @tool_bp.route('/calculate-index', methods=['POST'])

@@ -216,7 +216,7 @@ const visParams = reactive({
     gamma: 1.4
 })
 
-let map = null
+var map = ref(null)
 let baseLayer = null
 
 // 添加调色板状态
@@ -469,7 +469,7 @@ watch(selectedBaseMap, () => {
     }
 })
 
-// 在 onMounted 中只需要调用这个函��
+// 在 onMounted 中只需要调用这个函
 onMounted(async () => {
     try {
         map = L.map('map', {
@@ -586,6 +586,9 @@ onMounted(async () => {
             }
         });
 
+        // 触发初始化完成事件
+        emit('map-initialized')
+
     } catch (error) {
         console.error('Error loading map:', error)
     }
@@ -607,9 +610,13 @@ watch(() => layers.value.map(l => l.visible), () => {
     nextTick(updateLayerOrder)
 }, { deep: true })
 
-// 暴露方法给父组件
+// 暴露方法和属性给父组件
 defineExpose({
-    addNewLayer
+    layers,
+    map,  // 暴露地图实例
+    addNewLayer,
+    removeLayer,
+    updateLayerOrder
 })
 
 // 添加底图配置
@@ -951,6 +958,8 @@ const initDrawControl = () => {
     map.addControl(drawControl.value)
 }
 
+// 在 script setup 中添加
+const emit = defineEmits(['map-initialized'])
 
 </script>
 

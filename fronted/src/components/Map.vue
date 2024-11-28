@@ -1,7 +1,7 @@
 <template>
     <div class="container">
-        <!-- 添加顶部导航栏 -->
-        <Header />
+        <!-- 传递整个 mapView 引用 -->
+        <Header :map-view="mapView" />
 
         <!-- 左侧边栏预留 -->
         <div class="sidebar-left"></div>
@@ -17,15 +17,29 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import MapView from './MapView.vue'
 import ControlPanel from './ControlPanel.vue'
 import Header from './Header.vue'
 
 const mapView = ref(null)
 
+// 监听 mapView 的变化
+watch(() => mapView.value, (newMapView) => {
+    if (newMapView) {
+        console.log('MapView component updated:', {
+            // object: Object.keys(newMapView)
+            newMapView
+        })
+    }
+}, { deep: true })
+
+onMounted(() => {
+    console.log('MapView component mounted:', mapView.value)
+})
+
 const handleAddLayer = ({ layerName, mapData }) => {
-    mapView.value.addNewLayer(layerName, mapData)
+    mapView.value?.addNewLayer(layerName, mapData)
 }
 </script>
 
