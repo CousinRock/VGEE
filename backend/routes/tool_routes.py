@@ -66,19 +66,6 @@ def supervised_classification():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@tool_bp.route('/change-detection', methods=['POST'])
-def change_detection():
-    try:
-        data = request.json
-        result = ToolService.change_detection(
-            data.get('image1'),
-            data.get('image2'),
-            data.get('method'),
-            data.get('params')
-        )
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 @tool_bp.route('/get-layers', methods=['GET'])
 def get_layers():

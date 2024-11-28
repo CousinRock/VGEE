@@ -8,12 +8,9 @@ export const menuItems = [
                 label: '预处理工具',
                 children: [
                     { id: 'cloud-removal', label: '影像除云', icon: 'fas fa-cloud-sun' },
-                    { id: 'atmospheric-correction', label: '大气校正', icon: 'fas fa-wind' },
-                    { id: 'radiometric-calibration', label: '辐射定标', icon: 'fas fa-adjust' },
-                    { id: 'geometric-correction', label: '几何校正', icon: 'fas fa-ruler-combined' }
+                    { id: 'image-filling', label: '影像填补', icon: 'fas fa-fill-drip' }
                 ]
             },
-            // ... 其他工具配置 ...
         ]
     },
     {

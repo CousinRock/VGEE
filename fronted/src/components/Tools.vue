@@ -49,8 +49,8 @@
 <script setup>
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { menuItems } from '../config/tools-config'  // 将菜单配置移到单独的文件
-import L from 'leaflet'  // 添加这行
+import { menuItems } from '../config/tools-config'
+import L from 'leaflet'
 
 const props = defineProps({
     mapView: {
@@ -94,26 +94,43 @@ const handleSubMenuClick = (item) => {
     }
 }
 
+// 获取可用图层的通用方法
+const getAvailableLayers = async () => {
+    try {
+        const response = await fetch('http://localhost:5000/tools/get-layers')
+        const data = await response.json()
+
+        if (!data.success) {
+            ElMessage.error('获取图层失败')
+            return null
+        }
+
+        if (!data.layers || data.layers.length === 0) {
+            ElMessage.warning('没有可用的 Landsat 图层')
+            return null
+        }
+
+        return data.layers
+    } catch (error) {
+        console.error('Error getting layers:', error)
+        ElMessage.error('获取图层失败')
+        return null
+    }
+}
+
 // 工具处理方法
 const handleToolClick = async (tool) => {
     try {
-        if (tool.id === 'cloud-removal') {
-            const response = await fetch('http://localhost:5000/tools/get-layers')
-            const data = await response.json()
-
-            if (!data.success) {
-                ElMessage.error('获取图层失败')
-                return
-            }
-
-            if (!data.layers || data.layers.length === 0) {
-                ElMessage.warning('没有可用的 Landsat 图层')
-                return
-            }
-
-            availableLayers.value = data.layers
-            currentTool.value = tool
-            showLayerSelect.value = true
+        switch (tool.id) {
+            case 'cloud-removal':
+                await handleCloudRemoval(tool)
+                break
+            case 'image-filling':
+                await handleImageFilling(tool)
+                break
+            // 可以继续添加其他工具的 case
+            default:
+                ElMessage.warning('该功能尚未实现')
         }
     } catch (error) {
         console.error('Error handling tool click:', error)
@@ -121,7 +138,26 @@ const handleToolClick = async (tool) => {
     }
 }
 
-// 图层处理方法
+// 云去除功能处理函数
+async function handleCloudRemoval(tool) {
+    const layers = await getAvailableLayers()
+    if (!layers) return
+    
+    availableLayers.value = layers
+    currentTool.value = tool
+    showLayerSelect.value = true
+}
+
+// 图像填补功能处理函数
+async function handleImageFilling(tool) {
+    const layers = await getAvailableLayers()
+    if (!layers) return
+    
+    // TODO: 实现图像填补功能
+    ElMessage.info('图像填补功能开发中...')
+}
+
+// 图层选择处理
 const handleLayerSelect = async () => {
     if (selectedLayerName.value.length === 0) {
         ElMessage.warning('请选择至少一个图层')
@@ -129,11 +165,22 @@ const handleLayerSelect = async () => {
     }
 
     try {
-        // 设置处理状态
         isProcessing.value = true
 
-        // 发送请求到后端
-        const result = await fetch('http://localhost:5000/tools/cloud-removal', {
+        // 根据当前工具类型选择不同的处理端点
+        let endpoint = ''
+        switch (currentTool.value.id) {
+            case 'cloud-removal':
+                endpoint = 'cloud-removal'
+                break
+            case 'image-filling':
+                endpoint = 'image-filling'
+                break
+            default:
+                throw new Error('未知的工具类型')
+        }
+
+        const result = await fetch(`http://localhost:5000/tools/${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -145,48 +192,7 @@ const handleLayerSelect = async () => {
 
         const data = await result.json()
         if (data.success && data.tileUrl) {
-            // 找到要更新的图层
-            const layer = props.mapView.layers.find(l => l.id === selectedLayerName.value[0])
-            if (layer) {
-                console.log('Layer found:', layer)
-                // 移除旧图层
-                if (layer.leafletLayer) {
-                    // 确保 _layers 存在
-                    if (props.mapView.map._layers) {
-                        let mapLayers = Object.values(props.mapView.map._layers);
-                        console.log('mapLayers:', mapLayers);
-
-                        mapLayers.forEach((mapLayer) => {
-                            if (mapLayer instanceof L.TileLayer &&
-                                mapLayer._url === layer.leafletLayer._url) {
-                                mapLayer.options.zoomAnimation = false;
-                                props.mapView.map.removeLayer(mapLayer);
-                            }
-                        });
-                    }
-                }
-
-                // 创建新图层
-                const newLeafletLayer = L.tileLayer(data.tileUrl, {
-                    opacity: layer.opacity,
-                    maxZoom: 20,
-                    maxNativeZoom: 20,
-                    tileSize: 256,
-                    updateWhenIdle: false,
-                    updateWhenZooming: false,
-                    keepBuffer: 2,
-                    zIndex: layer.zIndex
-                })
-
-                // 更新图层引用
-                layer.leafletLayer = newLeafletLayer
-
-                // 如果图层是可见的，则添加到地图
-                if (layer.visible) {
-                    newLeafletLayer.addTo(props.mapView.map)
-                    newLeafletLayer.setZIndex(layer.zIndex)
-                }
-            }
+            await updateMapLayer(data.tileUrl)
             ElMessage.success(data.message)
             showLayerSelect.value = false
             selectedLayerName.value = []
@@ -197,8 +203,46 @@ const handleLayerSelect = async () => {
         console.error('Error processing layers:', error)
         ElMessage.error('处理失败')
     } finally {
-        // 重置处理状态
         isProcessing.value = false
+    }
+}
+
+// 更新地图图层
+async function updateMapLayer(tileUrl) {
+    const layer = props.mapView.layers.find(l => l.id === selectedLayerName.value[0])
+    if (!layer) return
+
+    // 移除旧图层
+    if (layer.leafletLayer && props.mapView.map._layers) {
+        let mapLayers = Object.values(props.mapView.map._layers)
+        mapLayers.forEach((mapLayer) => {
+            if (mapLayer instanceof L.TileLayer &&
+                mapLayer._url === layer.leafletLayer._url) {
+                mapLayer.options.zoomAnimation = false
+                props.mapView.map.removeLayer(mapLayer)
+            }
+        })
+    }
+
+    // 创建新图层
+    const newLeafletLayer = L.tileLayer(tileUrl, {
+        opacity: layer.opacity,
+        maxZoom: 20,
+        maxNativeZoom: 20,
+        tileSize: 256,
+        updateWhenIdle: false,
+        updateWhenZooming: false,
+        keepBuffer: 2,
+        zIndex: layer.zIndex
+    })
+
+    // 更新图层引用
+    layer.leafletLayer = newLeafletLayer
+
+    // 如果图层是可见的，则添加到地图
+    if (layer.visible) {
+        newLeafletLayer.addTo(props.mapView.map)
+        newLeafletLayer.setZIndex(layer.zIndex)
     }
 }
 
