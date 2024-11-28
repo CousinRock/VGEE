@@ -10,7 +10,7 @@ def cloud_removal():
     try:
         data = request.json
         layer_id = data.get('layer_id')
-        print(layer_id)
+        print(f"cloud_removal-datasets: {datasets}")
         
         if not layer_id or layer_id not in datasets:
             return jsonify({
@@ -20,7 +20,21 @@ def cloud_removal():
             
         # 获取图层数据并进行除云处理
         result = ToolService.cloud_removal(datasets[layer_id])
-        return jsonify(result)
+        datasets[layer_id] = result
+
+         # 返回处理结果
+        map_id = result.getMapId({
+            'bands': ['B4', 'B3', 'B2'],
+            'min': 0,
+            'max': 0.3,
+            'gamma': 1.4
+        })
+
+        return jsonify({
+                'success': True,
+                'message': '除云处理完成',
+                'tileUrl': map_id['tile_fetcher'].url_format
+            })
         
     except Exception as e:
         print(f"Error in cloud_removal: {str(e)}")

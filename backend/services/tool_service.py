@@ -5,7 +5,6 @@ class ToolService:
     def RemoveBit(image):
         """除云除雪函数"""
         snow_bit = 1 << 5
-        cirrus = 1 << 2  # 卷云
         dilated_cloud = 1 << 1  # 扩张云
         cloud_shadow_bit_mask = 1 << 4
         clouds_bit_mask = 1 << 3
@@ -26,19 +25,11 @@ class ToolService:
             # 应用除云除雪函数
             cleared_image = ToolService.RemoveBit(image)
             
-            # 返回处理结果
-            map_id = cleared_image.getMapId({
-                'bands': ['B4', 'B3', 'B2'],
-                'min': 0,
-                'max': 0.3,
-                'gamma': 1.4
-            })
+           
             
-            return {
-                'success': True,
-                'message': '除云处理完成',
-                'tileUrl': map_id['tile_fetcher'].url_format
-            }
+            return cleared_image
+
+            
         except Exception as e:
             raise Exception(f"Error in cloud removal: {str(e)}")
 

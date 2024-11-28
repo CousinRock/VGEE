@@ -216,7 +216,7 @@ const visParams = reactive({
     gamma: 1.4
 })
 
-var map = ref(null)
+const map = ref(null)
 let baseLayer = null
 
 // 添加调色板状态
@@ -305,10 +305,10 @@ const addNewLayer = async (layerName, mapData) => {
                 updateWhenZooming: false,
                 keepBuffer: 2,
                 zIndex: newLayer.zIndex,
-                crs: map.options.crs  // 使用与地图相同的CRS
+                crs: map.value.options.crs  // 使用与地图相同的CRS
             })
 
-            newLayer.leafletLayer.addTo(map)
+            newLayer.leafletLayer.addTo(map.value)
             layers.value.push(newLayer)
         })
 
@@ -320,30 +320,53 @@ const addNewLayer = async (layerName, mapData) => {
 }
 
 // 移除选定的图层
-const removeLayer = (layerId, layerName) => {
+const removeLayer =async (layerId, layerName) => {
     console.log('remove layer:', layerName);
+    console.log('layerId:', layerId);
 
     if (!map) return;
 
-    let mapLayers = Object.values(map._layers);
+    try {
+        // 先调用后端移除数据集中的图层
+        const response = await fetch('http://localhost:5000/remove-layer', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                layer_id: layerId
+            })
+        });
 
-    mapLayers.forEach((mapLayer) => {
-        // 检查是否是我们要删除的图层且不是底图
-        //确保删除的是瓦片图层的实例
-        if (mapLayer instanceof L.TileLayer &&
-            mapLayer !== baseLayer &&
-            mapLayer._leaflet_id === layers.value.find(l => l.id === layerId)?.leafletLayer._leaflet_id) {
-            // 禁用动画
-            mapLayer.options.zoomAnimation = false;
-            // 移除图层
-            map.removeLayer(mapLayer);
+        const result = await response.json();
+        if (!result.success) {
+            console.error('Failed to remove layer from dataset:', result.message);
+            ElMessage.warning('从数据集移除图层失败，但会继续移除显示图层');
         }
-    });
 
-    // 从数组中移除图层
-    const layerIndex = layers.value.findIndex(l => l.id === layerId);
-    if (layerIndex > -1) {
-        layers.value.splice(layerIndex, 1);
+        // 继续移除地图上的图层
+        let mapLayers = Object.values(map.value._layers);
+
+        mapLayers.forEach((mapLayer) => {
+            // 检查是否是我们要删除的图层且不是底图
+            //确保删除的是瓦片图层的实例
+            if (mapLayer instanceof L.TileLayer &&
+                mapLayer !== baseLayer &&
+                mapLayer._leaflet_id === layers.value.find(l => l.id === layerId)?.leafletLayer._leaflet_id) {
+                // 禁用动画
+                mapLayer.options.zoomAnimation = false;
+                // 移除图层
+                map.value.removeLayer(mapLayer);
+            }
+        });
+
+        // 从数组中移除图层
+        const layerIndex = layers.value.findIndex(l => l.id === layerId);
+        if (layerIndex > -1) {
+            layers.value.splice(layerIndex, 1);
+        }
+    } catch (error) {
+        console.error('Error removing layer:', error);
     }
 };
 
@@ -401,18 +424,18 @@ watch(layers, debounce((newLayers) => {
 
                 if (layer.visible) {
                     // 如果图层应该可见，直接使用 layer.leafletLayer
-                    if (!map.hasLayer(layer.leafletLayer)) {
-                        layer.leafletLayer.addTo(map)
+                    if (!map.value.hasLayer(layer.leafletLayer)) {
+                        layer.leafletLayer.addTo(map.value)
                     }
                     layer.leafletLayer.setZIndex(1000 + newLayers.indexOf(layer))
                 } else {
                     // 如果图层应该隐藏遍历查找并移除
-                    let mapLayers = Object.values(map._layers);
+                    let mapLayers = Object.values(map.value._layers);
                     mapLayers.forEach((mapLayer) => {
                         if (mapLayer instanceof L.TileLayer &&
                             mapLayer !== baseLayer &&
                             mapLayer._leaflet_id === layer.leafletLayer._leaflet_id) {
-                            map.removeLayer(mapLayer)
+                            map.value.removeLayer(mapLayer)
                         }
                     });
                 }
@@ -421,25 +444,25 @@ watch(layers, debounce((newLayers) => {
     })
 }, 100), { deep: true })
 
-// 听底图可见
-watch(baseLayerVisible, (newValue) => {
-    nextTick(() => {
-        if (baseLayer) {
-            if (newValue) {
-                baseLayer.addTo(map)
-                baseLayer.setZIndex(0)
-            } else {
-                baseLayer.remove()
-            }
-        }
-    })
-})
-
-// 将 changeBaseMap 函数移到 onMounted 外面
+// 修改 changeBaseMap 函数
 const changeBaseMap = () => {
+    // 移除旧底图
     if (baseLayer) {
-        map.removeLayer(baseLayer)
+        // 先从地图中移除旧图层
+        Object.values(map.value._layers).forEach(layer => {
+            if (layer instanceof L.TileLayer && 
+                (layer._url === baseLayer._url || 
+                 baseMaps.some(m => layer._url === m.url.replace('{s}', layer.options.subdomains[0])))) {
+                map.value.removeLayer(layer);
+            }
+        });
+        
+        // 清理旧底图的引用
+        baseLayer.off();
+        baseLayer = null;
     }
+
+    // 创建新底图
     const selectedMap = baseMaps.find(m => m.id === selectedBaseMap.value)
     if (selectedMap) {
         baseLayer = L.tileLayer(selectedMap.url, {
@@ -457,14 +480,39 @@ const changeBaseMap = () => {
         })
 
         if (baseLayerVisible.value) {
-            baseLayer.addTo(map)
+            baseLayer.addTo(map.value)
         }
+        
+        // 添加日志以便调试
+        console.log('New baseLayer created:', {
+            id: baseLayer._leaflet_id,
+            url: baseLayer._url
+        });
     }
 }
 
+// 修改底图可见性监听
+watch(baseLayerVisible, (newValue) => {
+    nextTick(() => {
+        if (baseLayer) {
+            if (newValue) {
+                // 确保不会重复添加
+                if (!map.value.hasLayer(baseLayer)) {
+                    baseLayer.addTo(map.value)
+                    baseLayer.setZIndex(0)
+                }
+            } else {
+                if (map.value.hasLayer(baseLayer)) {
+                    baseLayer.remove()
+                }
+            }
+        }
+    })
+})
+
 // 监听底图类型变化
 watch(selectedBaseMap, () => {
-    if (map) {
+    if (map.value) {
         changeBaseMap()
     }
 })
@@ -472,7 +520,8 @@ watch(selectedBaseMap, () => {
 // 在 onMounted 中只需要调用这个函
 onMounted(async () => {
     try {
-        map = L.map('map', {
+        // 创建地图实例时直接赋值给 ref
+        map.value = L.map('map', {
             center: [20, 0],
             zoom: 3,
             zoomAnimation: true,
@@ -496,7 +545,7 @@ onMounted(async () => {
         initDrawControl()
 
         // 添加滚动优化
-        map.on('zoomstart', () => {
+        map.value.on('zoomstart', () => {
             // 禁用所有图层的动画
             layers.value.forEach(layer => {
                 if (layer.leafletLayer) {
@@ -505,7 +554,7 @@ onMounted(async () => {
             });
         });
 
-        map.on('zoomend', () => {
+        map.value.on('zoomend', () => {
             // 重新启用动画
             setTimeout(() => {
                 layers.value.forEach(layer => {
@@ -517,7 +566,7 @@ onMounted(async () => {
         });
 
         // 添加绘制完成事件监听
-        map.on(L.Draw.Event.CREATED, async (event) => {
+        map.value.on(L.Draw.Event.CREATED, async (event) => {
             const layer = event.layer;
             drawnItems.value.addLayer(layer);
 
@@ -548,7 +597,7 @@ onMounted(async () => {
         });
 
         // 修改删除事件监听
-        map.on(L.Draw.Event.DELETED, async (event) => {
+        map.value.on(L.Draw.Event.DELETED, async (event) => {
             try {
                 const layers = event.layers;
 
@@ -587,7 +636,7 @@ onMounted(async () => {
         });
 
         // 触发初始化完成事件
-        emit('map-initialized')
+        emit('map-initialized', map.value)
 
     } catch (error) {
         console.error('Error loading map:', error)
@@ -613,7 +662,7 @@ watch(() => layers.value.map(l => l.visible), () => {
 // 暴露方法和属性给父组件
 defineExpose({
     layers,
-    map,  // 暴露地图实例
+    map: map,  // 使用 readonly 包装，防止外部修改
     addNewLayer,
     removeLayer,
     updateLayerOrder
@@ -762,7 +811,7 @@ const applyVisParams = async () => {
             if (layer) {
                 // 先移除旧图层
                 if (layer.leafletLayer) {
-                    let mapLayers = Object.values(map._layers);
+                    let mapLayers = Object.values(map.value._layers);
 
                     mapLayers.forEach((mapLayer) => {
                         // 检查是否是我们要删除的图层且不是底图
@@ -774,7 +823,7 @@ const applyVisParams = async () => {
                             // 禁用动画
                             mapLayer.options.zoomAnimation = false;
                             // 移除图层
-                            map.removeLayer(mapLayer);
+                            map.value.removeLayer(mapLayer);
                         }
                     });
                 }
@@ -797,7 +846,7 @@ const applyVisParams = async () => {
 
                 // 如果图层是可见的，则添加到地图
                 if (layer.visible) {
-                    newLeafletLayer.addTo(map)
+                    newLeafletLayer.addTo(map.value)
                     newLeafletLayer.setZIndex(1000 + layers.value.indexOf(layer))
                 }
             }
@@ -846,8 +895,8 @@ onUnmounted(() => {
                 }
 
                 // 从地图中移除
-                if (map && map.hasLayer(layer.leafletLayer)) {
-                    map.removeLayer(layer.leafletLayer)
+                if (map.value && map.value.hasLayer(layer.leafletLayer)) {
+                    map.value.removeLayer(layer.leafletLayer)
                 }
 
                 layer.leafletLayer = null
@@ -865,8 +914,8 @@ onUnmounted(() => {
             if (typeof baseLayer._removeAllTiles === 'function') {
                 baseLayer._removeAllTiles()
             }
-            if (map && map.hasLayer(baseLayer)) {
-                map.removeLayer(baseLayer)
+            if (map.value && map.value.hasLayer(baseLayer)) {
+                map.value.removeLayer(baseLayer)
             }
             baseLayer = null
         } catch (error) {
@@ -875,18 +924,18 @@ onUnmounted(() => {
     }
 
     // 移除地图事件监听
-    if (map) {
-        map.off()
-        map.remove()
-        map = null
+    if (map.value) {
+        map.value.off()
+        map.value.remove()
+        map.value = null
     }
 
     // 清理绘制相关的内容
     if (drawnItems.value) {
-        map.removeLayer(drawnItems.value)
+        map.value.removeLayer(drawnItems.value)
     }
     if (drawControl.value) {
-        map.removeControl(drawControl.value)
+        map.value.removeControl(drawControl.value)
     }
 })
 
@@ -894,7 +943,7 @@ onUnmounted(() => {
 const initDrawControl = () => {
     // 创建绘制图层组
     drawnItems.value = new L.FeatureGroup()
-    map.addLayer(drawnItems.value)
+    map.value.addLayer(drawnItems.value)
 
     // 配置绘制控件
     const drawOptions = {
@@ -955,7 +1004,7 @@ const initDrawControl = () => {
     // 创建绘制控件
     drawControl.value = new L.Control.Draw(drawOptions);
 
-    map.addControl(drawControl.value)
+    map.value.addControl(drawControl.value)
 }
 
 // 在 script setup 中添加

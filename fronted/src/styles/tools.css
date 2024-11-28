@@ -1,0 +1,33 @@
+/* 可以将相关样式移到单独的 CSS 文件中 */
+.tools-menu {
+    display: flex;
+    align-items: center;
+}
+
+.submenu-item.processing {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.submenu-item.processing i.fa-spin {
+    margin-left: auto;
+    color: #4a90e2;
+}
+
+.layer-select-content {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.layer-option {
+    padding: 8px 0;
+}
+
+/* 添加处理中的按钮样式 */
+.el-button.is-loading {
+    pointer-events: none;
+}
+
+.el-button.is-loading .el-icon {
+    margin-right: 5px;
+}

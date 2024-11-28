@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from services.map_service import get_map_data_service
+from services.map_service import get_map_data_service,remove_dataset
 import ee
 
 map_bp = Blueprint('map', __name__)
@@ -84,3 +84,30 @@ def remove_geometry():
     except Exception as e:
         print(f"Error in remove_geometry: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@map_bp.route('/remove-layer', methods=['POST'])
+def remove_layer():
+    try:
+        data = request.get_json()
+        layer_id = data.get('layer_id')
+        
+        if not layer_id:
+            return jsonify({
+                'success': False,
+                'message': '缺少图层ID'
+            }), 400
+            
+        # 调用已有的 remove_dataset 服务
+        remove_dataset(layer_id)
+        
+        return jsonify({
+            'success': True,
+            'message': '图层已从数据集中移除'
+        })
+        
+    except Exception as e:
+        print(f"Error removing layer: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'移除图层时发生错误: {str(e)}'
+        }), 500

@@ -20,6 +20,7 @@ def update_vis_params():
         data = request.json
         print(f"Received data: {data}")
         layer_id = data.get('layerId')  # 从请求中获取图层ID
+        print(f"update_vis_params-layer_id: {layer_id}")
         
         # 获取对应图层的 dataset
         current_dataset = get_dataset(layer_id)

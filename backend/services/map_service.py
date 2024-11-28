@@ -6,11 +6,26 @@ datasetsNames  ={}
 index = 0
 
 def get_dataset(layer_id):
+    '''
+    获取图层
+    '''
     print('datasets: ', datasets)
     return datasets.get(layer_id)
 
 def get_all_datasets():
+    '''
+    获取所有图层
+    '''
     return datasets,datasetsNames
+
+def remove_dataset(layer_id):
+    '''
+    移除图层
+    '''
+    if layer_id in datasets:
+        del datasets[layer_id]
+        del datasetsNames[layer_id]
+        print(f"remove_dataset-datasets: {datasets}")
 
 def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=None,layerName=None):
     """获取地图数据服务"""
