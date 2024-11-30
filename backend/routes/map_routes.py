@@ -91,6 +91,7 @@ def remove_layer():
         data = request.get_json()
         layer_id = data.get('layer_id')
         
+        
         if not layer_id:
             return jsonify({
                 'success': False,
