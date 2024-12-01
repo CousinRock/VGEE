@@ -33,7 +33,7 @@ const onMapInitialized = (mapInstance) => {
 }
 
 onMounted(() => {
-    console.log('MapView component mounted:', mapView.value)
+    console.log('Map.vue - MapView component mounted:', mapView.value)
 })
 
 const handleAddLayer = ({ layerName, mapData }) => {

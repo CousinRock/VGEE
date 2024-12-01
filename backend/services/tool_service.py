@@ -22,14 +22,12 @@ class ToolService:
     def cloud_removal(image):
         """影像除云处理"""
         try:
-            # 应用除云除雪函数
-            cleared_image = ToolService.RemoveBit(image)  
+            cleared_image = ToolService.RemoveBit(image)
             
-            return cleared_image
-
+            return cleared_image 
             
         except Exception as e:
-            raise Exception(f"Error in cloud removal: {str(e)}")
+            raise Exception(f"Tool_service.py - Error in cloud removal: {str(e)}")
 
     @staticmethod
     def calculate_index(image, index_type, params=None):
@@ -53,7 +51,7 @@ class ToolService:
                 'message': f'{index_type} 计算完成'
             }
         except Exception as e:
-            raise Exception(f"Error calculating {index_type}: {str(e)}")
+            raise Exception(f"Tool_service.py - Error calculating {index_type}: {str(e)}")
 
     @staticmethod
     def supervised_classification(image, training_data, params):
@@ -65,4 +63,29 @@ class ToolService:
                 'message': '监督分类完成'
             }
         except Exception as e:
-            raise Exception(f"Error in supervised classification: {str(e)}")
+            raise Exception(f"Tool_service.py - Error in supervised classification: {str(e)}")
+
+    @staticmethod
+    def image_filling(images):
+        try:
+            # 将图像列表转换为 ImageCollection
+            imageCollection = ee.ImageCollection.fromImages(images)
+            
+            def fillGaps(image, collection):
+                # 过滤掉当前图像
+                sourceCollection = collection.filter(
+                    ee.Filter.neq('system:index', image.get('system:index')))
+                # 使用其他图像的镶嵌来填补当前图像的缺失部分
+                filled = image.unmask(sourceCollection.mosaic())
+                return filled
+            
+            # 对每个图像进行填补处理
+            filled_images = []
+            for img in images:
+                filled = fillGaps(ee.Image(img), imageCollection)
+                filled_images.append(filled)
+                
+            return filled_images
+            
+        except Exception as e:
+            raise Exception(f"Tool_service.py - Error in image_filling: {str(e)}")

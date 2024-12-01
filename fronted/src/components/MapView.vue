@@ -237,7 +237,6 @@ const palettes = {
 }
 
 // 添加绘制控制相关的状态
-const showDrawControl = ref(false)
 const drawnItems = ref(null)
 const drawControl = ref(null)
 
@@ -254,12 +253,11 @@ const addNewLayer = async (layerName, mapData) => {
             return
         }
 
-        // 预取波段信息并缓存
+        // 1. 预取波段信息并缓存
         const response = await fetch(`http://localhost:5000/layer-info?satellite=${mapData.satellite}`)
         const layerInfo = await response.json()
-        console.log('Layer info:', layerInfo)
 
-        // 根据卫星类型设置默认波段组合
+        // 2. 根据卫星类型设置默认波段组合
         let defaultBands
         switch (mapData.satellite) {
             case 'LANDSAT':
@@ -275,6 +273,7 @@ const addNewLayer = async (layerName, mapData) => {
                 defaultBands = layerInfo.bands.slice(0, 3)  // 默认使用前三个波段
         }
 
+        // 3. 为每个图层创建新的图层对象
         mapData.overlayLayers.forEach(layerData => {
             const newLayer = {
                 id: `layer-${layerInfo.index}-${layerInfo.satellite}`,
@@ -285,17 +284,16 @@ const addNewLayer = async (layerName, mapData) => {
                 leafletLayer: null,
                 zIndex: 1000 + layers.value.length,
                 satellite: mapData.satellite || 'LANDSAT',
-                // 缓存波段信息
                 bandInfo: layerInfo,
                 visParams: {
-                    bands: defaultBands,  // 使用根据卫星类型确定的默认波段
-                    min: bandStats.value[defaultBands[0]]?.min || 0,
-                    max: bandStats.value[defaultBands[0]]?.max || 1,
-                    gamma: 1.4
+                    bands: mapData.visParams.bands,
+                    min: mapData.visParams.min,
+                    max: mapData.visParams.max,
+                    gamma: mapData.visParams.gamma
                 }
             }
 
-            // 创建Leaflet图层
+            // 4. 创建 Leaflet 图层
             newLayer.leafletLayer = L.tileLayer(layerData.url, {
                 opacity: newLayer.opacity,
                 maxZoom: 20,
@@ -304,25 +302,27 @@ const addNewLayer = async (layerName, mapData) => {
                 updateWhenIdle: false,
                 updateWhenZooming: false,
                 keepBuffer: 2,
-                zIndex: newLayer.zIndex,
-                crs: map.value.options.crs  // 使用与地图相同的CRS
+                zIndex: newLayer.zIndex
             })
 
+            // 5. 添加到地图和图层数组
             newLayer.leafletLayer.addTo(map.value)
             layers.value.push(newLayer)
+            console.log('MapView.vue - newLayer.visParams:', newLayer.visParams);
         })
 
+        // 6. 更新图层顺序
         updateLayerOrder()
     } catch (error) {
-        console.error('Error adding layer:', error)
+        console.error('MapView.vue - Error adding layer:', error)
         alert('添加图层失败，请重试')
     }
 }
 
 // 移除选定的图层
 const removeLayer =async (layerId, layerName) => {
-    console.log('remove layer:', layerName);
-    console.log('layerId:', layerId);
+    console.log('MapView.vue - remove layer:', layerName);
+    console.log('MapView.vue - layerId:', layerId);
 
     if (!map) return;
 
@@ -340,7 +340,7 @@ const removeLayer =async (layerId, layerName) => {
 
         const result = await response.json();
         if (!result.success) {
-            console.error('Failed to remove layer from dataset:', result.message);
+            console.error('MapView.vue - Failed to remove layer from dataset:', result.message);
             ElMessage.warning('从数据集移除图层失败，但会继续移除显示图层');
         }
 
@@ -366,7 +366,7 @@ const removeLayer =async (layerId, layerName) => {
             layers.value.splice(layerIndex, 1);
         }
     } catch (error) {
-        console.error('Error removing layer:', error);
+        console.error('MapView.vue - Error removing layer:', error);
     }
 };
 
@@ -484,7 +484,7 @@ const changeBaseMap = () => {
         }
         
         // 添加日志以便调试
-        console.log('New baseLayer created:', {
+        console.log('MapView.vue - New baseLayer created:', {
             id: baseLayer._leaflet_id,
             url: baseLayer._url
         });
@@ -639,7 +639,7 @@ onMounted(async () => {
         emit('map-initialized', map.value)
 
     } catch (error) {
-        console.error('Error loading map:', error)
+        console.error('MapView.vue - Error loading map:', error)
     }
 })
 
@@ -696,7 +696,7 @@ const baseMaps = [
 const openLayerSettings = (layer) => {
     try {
         if (!layer.bandInfo) {
-            console.error('No band info available')
+            console.error('MapView.vue - No band info available')
             return
         }
 
@@ -724,7 +724,7 @@ const openLayerSettings = (layer) => {
         currentLayer.value = layer
         showLayerSettings.value = true
     } catch (error) {
-        console.error('Error opening layer settings:', error)
+        console.error('MapView.vue - Error opening layer settings:', error)
     }
 }
 
@@ -815,7 +815,7 @@ const applyVisParams = async () => {
 
                     mapLayers.forEach((mapLayer) => {
                         // 检查是否是我们要删除的图层且不是底图
-                        // 确保删除的是瓦片图层的实例且是当前正在修改的图层
+                        // 确保删除的是瓦片图层的���例且是当前���在修改的图层
                         if (mapLayer instanceof L.TileLayer &&
                             mapLayer !== baseLayer &&
                             mapLayer._url === layer.leafletLayer._url) {  // 通过URL匹配确保是同一个图层
@@ -853,7 +853,7 @@ const applyVisParams = async () => {
             showLayerSettings.value = false
         }
     } catch (error) {
-        console.error('Error updating vis params:', error)
+        console.error('MapView.vue - Error updating vis params:', error)
         ElMessage.error('更新图层样式失败')
     } finally {
         // 恢复按钮状态
@@ -874,7 +874,7 @@ watch(() => visParams.bands, (newBands) => {
 // 在 script setup 中添加 importSettings 函数
 const importSettings = () => {
     // TODO: 实现导入设置功能
-    console.log('Import settings clicked')
+    console.log('MapView.vue - Import settings clicked')
 }
 
 // 修改组件卸载时的清理代码
@@ -901,7 +901,7 @@ onUnmounted(() => {
 
                 layer.leafletLayer = null
             } catch (error) {
-                console.error('Error cleaning up layer:', error)
+                console.error('MapView.vue - Error cleaning up layer:', error)
             }
         }
     })
@@ -919,7 +919,7 @@ onUnmounted(() => {
             }
             baseLayer = null
         } catch (error) {
-            console.error('Error cleaning up base layer:', error)
+            console.error('MapView.vue - Error cleaning up base layer:', error)
         }
     }
 

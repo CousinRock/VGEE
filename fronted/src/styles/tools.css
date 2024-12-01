@@ -15,12 +15,12 @@
 }
 
 .layer-select-content {
-    max-height: 300px;
+    max-height: 400px;
     overflow-y: auto;
 }
 
 .layer-option {
-    padding: 8px 0;
+    padding: 4px 16px;
 }
 
 /* 添加处理中的按钮样式 */
@@ -30,4 +30,10 @@
 
 .el-button.is-loading .el-icon {
     margin-right: 5px;
+}
+
+.select-all-option {
+    padding: 8px 16px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 8px;
 }

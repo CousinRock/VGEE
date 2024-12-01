@@ -99,7 +99,7 @@ const addNewLayer = async () => {
 
         const response = await fetch(`http://localhost:5000/map-data?${params}`)
         const mapData = await response.json()
-
+        console.log('ControlPanel.vue - mapData:', mapData);
         if (!mapData?.overlayLayers?.length) {
             alert('未找到符合条件的影像数据')
             return
@@ -112,7 +112,7 @@ const addNewLayer = async () => {
         layerName.value = ''
 
     } catch (error) {
-        console.error('Error adding layer:', error)
+        console.error('ControlPanel.vue - Error adding layer:', error)
         alert('添加图层失败，请重试')
     } finally {
         // 恢复按钮状态

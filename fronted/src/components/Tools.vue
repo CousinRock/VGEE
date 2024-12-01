@@ -27,7 +27,18 @@
     <!-- 添加图层选择对话框 -->
     <el-dialog v-model="showLayerSelect" title="选择需要处理的图层" width="400px">
         <div class="layer-select-content">
-            <el-checkbox-group v-model="selectedLayerName">
+            <!-- 添加全选复选框 -->
+            <div class="select-all-option">
+                <el-checkbox 
+                    v-model="selectAll"
+                    @change="handleSelectAllChange"
+                    :indeterminate="isIndeterminate">
+                    全选
+                </el-checkbox>
+            </div>
+            <el-checkbox-group 
+                v-model="selectedLayerName"
+                @change="handleCheckedLayersChange">
                 <div v-for="layer in availableLayers" :key="layer.id" class="layer-option">
                     <el-checkbox :label="layer.id">{{ layer.name }}</el-checkbox>
                 </div>
@@ -47,7 +58,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { menuItems } from '../config/tools-config'
 import L from 'leaflet'
@@ -68,6 +79,8 @@ const showLayerSelect = ref(false)
 const availableLayers = ref([])
 const selectedLayerName = ref([])
 const currentTool = ref(null)
+const selectAll = ref(false)
+const isIndeterminate = ref(false)
 
 // 菜单操作方法
 const toggleMenu = (item) => {
@@ -112,7 +125,7 @@ const getAvailableLayers = async () => {
 
         return data.layers
     } catch (error) {
-        console.error('Error getting layers:', error)
+        console.error('Tools.vue - Error getting layers:', error)
         ElMessage.error('获取图层失败')
         return null
     }
@@ -133,7 +146,7 @@ const handleToolClick = async (tool) => {
                 ElMessage.warning('该功能尚未实现')
         }
     } catch (error) {
-        console.error('Error handling tool click:', error)
+        console.error('Tools.vue - Error handling tool click:', error)
         ElMessage.error('工具执行失败')
     }
 }
@@ -143,6 +156,7 @@ async function handleCloudRemoval(tool) {
     const layers = await getAvailableLayers()
     if (!layers) return
     
+    selectedLayerName.value = []  // 清空之前的选择
     availableLayers.value = layers
     currentTool.value = tool
     showLayerSelect.value = true
@@ -153,8 +167,24 @@ async function handleImageFilling(tool) {
     const layers = await getAvailableLayers()
     if (!layers) return
     
-    // TODO: 实现图像填补功能
-    ElMessage.info('图像填补功能开发中...')
+    // 允许多选图层
+    selectedLayerName.value = []  // 清空之前的选择
+    availableLayers.value = layers
+    currentTool.value = tool
+    showLayerSelect.value = true
+}
+
+// 创建通用的请求数据构建函数
+const createRequestData = (selectedIds) => {
+    return {
+        layer_ids: selectedIds,
+        vis_params: props.mapView.layers
+            .filter(l => selectedIds.includes(l.id))
+            .map(l => ({
+                id: l.id,
+                visParams: l.visParams
+            }))
+    }
 }
 
 // 图层选择处理
@@ -163,15 +193,17 @@ const handleLayerSelect = async () => {
         ElMessage.warning('请选择至少一个图层')
         return
     }
-
+    
     try {
         isProcessing.value = true
 
-        // 根据当前工具类型选择不同的处理端点
+        // 根据当前工具类型选择不同的处理端点和参数
         let endpoint = ''
+        let requestData = {}
+        
         switch (currentTool.value.id) {
             case 'cloud-removal':
-                endpoint = 'cloud-removal'
+                endpoint = 'cloud-removal'               
                 break
             case 'image-filling':
                 endpoint = 'image-filling'
@@ -180,19 +212,28 @@ const handleLayerSelect = async () => {
                 throw new Error('未知的工具类型')
         }
 
+        requestData = createRequestData(selectedLayerName.value)
+
         const result = await fetch(`http://localhost:5000/tools/${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                layer_id: selectedLayerName.value[0]
-            })
+            body: JSON.stringify(requestData)
         })
 
         const data = await result.json()
-        if (data.success && data.tileUrl) {
-            await updateMapLayer(data.tileUrl)
+        if (data.success) {
+            // 处理返回的多个图层结果
+            if (Array.isArray(data.results)) {
+                for (const layerResult of data.results) {
+                    await updateMapLayer(layerResult.tileUrl, layerResult.layer_id)
+                }
+            } else {
+                // 处理单个图层结果
+                await updateMapLayer(data.tileUrl, selectedLayerName.value[0])
+            }
+            
             ElMessage.success(data.message)
             showLayerSelect.value = false
             selectedLayerName.value = []
@@ -200,7 +241,7 @@ const handleLayerSelect = async () => {
             ElMessage.error(data.error || '处理失败')
         }
     } catch (error) {
-        console.error('Error processing layers:', error)
+        console.error('Tools.vue - Error processing layers:', error)
         ElMessage.error('处理失败')
     } finally {
         isProcessing.value = false
@@ -208,8 +249,8 @@ const handleLayerSelect = async () => {
 }
 
 // 更新地图图层
-async function updateMapLayer(tileUrl) {
-    const layer = props.mapView.layers.find(l => l.id === selectedLayerName.value[0])
+async function updateMapLayer(tileUrl, layerId) {
+    const layer = props.mapView.layers.find(l => l.id === layerId)
     if (!layer) return
 
     // 移除旧图层
@@ -238,6 +279,7 @@ async function updateMapLayer(tileUrl) {
 
     // 更新图层引用
     layer.leafletLayer = newLeafletLayer
+    console.log('Tools.vue - layer.visParams', layer.visParams)
 
     // 如果图层是可见的，则添加到地图
     if (layer.visible) {
@@ -245,6 +287,28 @@ async function updateMapLayer(tileUrl) {
         newLeafletLayer.setZIndex(layer.zIndex)
     }
 }
+
+// 处理全选变化
+const handleSelectAllChange = (val) => {
+    selectedLayerName.value = val ? availableLayers.value.map(layer => layer.id) : []
+    isIndeterminate.value = false
+}
+
+// 处理选中图层变化
+const handleCheckedLayersChange = (value) => {
+    const checkedCount = value.length
+    selectAll.value = checkedCount === availableLayers.value.length
+    isIndeterminate.value = checkedCount > 0 && checkedCount < availableLayers.value.length
+}
+
+// 在显示对话框时重置选择状态
+watch(showLayerSelect, (newVal) => {
+    if (newVal) {
+        selectAll.value = false
+        isIndeterminate.value = false
+        selectedLayerName.value = []
+    }
+})
 
 // 暴露方法给父组件
 defineExpose({

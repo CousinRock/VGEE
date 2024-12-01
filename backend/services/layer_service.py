@@ -30,7 +30,7 @@ def  get_layer_info_service(satellite):
         }
         
     except Exception as e:
-        raise Exception(f"Error in get_layer_info_service: {str(e)}")
+        raise Exception(f"Layer_service.py - Error in get_layer_info_service: {str(e)}")
 
 def update_vis_params_service(data, current_dataset):
     """更新可视化参数服务"""
@@ -38,7 +38,7 @@ def update_vis_params_service(data, current_dataset):
         vis_params = data.get('visParams')
         
         if current_dataset is None:
-            raise Exception("No dataset available")
+            raise Exception("Layer_service.py - No dataset available")
 
         # 获取选择的波段
         selected_bands = vis_params.get('bands', [])
@@ -68,4 +68,4 @@ def update_vis_params_service(data, current_dataset):
         }
             
     except Exception as e:
-        raise Exception(f"Error in update_vis_params_service: {str(e)}") 
+        raise Exception(f"Layer_service.py - Error in update_vis_params_service: {str(e)}") 

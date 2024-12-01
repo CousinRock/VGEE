@@ -25,7 +25,7 @@ def remove_dataset(layer_id):
     if layer_id in datasets:
         del datasets[layer_id]
         del datasetsNames[layer_id]
-        print(f"remove_dataset-datasets: {datasets}")
+        print(f"Map_service.py - remove_dataset-datasets: {datasets}")
 
 def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=None,layerName=None):
     """获取地图数据服务"""
@@ -34,7 +34,7 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
         # 生成唯一的图层ID
         index += 1
         layer_id = f"layer-{index}-{satellite}"
-        print(f"Generated layer ID: {layer_id}")
+        print(f"Map_service.py - Generated layer ID: {layer_id}")
         
         # 根据不同的卫星类型返回不同的数据
         if satellite == 'LANDSAT':
@@ -51,7 +51,8 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
             vis_params = {
                 'bands': ['B4', 'B3', 'B2'],
                 'min': 0,
-                'max': 0.3
+                'max': 0.3,
+                'gamma': 1.4
             }
             layer_name = f'Landsat 8 ({start_date} to {end_date})'
             
@@ -69,7 +70,8 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
             vis_params = {
                 'bands': ['B4', 'B3', 'B2'],
                 'min': 0,
-                'max': 3000
+                'max': 3000,
+                'gamma': 1.4
             }
             layer_name = f'Sentinel-2 ({start_date} to {end_date})'
             
@@ -120,4 +122,4 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
         }
         
     except Exception as e:
-        raise Exception(f"Error in get_map_data_service: {str(e)}") 
+        raise Exception(f"Map_service.py - Error in get_map_data_service: {str(e)}") 
