@@ -71,19 +71,22 @@ class ToolService:
             # 将图像列表转换为 ImageCollection
             imageCollection = ee.ImageCollection.fromImages(images)
             
-            def fillGaps(image, collection):
+            def fillGaps(image):
                 # 过滤掉当前图像
-                sourceCollection = collection.filter(
+                sourceCollection = imageCollection.filter(
                     ee.Filter.neq('system:index', image.get('system:index')))
                 # 使用其他图像的镶嵌来填补当前图像的缺失部分
                 filled = image.unmask(sourceCollection.mosaic())
                 return filled
             
             # 对每个图像进行填补处理
-            filled_images = []
-            for img in images:
-                filled = fillGaps(ee.Image(img), imageCollection)
-                filled_images.append(filled)
+
+            filled_images = imageCollection.map(fillGaps)
+
+            # filled_images = []
+            # for img in images:
+            #     filled = fillGaps(ee.Image(img), imageCollection)
+            #     filled_images.append(filled)
                 
             return filled_images
             

@@ -704,11 +704,14 @@ const openLayerSettings = (layer) => {
         availableBands.value = layer.bandInfo.bands
         bandStats.value = layer.bandInfo.bandStats
 
+        console.log('MapView.vue - Layer visParams:', layer.visParams);
+        
+
         // 设置波段模式
         bandMode.value = layer.visParams.bands.length === 1 ? 1 : 3
 
         // 根据当前选择的波段设置范围
-        updateRangeBasedOnBands(layer.visParams.bands, layer.satellite)
+        updateRangeBasedOnBands(layer.visParams.bands, layer.satellite,layer.visParams)
 
         // 更新 visParams
         Object.assign(visParams, {
@@ -729,7 +732,7 @@ const openLayerSettings = (layer) => {
 }
 
 // 添加一个函数来更新范围设置
-const updateRangeBasedOnBands = (selectedBands, satelliteType) => {
+const updateRangeBasedOnBands = (selectedBands, satelliteType,vis) => {
     if (!bandStats.value) return
 
     // 获取所选波段的最小和最大值
@@ -763,9 +766,10 @@ const updateRangeBasedOnBands = (selectedBands, satelliteType) => {
                 maxVal = 100
         }
     }
-
     // 更新滑块的范围
     visParams.range = [minVal, maxVal]
+    // visParams.min = vis.min
+    // visParams.max = vis.max
 }
 
 // 应用可视化参数
@@ -815,7 +819,7 @@ const applyVisParams = async () => {
 
                     mapLayers.forEach((mapLayer) => {
                         // 检查是否是我们要删除的图层且不是底图
-                        // 确保删除的是瓦片图层的���例且是当前���在修改的图层
+                        // 确保删除的是瓦片图层的例且是当前在修改的图层
                         if (mapLayer instanceof L.TileLayer &&
                             mapLayer !== baseLayer &&
                             mapLayer._url === layer.leafletLayer._url) {  // 通过URL匹配确保是同一个图层
@@ -868,7 +872,7 @@ const applyVisParams = async () => {
 // 修改波段变化的监听
 watch(() => visParams.bands, (newBands) => {
     if (!currentLayer.value || !currentLayer.value.bandInfo) return
-    updateRangeBasedOnBands(newBands, currentLayer.value.satellite)
+    updateRangeBasedOnBands(newBands, currentLayer.value.satellite,visParams)
 }, { deep: true })
 
 // 在 script setup 中添加 importSettings 函数

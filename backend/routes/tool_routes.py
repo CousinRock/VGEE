@@ -103,16 +103,16 @@ def image_filling():
         selected_images = [datasets[layer_id] for layer_id in layer_ids]
         
         # 调用服务进行图像填补
-        results = ToolService.image_filling(selected_images)
+        results = ToolService.image_filling(selected_images).toList(len(selected_images))
         
+        layer_results = []
         # 更新数据集中的图层
         for i, layer_id in enumerate(layer_ids):
-            datasets[layer_id] = results[i]
-        
-        # 为每个处理后的图层生成新的瓦片URL
-        layer_results = []
-        for i, result in enumerate(results):
-            # 使用对应图层的原始 visParams
+            result = ee.Image(results.get(i))
+            # 更新数据集中的图层
+            datasets[layer_id] = result
+
+             # 使用对应图层的原始 visParams
             layer_vis = next((v for v in vis_params if v['id'] == layer_ids[i]), None)
             params = layer_vis['visParams'] if layer_vis else {
                 'bands': ['B4', 'B3', 'B2'],
@@ -127,6 +127,7 @@ def image_filling():
                 'layer_id': layer_ids[i],
                 'tileUrl': map_id['tile_fetcher'].url_format
             })
+    
 
         return jsonify({
             'success': True,
