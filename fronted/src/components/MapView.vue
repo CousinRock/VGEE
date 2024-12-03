@@ -746,30 +746,8 @@ const updateRangeBasedOnBands = (selectedBands, satelliteType,vis) => {
         }
     })
 
-    // 如果没有找到统计信息，使用默认值
-    if (minVal === Infinity || maxVal === -Infinity) {
-        switch (satelliteType) {
-            case 'LANDSAT':
-                minVal = 0
-                maxVal = 0.4
-                break
-            case 'SENTINEL':
-                minVal = 0
-                maxVal = 3000
-                break
-            case 'MODIS':
-                minVal = -2000
-                maxVal = 10000
-                break
-            default:
-                minVal = 0
-                maxVal = 100
-        }
-    }
     // 更新滑块的范围
-    visParams.range = [minVal, maxVal]
-    // visParams.min = vis.min
-    // visParams.max = vis.max
+    visParams.range = [vis.min, vis.max]
 }
 
 // 应用可视化参数
