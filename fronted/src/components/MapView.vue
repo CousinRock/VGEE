@@ -711,7 +711,7 @@ const openLayerSettings = (layer) => {
         bandMode.value = layer.visParams.bands.length === 1 ? 1 : 3
 
         // 根据当前选择的波段设置范围
-        updateRangeBasedOnBands(layer.visParams.bands, layer.satellite,layer.visParams)
+        updateRangeBasedOnBands(layer.visParams)
 
         // 更新 visParams
         Object.assign(visParams, {
@@ -732,21 +732,7 @@ const openLayerSettings = (layer) => {
 }
 
 // 添加一个函数来更新范围设置
-const updateRangeBasedOnBands = (selectedBands, satelliteType,vis) => {
-    if (!bandStats.value) return
-
-    // 获取所选波段的最小和最大值
-    let minVal = Infinity
-    let maxVal = -Infinity
-
-    selectedBands.forEach(band => {
-        if (bandStats.value[band]) {
-            minVal = Math.min(minVal, bandStats.value[band].min)
-            maxVal = Math.max(maxVal, bandStats.value[band].max)
-        }
-    })
-
-    // 更新滑块的范围
+const updateRangeBasedOnBands = (vis) => {
     visParams.range = [vis.min, vis.max]
 }
 
@@ -850,7 +836,7 @@ const applyVisParams = async () => {
 // 修改波段变化的监听
 watch(() => visParams.bands, (newBands) => {
     if (!currentLayer.value || !currentLayer.value.bandInfo) return
-    updateRangeBasedOnBands(newBands, currentLayer.value.satellite,visParams)
+    updateRangeBasedOnBands(visParams)
 }, { deep: true })
 
 // 在 script setup 中添加 importSettings 函数
