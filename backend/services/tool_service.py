@@ -31,27 +31,67 @@ class ToolService:
 
     @staticmethod
     def calculate_index(image, index_type, params=None):
-        """计算指数（NDVI, NDWI等）"""
+        """计算各种遥感指数，并将结果添加为新波段"""
         try:
             if index_type == 'ndvi':
-                # 计算NDVI
+                # 归一化植被指数
                 nir = image.select('B5')  # Landsat 8 NIR band
                 red = image.select('B4')  # Landsat 8 Red band
-                ndvi = nir.subtract(red).divide(nir.add(red)).rename('NDVI')
-                return ndvi
+                ndvi = nir.subtract(red).divide(nir.add(red))
+                return image.addBands(ndvi.rename('NDVI'))
+                
             elif index_type == 'ndwi':
-                # 计算NDWI
+                # 归一化水体指数
                 nir = image.select('B5')
                 green = image.select('B3')
-                ndwi = green.subtract(nir).divide(green.add(nir)).rename('NDWI')
-                return ndwi
-            # 可以添加更多指数计算
-            return {
-                'success': True,
-                'message': f'{index_type} 计算完成'
-            }
+                ndwi = green.subtract(nir).divide(green.add(nir))
+                return image.addBands(ndwi.rename('NDWI'))
+                
+            elif index_type == 'ndbi':
+                # 归一化建筑指数
+                swir = image.select('B6')  # Landsat 8 SWIR1 band
+                nir = image.select('B5')
+                ndbi = swir.subtract(nir).divide(swir.add(nir))
+                return image.addBands(ndbi.rename('NDBI'))
+                
+            elif index_type == 'evi':
+                # 增强型植被指数
+                nir = image.select('B5')
+                red = image.select('B4')
+                blue = image.select('B2')
+                evi = nir.subtract(red).multiply(2.5).divide(
+                    nir.add(red.multiply(6)).subtract(blue.multiply(7.5)).add(1)
+                )
+                return image.addBands(evi.rename('EVI'))
+                
+            elif index_type == 'savi':
+                # 土壤调节植被指数
+                nir = image.select('B5')
+                red = image.select('B4')
+                L = 0.5  # 土壤亮度校正因子
+                savi = nir.subtract(red).multiply(1 + L).divide(nir.add(red).add(L))
+                return image.addBands(savi.rename('SAVI'))
+                
+            elif index_type == 'mndwi':
+                # 改进的归一化水体指数
+                green = image.select('B3')
+                swir = image.select('B6')
+                mndwi = green.subtract(swir).divide(green.add(swir))
+                return image.addBands(mndwi.rename('MNDWI'))
+                
+            elif index_type == 'bsi':
+                # 裸土指数
+                swir1 = image.select('B6')
+                red = image.select('B4')
+                nir = image.select('B5')
+                blue = image.select('B2')
+                bsi = ((swir1.add(red)).subtract(nir.add(blue))).divide(
+                    (swir1.add(red)).add(nir.add(blue))
+                )
+                return image.addBands(bsi.rename('BSI'))
+                
         except Exception as e:
-            raise Exception(f"Tool_service.py - Error calculating {index_type}: {str(e)}")
+            raise Exception(f"Error calculating {index_type}: {str(e)}")
 
     @staticmethod
     def supervised_classification(image, training_data, params):

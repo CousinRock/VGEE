@@ -64,13 +64,55 @@ def cloud_removal():
 def calculate_index():
     try:
         data = request.json
-        result = ToolService.calculate_index(
-            data.get('image'),
-            data.get('index_type'),
-            data.get('params')
-        )
-        return jsonify(result)
+        layer_ids = data.get('layer_ids')
+        index_type = data.get('index_type')
+        vis_params = data.get('vis_params', [])
+
+        print(f"Tool_routes.py - calculate_index-index_type: {index_type}")
+        
+        if not layer_ids or not all(layer_id in datasets for layer_id in layer_ids):
+            return jsonify({
+                'success': False,
+                'error': 'Invalid layer ID'
+            }), 400
+            
+        # 获取所有选中的图层数据
+        selected_images = ee.ImageCollection([datasets[layer_id] for layer_id in layer_ids])
+        
+        results = selected_images.map(lambda image: ToolService.calculate_index(image, index_type)).toList(selected_images.size())
+
+        # 计算指数并添加为新波段
+        layer_results = []
+        for i, layer_id in enumerate(layer_ids):
+            result = ee.Image(results.get(i))
+            print(f"Tool_routes.py - calculate_index-result: {result.bandNames().getInfo()}")
+            # 更新数据集
+            datasets[layer_id] = result
+            
+            # 生成瓦片URL，使用原始的可视化参数
+            layer_vis = next((v for v in vis_params if v['id'] == layer_ids[i]), None)
+            params = layer_vis['visParams'] if layer_vis else {
+                'bands': ['B4', 'B3', 'B2'],
+                'min': 0,
+                'max': 0.3,
+                'gamma': 1.4
+            }
+            
+            map_id = result.getMapId(params)
+            layer_results.append({
+                'layer_id': layer_ids[i],
+                'tileUrl': map_id['tile_fetcher'].url_format
+            })
+            
+        
+        return jsonify({
+            'success': True,
+            'message': f'已添加 {index_type.upper()} 波段',
+            'results': layer_results
+        })
+        
     except Exception as e:
+        print(f"Error in calculate_index: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @tool_bp.route('/supervised-classification', methods=['POST'])

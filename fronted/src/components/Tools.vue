@@ -141,7 +141,16 @@ const handleToolClick = async (tool) => {
             case 'image-filling':
                 await handleImageFilling(tool)
                 break
-            // 可以继续添加其他工具的 case
+            // 添加所有指数计算的处理
+            case 'ndvi':
+            case 'ndwi':
+            case 'ndbi':
+            case 'evi':
+            case 'savi':
+            case 'mndwi':
+            case 'bsi':
+                await handleIndexCalculation(tool)
+                break
             default:
                 ElMessage.warning('该功能尚未实现')
         }
@@ -149,6 +158,17 @@ const handleToolClick = async (tool) => {
         console.error('Tools.vue - Error handling tool click:', error)
         ElMessage.error('工具执行失败')
     }
+}
+
+// 添加指数计算处理函数
+async function handleIndexCalculation(tool) {
+    const layers = await getAvailableLayers()
+    if (!layers) return
+    
+    selectedLayerName.value = []  // 清空之前的选择
+    availableLayers.value = layers
+    currentTool.value = tool
+    showLayerSelect.value = true
 }
 
 // 云去除功能处理函数
@@ -208,11 +228,29 @@ const handleLayerSelect = async () => {
             case 'image-filling':
                 endpoint = 'image-filling'
                 break
+            // 添加指数计算的处理
+            case 'ndvi':
+            case 'ndwi':
+            case 'ndbi':
+            case 'evi':
+            case 'savi':
+            case 'mndwi':
+            case 'bsi':
+                endpoint = 'calculate-index'
+                break
             default:
                 throw new Error('未知的工具类型')
         }
 
-        requestData = createRequestData(selectedLayerName.value)
+        // 构建请求数据
+        if (endpoint === 'calculate-index') {
+            requestData = {
+                ...createRequestData(selectedLayerName.value),
+                index_type: currentTool.value.id  // 添加指数类型
+            }
+        } else {
+            requestData = createRequestData(selectedLayerName.value)
+        }
 
         const result = await fetch(`http://localhost:5000/tools/${endpoint}`, {
             method: 'POST',
