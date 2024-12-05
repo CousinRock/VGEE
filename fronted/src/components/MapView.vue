@@ -183,6 +183,8 @@
 
 <script setup>
 import { onMounted, ref, watch, nextTick, reactive, onUnmounted } from 'vue'
+// 引入底图配置
+import { baseMaps,palettes } from '../config/map-config'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import '@fortawesome/fontawesome-free/css/all.css'
@@ -222,20 +224,6 @@ let baseLayer = null
 
 // 添加调色板状态
 const selectedPalette = ref('default')
-
-// 调色板映射
-const palettes = {
-    default: ['FFFFFF', 'CE7E45', 'DF923D', 'F1B555', 'FCD163', '99B718',
-        '74A901', '66A000', '529400', '3E8601', '207401', '056201',
-        '004C00', '023B01', '012E01', '011D01', '011301'],
-    grayscale: ['black', 'white'],
-    RdYlGn: ['#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf',
-        '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850'],
-    RdYlBu: ['#d73027', '#f46d43', '#fdae61', '#fee090', '#ffffbf',
-        '#e0f3f8', '#abd9e9', '#74add1', '#4575b4'],
-    Spectral: ['#9e0142', '#d53e4f', '#f46d43', '#fdae61', '#fee08b',
-        '#ffffbf', '#e6f598', '#abdda4', '#66c2a5', '#3288bd', '#5e4fa2']
-}
 
 // 添加绘制控制相关的状态
 const drawnItems = ref(null)
@@ -603,7 +591,7 @@ onMounted(async () => {
             }
         });
 
-        // 修改删除事���监听
+        // 修改删除事监听
         map.value.on(L.Draw.Event.DELETED, async (event) => {
             try {
                 const layers = event.layers;
@@ -674,30 +662,6 @@ defineExpose({
     removeLayer,
     updateLayerOrder
 })
-
-// 添加底图配置
-const baseMaps = [
-    {
-        id: 'osm',
-        name: 'OpenStreetMap',
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '© OpenStreetMap contributors'
-    },
-    {
-        id: 'satellite',
-        name: '卫星影像',
-        url: 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '© Google'
-    },
-    {
-        id: 'terrain',
-        name: '地形图',
-        url: 'http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '© Google'
-    }
-]
 
 // 修改打开图层设置方法
 const openLayerSettings = async (layer) => {
@@ -935,7 +899,7 @@ const initDrawControl = () => {
         }
     };
 
-    // 单独配置每个绘制工具
+    // 单独配置每个绘制���具
     drawOptions.draw.polyline = {
         shapeOptions: {
             color: '#f357a1',
