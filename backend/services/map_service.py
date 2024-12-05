@@ -36,6 +36,10 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
         layer_id = f"layer-{index}-{satellite}"
         print(f"Map_service.py - Generated layer ID: {layer_id}")
         
+        # 默认最小值和最大值（暂时保留）
+        img_min = 0
+        img_max = 1
+        
         # 根据不同的卫星类型返回不同的数据
         if satellite == 'LANDSAT':
             dataset = ee.ImageCollection('LANDSAT/LC08/C02/T1_TOA') \
@@ -66,7 +70,6 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
             if region:
                 dataset = dataset.clip(region)
                 
-                
             vis_params = {
                 'bands': ['B4', 'B3', 'B2'],
                 'min': 0,
@@ -83,6 +86,7 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
             
             if region:
                 dataset = dataset.clip(region)
+            
                 
             vis_params = {
                 'min': -2000,
@@ -115,10 +119,13 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
                 'url': tile_url,
                 'visible': True,
                 'opacity': 1.0,
-                'id': layer_id  # 返回图层ID
+                'id': layer_id , # 返回图层ID
+                'min':img_min,
+                'max':img_max
             }],
             'satellite': satellite,
             'visParams': vis_params
+            
         }
         
     except Exception as e:

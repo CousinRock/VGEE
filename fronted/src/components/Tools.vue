@@ -265,6 +265,17 @@ const handleLayerSelect = async () => {
             // 处理返回的多个图层结果
             if (Array.isArray(data.results)) {
                 for (const layerResult of data.results) {
+                    // 计算指数后重新获取波段信息
+                    if (endpoint === 'calculate-index') {
+                        const layer = props.mapView.layers.find(l => l.id === layerResult.layer_id)
+                        if (layer) {
+                            const response = await fetch(`http://localhost:5000/layer-info?id=${layer.id}&satellite=${layer.satellite}`)
+                            const layerInfo = await response.json()
+                            if (layerInfo.success) {
+                                layer.bandInfo = layerInfo.bands
+                            }
+                        }
+                    }
                     await updateMapLayer(layerResult.tileUrl, layerResult.layer_id)
                 }
             } else {
@@ -348,7 +359,7 @@ watch(showLayerSelect, (newVal) => {
     }
 })
 
-// 暴露方法给父组件
+// 暴露方法��父组件
 defineExpose({
     closeAllMenus: () => {
         showSubmenu.value = ''

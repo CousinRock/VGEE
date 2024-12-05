@@ -146,8 +146,8 @@
                 <div class="range-setting">
                     <label>Range:</label>
                     <el-slider v-model="visParams.range" range
-                        :min="currentLayer.bandInfo ? Math.min(...Object.values(currentLayer.bandInfo.bandStats).map(s => s.min)) : 0"
-                        :max="currentLayer.bandInfo ? Math.max(...Object.values(currentLayer.bandInfo.bandStats).map(s => s.max)) : 100"
+                        :min="currentLayer.bandInfo ? currentLayer.min : 0"
+                        :max="currentLayer.bandInfo ? currentLayer.max : 100"
                         :step="getSliderStep(currentLayer.value?.satellite)"
                         :format-tooltip="val => formatSliderValue(val)" />
                     <div class="range-values">
@@ -215,6 +215,7 @@ const visParams = reactive({
     max: 0.3,
     gamma: 1.4
 })
+var index = 1
 
 const map = ref(null)
 let baseLayer = null
@@ -253,9 +254,11 @@ const addNewLayer = async (layerName, mapData) => {
             return
         }
 
+        console.log('MapView.vue - addNewLayer - mapData:', mapData.overlayLayers[0].id);
         // 1. 预取波段信息并缓存
-        const response = await fetch(`http://localhost:5000/layer-info?satellite=${mapData.satellite}`)
+        const response = await fetch(`http://localhost:5000/layer-info?id=${mapData.overlayLayers[0].id}&satellite=${mapData.satellite}`)
         const layerInfo = await response.json()
+        console.log('MapView.vue - addNewLayer - layerInfo:', layerInfo);
 
         // 2. 根据卫星类型设置默认波段组合
         let defaultBands
@@ -276,7 +279,7 @@ const addNewLayer = async (layerName, mapData) => {
         // 3. 为每个图层创建新的图层对象
         mapData.overlayLayers.forEach(layerData => {
             const newLayer = {
-                id: `layer-${layerInfo.index}-${layerInfo.satellite}`,
+                id: `layer-${index}-${layerInfo.satellite}`,
                 name: layerName,
                 icon: 'fas fa-satellite',
                 visible: true,
@@ -284,13 +287,15 @@ const addNewLayer = async (layerName, mapData) => {
                 leafletLayer: null,
                 zIndex: 1000 + layers.value.length,
                 satellite: mapData.satellite || 'LANDSAT',
-                bandInfo: layerInfo,
+                bandInfo: layerInfo.bands,
                 visParams: {
                     bands: mapData.visParams.bands,
                     min: mapData.visParams.min,
                     max: mapData.visParams.max,
                     gamma: mapData.visParams.gamma
-                }
+                },
+                min: mapData.overlayLayers[0].min,
+                max: mapData.overlayLayers[0].max
             }
 
             // 4. 创建 Leaflet 图层
@@ -310,6 +315,8 @@ const addNewLayer = async (layerName, mapData) => {
             layers.value.push(newLayer)
             console.log('MapView.vue - newLayer.visParams:', newLayer.visParams);
         })
+
+        index += 1
 
         // 6. 更新图层顺序
         updateLayerOrder()
@@ -348,7 +355,7 @@ const removeLayer =async (layerId, layerName) => {
         let mapLayers = Object.values(map.value._layers);
 
         mapLayers.forEach((mapLayer) => {
-            // 检查是否是我们要删除的图层且不是底图
+            // 检查是否是我们要删的图层且不是底图
             //确保删除的是瓦片图层的实例
             if (mapLayer instanceof L.TileLayer &&
                 mapLayer !== baseLayer &&
@@ -596,7 +603,7 @@ onMounted(async () => {
             }
         });
 
-        // 修改删除事件监听
+        // 修改删除事���监听
         map.value.on(L.Draw.Event.DELETED, async (event) => {
             try {
                 const layers = event.layers;
@@ -693,41 +700,34 @@ const baseMaps = [
 ]
 
 // 修改打开图层设置方法
-const openLayerSettings = (layer) => {
+const openLayerSettings = async (layer) => {
     try {
-        if (!layer.bandInfo) {
-            console.error('MapView.vue - No band info available')
+        currentLayer.value = layer
+        console.log('MapView.vue - openLayerSettings - currentLayer:', currentLayer.value);
+        
+        // 如果已经有波段信息，直接使用
+        if (layer.bandInfo) {
+            availableBands.value = layer.bandInfo
+            
+            // 设置波段模式
+            bandMode.value = layer.visParams.bands.length === 1 ? 1 : 3
+            
+            // 更新范围和参数
+            updateRangeBasedOnBands(layer.visParams)
+            Object.assign(visParams, {
+                bands: [...layer.visParams.bands],
+                min: visParams.range[0],
+                max: visParams.range[1],
+                gamma: layer.visParams.gamma || 1.4
+            })
+            
+            showLayerSettings.value = true
             return
         }
 
-        // 使用缓存的波段信息
-        availableBands.value = layer.bandInfo.bands
-        bandStats.value = layer.bandInfo.bandStats
-
-        console.log('MapView.vue - Layer visParams:', layer.visParams);
-        
-
-        // 设置波段模式
-        bandMode.value = layer.visParams.bands.length === 1 ? 1 : 3
-
-        // 根据当前选择的波段设置范围
-        updateRangeBasedOnBands(layer.visParams)
-
-        // 更新 visParams
-        Object.assign(visParams, {
-            bands: [...layer.visParams.bands],
-            min: visParams.range[0],
-            max: visParams.range[1],
-            gamma: layer.visParams.gamma || 1.4
-        })
-
-        // 初始化调色板选择
-        selectedPalette.value = 'default'
-
-        currentLayer.value = layer
-        showLayerSettings.value = true
     } catch (error) {
         console.error('MapView.vue - Error opening layer settings:', error)
+        ElMessage.error('获取波段信息失败')
     }
 }
 
@@ -755,8 +755,11 @@ const applyVisParams = async () => {
             gamma: visParams.gamma
         }
 
+        console.log('MapView.vue - applyVisParams - updatedVisParams:', updatedVisParams);
+
         // 如果是单波段，添加调色板
         if (bandMode.value === 1) {
+            updatedVisParams.bands = [visParams.bands[0]]
             updatedVisParams.palette = palettes[selectedPalette.value]
         }
 

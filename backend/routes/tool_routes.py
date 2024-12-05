@@ -6,6 +6,44 @@ tool_bp = Blueprint('tool', __name__)
 
 datasets = None
 
+def common_process(layer_ids, results, vis_params, message):
+    '''
+    通用的图层处理函数
+    Args:
+        layer_ids: 要处理的图层ID列表
+        results: 处理后的结果列表
+        vis_params: 可视化参数列表
+        message: 成功时的消息
+    '''
+     # 为每个处理后的图层生成新的瓦片URL
+    layer_results = []
+    for i, layer_id in enumerate(layer_ids):
+        result = ee.Image(results.get(i))
+        # 更新数据集中的图层
+        datasets[layer_id] = result
+        
+        # 使用对应图层的原始 visParams
+        layer_vis = next((v for v in vis_params if v['id'] == layer_ids[i]), None)
+        params = layer_vis['visParams'] if layer_vis else {
+            'bands': ['B4', 'B3', 'B2'],
+            'min': 0,
+            'max': 0.3,
+            'gamma': 1.4
+        }
+        
+        map_id = result.getMapId(params)
+        
+        layer_results.append({
+            'layer_id': layer_ids[i],
+            'tileUrl': map_id['tile_fetcher'].url_format
+        })
+
+    return jsonify({
+            'success': True,
+            'message': message,
+            'results': layer_results
+        })
+
 @tool_bp.route('/cloud-removal', methods=['POST'])
 def cloud_removal():
     try:
@@ -27,34 +65,7 @@ def cloud_removal():
         # 在服务端处理图像并获取结果列表
         results = selected_images.map(ToolService.cloud_removal).toList(selected_images.size())
         
-        # 为每个处理后的图层生成新的瓦片URL
-        layer_results = []
-        for i, layer_id in enumerate(layer_ids):
-            result = ee.Image(results.get(i))
-            # 更新数据集中的图层
-            datasets[layer_id] = result
-            
-            # 使用对应图层的原始 visParams
-            layer_vis = next((v for v in vis_params if v['id'] == layer_ids[i]), None)
-            params = layer_vis['visParams'] if layer_vis else {
-                'bands': ['B4', 'B3', 'B2'],
-                'min': 0,
-                'max': 0.3,
-                'gamma': 1.4
-            }
-            
-            map_id = result.getMapId(params)
-            
-            layer_results.append({
-                'layer_id': layer_ids[i],
-                'tileUrl': map_id['tile_fetcher'].url_format
-            })
-
-        return jsonify({
-                'success': True,
-                'message': '除云处理完成',
-                'results': layer_results
-            })
+        return common_process(layer_ids, results, vis_params, '除云处理完成')
         
     except Exception as e:
         print(f"Tool_routes.py - Error in cloud_removal: {str(e)}")
@@ -81,36 +92,7 @@ def calculate_index():
         
         results = selected_images.map(lambda image: ToolService.calculate_index(image, index_type)).toList(selected_images.size())
 
-        # 计算指数并添加为新波段
-        layer_results = []
-        for i, layer_id in enumerate(layer_ids):
-            result = ee.Image(results.get(i))
-            print(f"Tool_routes.py - calculate_index-result: {result.bandNames().getInfo()}")
-            # 更新数据集
-            datasets[layer_id] = result
-            
-            # 生成瓦片URL，使用原始的可视化参数
-            layer_vis = next((v for v in vis_params if v['id'] == layer_ids[i]), None)
-            params = layer_vis['visParams'] if layer_vis else {
-                'bands': ['B4', 'B3', 'B2'],
-                'min': 0,
-                'max': 0.3,
-                'gamma': 1.4
-            }
-            
-            map_id = result.getMapId(params)
-            layer_results.append({
-                'layer_id': layer_ids[i],
-                'tileUrl': map_id['tile_fetcher'].url_format
-            })
-            
-        
-        return jsonify({
-            'success': True,
-            'message': f'已添加 {index_type.upper()} 波段',
-            'results': layer_results
-        })
-        
+        return common_process(layer_ids, results, vis_params, f'已添加 {index_type.upper()} 波段')
     except Exception as e:
         print(f"Error in calculate_index: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -147,35 +129,7 @@ def image_filling():
         # 调用服务进行图像填补
         results = ToolService.image_filling(selected_images).toList(len(selected_images))
         
-        layer_results = []
-        # 更新数据集中的图层
-        for i, layer_id in enumerate(layer_ids):
-            result = ee.Image(results.get(i))
-            # 更新数据集中的图层
-            datasets[layer_id] = result
-
-             # 使用对应图层的原始 visParams
-            layer_vis = next((v for v in vis_params if v['id'] == layer_ids[i]), None)
-            params = layer_vis['visParams'] if layer_vis else {
-                'bands': ['B4', 'B3', 'B2'],
-                'min': 0,
-                'max': 0.3,
-                'gamma': 1.4
-            }
-            
-            map_id = result.getMapId(params)
-            
-            layer_results.append({
-                'layer_id': layer_ids[i],
-                'tileUrl': map_id['tile_fetcher'].url_format
-            })
-    
-
-        return jsonify({
-            'success': True,
-            'message': '图像填补处理完成',
-            'results': layer_results
-        })
+        return common_process(layer_ids, results, vis_params, '图像填补处理完成')
         
     except Exception as e:
         print(f"Error in image_filling: {str(e)}")

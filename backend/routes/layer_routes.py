@@ -7,8 +7,12 @@ layer_bp = Blueprint('layer', __name__)
 @layer_bp.route('/layer-info', methods=['GET'])
 def get_layer_info():
     try:
+        layer_id = request.args.get('id', '0')
+
         satellite = request.args.get('satellite', 'LANDSAT')
-        result = get_layer_info_service(satellite)
+        current_dataset = get_dataset(layer_id)
+        result = get_layer_info_service(current_dataset, satellite)
+        print(f"Layer_routes.py - get_layer_info - result: {result}")
         return jsonify(result)
     except Exception as e:
         print(f"Layer_routes.py - Error in get_layer_info: {str(e)}")

@@ -1,32 +1,16 @@
 import ee
 
 index = 0
-def  get_layer_info_service(satellite):
+def  get_layer_info_service(image, satellite):
     """获取图层信息服务"""
     try:
         global index
-        if satellite == 'LANDSAT':
-            dataset = ee.ImageCollection('LANDSAT/LC08/C02/T1_TOA').first()
-            band_names = dataset.bandNames().getInfo()
-            band_stats = {band: {'min': 0, 'max': 1} for band in band_names}
-            
-        elif satellite == 'SENTINEL':
-            dataset = ee.ImageCollection('COPERNICUS/S2_SR').first()
-            band_names = dataset.bandNames().getInfo()
-            band_stats = {band: {'min': 0, 'max': 4000} for band in band_names}
-            
-        else:  # MODIS
-            dataset = ee.ImageCollection('MODIS/006/MOD13A2').first()
-            band_names = dataset.bandNames().getInfo()
-            band_stats = {band: {'min': -2000, 'max': 10000} for band in band_names}
-            
-        index += 1
+        band_names = image.bandNames().getInfo()
             
         return {
+            'success': True,
             'bands': band_names,
-            'bandStats': band_stats,
             'satellite': satellite,
-            'index': index
         }
         
     except Exception as e:
@@ -42,6 +26,7 @@ def update_vis_params_service(data, current_dataset):
 
         # 获取选择的波段
         selected_bands = vis_params.get('bands', [])
+        img = current_dataset.select(selected_bands)
         
         # 如果是单波段且提供了调色板
         if len(selected_bands) == 1 and vis_params.get('palette'):
@@ -62,7 +47,8 @@ def update_vis_params_service(data, current_dataset):
                 'gamma': float(vis_params.get('gamma', 1.4))
             }
         
-        map_id = current_dataset.getMapId(vis_params)
+        print(f"Layer_service.py - update_vis_params_service-vis_params: {img.bandNames().getInfo()}")
+        map_id = img.getMapId(vis_params)
         return {
             'tileUrl': map_id['tile_fetcher'].url_format
         }
