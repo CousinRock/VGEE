@@ -673,6 +673,7 @@ const openLayerSettings = async (layer) => {
 // 添加一个函数来更新范围设置
 const updateRangeBasedOnBands = (vis) => {
     visParams.range = [vis.min, vis.max]
+    console.log('MapView.vue - updateRangeBasedOnBands - visParams.range:', visParams.range);
 }
 
 // 应用可视化参数
@@ -700,6 +701,7 @@ const applyVisParams = async () => {
         if (bandMode.value === 1) {
             updatedVisParams.bands = [visParams.bands[0]]
             updatedVisParams.palette = palettes[selectedPalette.value]
+            updatedVisParams.gamma = null
         }
 
         const response = await fetch('http://localhost:5000/update-vis-params', {

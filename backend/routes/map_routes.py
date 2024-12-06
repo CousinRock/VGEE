@@ -26,7 +26,7 @@ def get_map_data():
             # 将所有多边形合并成一个
             merged_area = ee.Geometry.MultiPolygon(study_areas)
 
-        # 传入合并后的研究区域进行筛选和裁剪
+        # 传入合并后的研究区域进行筛选和裁���
         result = get_map_data_service(satellite, start_date, end_date, 
                                       cloud_cover, merged_area,layerName)
         return jsonify(result)
@@ -66,7 +66,7 @@ def remove_geometry():
         data = request.json
         deleted_coordinates = data['coordinates']
         
-        # 将要删除的坐标转换为字符串进行比较
+        # 将要删除的���标转换为字符串进行比较
         deleted_str = [str(coords) for coords in deleted_coordinates]
         
         # 过滤掉被删除的坐标
