@@ -83,26 +83,15 @@
                     <!-- 只在单波段模式下显示调色板选择器 -->
                     <div class="palette-select" style="margin-top: 10px;">
                         <label>Color Palette</label>
-                        <el-select v-model="selectedPalette" style="width: 100%;">
-                            <el-option label="Default" value="default">
-                                <div class="palette-preview default"></div>
-                                <span>Default</span>
-                            </el-option>
-                            <el-option label="Grayscale" value="grayscale">
-                                <div class="palette-preview grayscale"></div>
-                                <span>Grayscale</span>
-                            </el-option>
-                            <el-option label="Red to Green" value="RdYlGn">
-                                <div class="palette-preview rdylgn"></div>
-                                <span>Red to Green</span>
-                            </el-option>
-                            <el-option label="Blue to Red" value="RdYlBu">
-                                <div class="palette-preview rdylbu"></div>
-                                <span>Blue to Red</span>
-                            </el-option>
-                            <el-option label="Spectral" value="Spectral">
-                                <div class="palette-preview spectral"></div>
-                                <span>Spectral</span>
+                        <el-select v-model="selectedPalette" style="width: 100%;" popper-class="palette-select-dropdown">
+                            <el-option v-for="(colors, name) in palettes" 
+                                :key="name" 
+                                :label="name" 
+                                :value="name">
+                                <div class="palette-preview-item">
+                                    <div class="palette-preview" :style="getPalettePreviewStyle(colors)"></div>
+                                    <span>{{ name }}</span>
+                                </div>
                             </el-option>
                         </el-select>
                     </div>
@@ -238,7 +227,7 @@ const toggleLayerControl = () => {
 const addNewLayer = async (layerName, mapData) => {
     try {
         if (!mapData?.overlayLayers?.length) {
-            alert('未找到符合条件的影像数据')
+            alert('未找符合条件的影像数据')
             return
         }
 
@@ -322,7 +311,7 @@ const removeLayer =async (layerId, layerName) => {
     if (!map) return;
 
     try {
-        // 先调用后端移除数据集中的图层
+        // 先调用后端移除据集中的图层
         const response = await fetch('http://localhost:5000/remove-layer', {
             method: 'POST',
             headers: {
@@ -441,48 +430,34 @@ watch(layers, debounce((newLayers) => {
 
 // 修改 changeBaseMap 函数
 const changeBaseMap = () => {
-    // 移除旧底图
+    // 移除底图
     if (baseLayer) {
-        // 先从地图中移除旧图层
-        Object.values(map.value._layers).forEach(layer => {
-            if (layer instanceof L.TileLayer && 
-                (layer._url === baseLayer._url || 
-                 baseMaps.some(m => layer._url === m.url.replace('{s}', layer.options.subdomains[0])))) {
-                map.value.removeLayer(layer);
-            }
-        });
-        
-        // 清理旧底图的引用
-        baseLayer.off();
-        baseLayer = null;
+        map.value.removeLayer(baseLayer)
+        baseLayer = null
     }
 
     // 创建新底图
     const selectedMap = baseMaps.find(m => m.id === selectedBaseMap.value)
     if (selectedMap) {
-        baseLayer = L.tileLayer(selectedMap.url, {
-            subdomains: selectedMap.subdomains || 'abc',
-            attribution: selectedMap.attribution,
-            maxZoom: 20,
-            maxNativeZoom: 20,
-            tileSize: 256,
-            zIndex: 0,
-            // 添加投影相关配置
-            continuousWorld: true,
-            noWrap: false,
-            bounds: L.latLngBounds(L.latLng(-85.06, -180), L.latLng(85.06, 180)),
-            crs: L.CRS.EPSG3857
-        })
+        if (selectedMap.wmsParams) {
+            // 处理WMS服务
+            baseLayer = L.tileLayer.wms(selectedMap.url, {
+                ...selectedMap.wmsParams,
+                attribution: selectedMap.attribution
+            })
+        } else {
+            // 处理普通瓦片服务
+            baseLayer = L.tileLayer(selectedMap.url, {
+                subdomains: selectedMap.subdomains || 'abc',
+                attribution: selectedMap.attribution,
+                maxZoom: 20,
+                maxNativeZoom: 20
+            })
+        }
 
         if (baseLayerVisible.value) {
             baseLayer.addTo(map.value)
         }
-        
-        // 添加日志以便调试
-        console.log('MapView.vue - New baseLayer created:', {
-            id: baseLayer._leaflet_id,
-            url: baseLayer._url
-        });
     }
 }
 
@@ -899,7 +874,7 @@ const initDrawControl = () => {
         }
     };
 
-    // 单独配置每个绘制���具
+    // 单独配置每个绘制具
     drawOptions.draw.polyline = {
         shapeOptions: {
             color: '#f357a1',
@@ -944,6 +919,13 @@ const initDrawControl = () => {
 
 // 在 script setup 中添加
 const emit = defineEmits(['map-initialized'])
+
+// 添加获取调色板预览样式的方法
+const getPalettePreviewStyle = (colors) => {
+    return {
+        background: `linear-gradient(to right, ${colors.join(',')})`
+    }
+}
 
 </script>
 

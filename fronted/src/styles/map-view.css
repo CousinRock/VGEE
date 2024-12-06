@@ -1,3 +1,4 @@
+/* 1. 基础容器样式 */
 .map-container {
     flex-grow: 1;
     height: 100%;
@@ -9,7 +10,7 @@
     height: 100%;
 }
 
-/* 地图工具栏样式 */
+/* 2. 工具栏样式 */
 .map-tools {
     position: absolute;
     top: 10px;
@@ -54,7 +55,7 @@
     color: #555;
 }
 
-/* 图层控制面板样式 */
+/* 3. 图层控制面板 */
 .layer-control {
     position: absolute;
     top: 50px;
@@ -74,68 +75,6 @@
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.layer-item:last-child {
-    margin-bottom: 0;
-    border-bottom: none;
-}
-
-.layer-item label {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-}
-
-.layer-item input[type="checkbox"] {
-    margin-right: 8px;
-}
-
-.layer-item i {
-    margin-right: 6px;
-    color: #666;
-    width: 16px;
-}
-
-.layer-item span {
-    font-size: 14px;
-    color: #333;
-}
-
-.opacity-slider {
-    width: calc(100% - 24px);
-    margin-top: 8px;
-    margin-left: 24px;
-    height: 4px;
-    background: #ddd;
-    border-radius: 2px;
-    -webkit-appearance: none;
-}
-
-.opacity-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #4a90e2;
-    cursor: pointer;
-    border: 2px solid white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-/* 工具提示 */
-.tool-button:hover::after {
-    content: attr(title);
-    position: absolute;
-    right: 100%;
-    margin-right: 10px;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    white-space: nowrap;
-}
-
-/* 图层控制面板中的样式 */
 .layer-header {
     display: flex;
     align-items: center;
@@ -144,17 +83,13 @@
     gap: 8px;
 }
 
-.layer-header label {
-    flex: 1;
-    margin-right: 8px;
-}
-
 .layer-actions {
     display: flex;
     gap: 4px;
 }
 
-.layer-settings {
+/* 4. 图层操作按钮 */
+.layer-settings, .remove-layer {
     background: none;
     border: none;
     color: #666;
@@ -175,46 +110,74 @@
     color: #409EFF;
 }
 
-.remove-layer {
-    background: none;
-    border: none;
-    color: #666;
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 12px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 24px;
-    height: 24px;
-}
-
 .remove-layer:hover {
     background: rgba(0, 0, 0, 0.1);
     color: #ff4444;
 }
 
-/* 设置对话框样式 */
-.setting-item {
-    margin-bottom: 20px;
+/* 5. 透明度滑块 */
+.opacity-slider {
+    width: calc(100% - 24px);
+    margin-top: 8px;
+    margin-left: 24px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
-.setting-item label {
-    display: block;
-    margin-bottom: 8px;
-    color: #606266;
-    font-size: 14px;
+.opacity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #4a90e2;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.zoom-range {
+/* 6. 调色板相关样式 */
+.palette-select-dropdown {
+    max-height: 400px !important;
+}
+
+.palette-preview-item {
     display: flex;
     align-items: center;
     gap: 10px;
+    padding: 5px 0;
 }
 
-/* Element Plus 对话框自定义样式 */
+.palette-preview {
+    width: 100px;
+    height: 20px;
+    border-radius: 3px;
+    border: 1px solid #dcdfe6;
+}
+
+/* 调色板滚动条 */
+.palette-select-dropdown .el-select-dropdown__wrap {
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.palette-select-dropdown .el-select-dropdown__wrap::-webkit-scrollbar {
+    width: 6px;
+}
+
+.palette-select-dropdown .el-select-dropdown__wrap::-webkit-scrollbar-thumb {
+    background-color: #909399;
+    border-radius: 3px;
+}
+
+.palette-select-dropdown .el-select-dropdown__wrap::-webkit-scrollbar-track {
+    background-color: #f5f7fa;
+}
+
+/* 7. Element Plus 组件覆盖样式 */
 :deep(.el-dialog) {
     border-radius: 8px;
 }
@@ -233,60 +196,7 @@
     width: 100%;
 }
 
-/* 调色板预览样式 */
-.palette-preview {
-    display: inline-block;
-    width: 100px;
-    height: 20px;
-    margin-right: 10px;
-    border: 1px solid #dcdfe6;
-}
-
-.palette-preview.default {
-    background: linear-gradient(to right, #FFFFFF, #CE7E45, #DF923D, #F1B555, #FCD163,
-            #99B718, #74A901, #66A000, #529400, #3E8601, #207401,
-            #056201, #004C00);
-}
-
-.palette-preview.grayscale {
-    background: linear-gradient(to right, black, white);
-}
-
-.palette-preview.rdylgn {
-    background: linear-gradient(to right, #d73027, #f46d43, #fdae61, #fee08b, #ffffbf,
-            #d9ef8b, #a6d96a, #66bd63, #1a9850);
-}
-
-.palette-preview.rdylbu {
-    background: linear-gradient(to right, #d73027, #f46d43, #fdae61, #fee090, #ffffbf,
-            #e0f3f8, #abd9e9, #74add1, #4575b4);
-}
-
-.palette-preview.spectral {
-    background: linear-gradient(to right, #9e0142, #d53e4f, #f46d43, #fdae61, #fee08b,
-            #ffffbf, #e6f598, #abdda4, #66c2a5, #3288bd, #5e4fa2);
-}
-
-/* 下拉选项样式 */
-.el-select-dropdown__item {
-    display: flex;
-    align-items: center;
-    padding: 8px 12px;
-}
-
-/* 调色板选择器容器样式 */
-.palette-select {
-    margin-top: 10px;
-}
-
-.palette-select label {
-    display: block;
-    margin-bottom: 8px;
-    color: #606266;
-    font-size: 14px;
-}
-
-/* 绘制工具的容器定位 */
+/* 8. 绘制工具样式 */
 .leaflet-draw.leaflet-control {
     position: absolute;
     left: 0px;
