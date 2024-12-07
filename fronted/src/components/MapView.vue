@@ -134,11 +134,14 @@
                 <!-- 数值范围设置 -->
                 <div class="range-setting">
                     <label>Range:</label>
-                    <el-slider v-model="visParams.range" range
-                        :min="currentLayer.bandInfo ? currentLayer.min : 0"
-                        :max="currentLayer.bandInfo ? currentLayer.max : 100"
-                        :step="getSliderStep(currentLayer.value?.satellite)"
-                        :format-tooltip="val => formatSliderValue(val)" />
+                    <el-slider 
+                        v-model="visParams.range" 
+                        range
+                        :min="currentLayer.min"
+                        :max="currentLayer.max"
+                        :step="getSliderStep(currentLayer.satellite)"
+                        :format-tooltip="val => formatSliderValue(val)"
+                        @change="handleRangeChange" />
                     <div class="range-values">
                         {{ formatSliderValue(visParams.range[0]) }} – {{ formatSliderValue(visParams.range[1]) }}
                     </div>
@@ -174,6 +177,7 @@
 import { onMounted, ref, watch, nextTick, reactive, onUnmounted } from 'vue'
 // 引入底图配置
 import { baseMaps,palettes } from '../config/map-config'
+import { normalizeRange } from '../util/methods'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import '@fortawesome/fontawesome-free/css/all.css'
@@ -380,7 +384,7 @@ const formatSliderValue = (value) => {
             return value.toFixed(3);  // Landsat 显示3位小数
         case 'SENTINEL':
         case 'MODIS':
-            return value.toFixed(0);  // Sentinel 和 MODIS 显示整数
+            return value.toFixed(0);  // Sentinel 和 MODIS 显示数
         default:
             return value.toFixed(1);
     }
@@ -490,7 +494,7 @@ watch(selectedBaseMap, () => {
 // 在 onMounted 中只需要调用这个函
 onMounted(async () => {
     try {
-        // 创建地图实例时直接赋值给 ref
+        // 创建地图实例时直接赋给 ref
         map.value = L.map('map', {
             center: [20, 0],
             zoom: 3,
@@ -605,7 +609,7 @@ onMounted(async () => {
             }
         });
 
-        // 触发初始化完成事件
+        // 触发初化完成事件
         emit('map-initialized', map.value)
 
     } catch (error) {
@@ -638,6 +642,15 @@ defineExpose({
     updateLayerOrder
 })
 
+// 添加范围变化处理函数
+const handleRangeChange = (value) => {
+    // 确保范围不超过限制
+    visParams.range = [
+        Math.max(value[0], currentLayer.value.min),
+        Math.min(value[1], currentLayer.value.max)
+    ];
+};
+
 // 修改打开图层设置方法
 const openLayerSettings = async (layer) => {
     try {
@@ -656,7 +669,11 @@ const openLayerSettings = async (layer) => {
                 bands: [...layer.visParams.bands],
                 min: layer.visParams.min,
                 max: layer.visParams.max,
-                range: [layer.visParams.min, layer.visParams.max],
+                // 确保范围在限制内
+                range: [
+                    Math.max(layer.visParams.min, layer.min),
+                    Math.min(layer.visParams.max, layer.max)
+                ],
                 gamma: layer.visParams.gamma || 1.4
             })
             
@@ -697,11 +714,15 @@ const updateRangeBasedOnBands = async (vis) => {
         const result = await response.json();
         
         if (result.success) {
-            // 更新当前图层最大最小值
-            currentLayer.value.min = result.min;
-            currentLayer.value.max = result.max;
+            // 使用范围标准化函数处理最大最小值
+            const normalizedRange = normalizeRange(result.min, result.max);
             
-            console.log('MapView.vue - updateRangeBasedOnBands - new range:', visParams.range);
+            // 更新当前图层最大��小值
+            currentLayer.value.min = normalizedRange.min;
+            currentLayer.value.max = normalizedRange.max;          
+
+            
+            console.log('MapView.vue - updateRangeBasedOnBands - new range:', normalizedRange);
         } else {
             // 如果计算失败，使用传入的值
             // visParams.range = [vis.min, vis.max];
@@ -790,7 +811,7 @@ const applyVisParams = async () => {
                     });
                 }
 
-                // 创建新图层
+                // 创建��图层
                 const newLeafletLayer = L.tileLayer(data.tileUrl, {
                     opacity: currentLayer.value.opacity,
                     maxZoom: 20,
@@ -827,7 +848,7 @@ const applyVisParams = async () => {
     }
 }
 
-// 修改波段变化的监听
+// ��改波段变化的监听
 watch(() => visParams.bands, (newBands) => {
     if (!currentLayer.value || !currentLayer.value.bandInfo) return
 
@@ -975,13 +996,12 @@ const initDrawControl = () => {
 // 在 script setup 中添加
 const emit = defineEmits(['map-initialized'])
 
-// 添加获取调色板预览样式的方法
+// 添加获取调色板预览样���的方法
 const getPalettePreviewStyle = (colors) => {
     return {
         background: `linear-gradient(to right, ${colors.join(',')})`
     }
 }
-
 </script>
 
 <style src="../styles/map-view.css"></style>
