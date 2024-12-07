@@ -111,6 +111,30 @@ class ToolService:
             # 将图像列表转换为 ImageCollection
             imageCollection = ee.ImageCollection.fromImages(images)
             
+            # 检查波段数量是否一致
+            def check_band_count(image):
+                band_count = image.bandNames()
+                return image.set('band_count', band_count)
+
+            band_counts = imageCollection.map(check_band_count)
+            unique_band_counts = band_counts.aggregate_array('band_count').distinct()
+            
+            # 使用 ee.Algorithms.If 判断波段数量是否一致
+            is_consistent = unique_band_counts.size().eq(1)
+            
+            result = ee.Algorithms.If( 
+                is_consistent,
+                'consistent',
+                'inconsistent'
+            )
+            
+            # 检查结果是否为一致
+            if result.getInfo() == 'inconsistent':  # getInfo 必须在服务器端取值判断
+                return {
+                    'success': False,
+                    'message': '所选图像的波段数量不一致，无法进行填补。'
+                }
+                
             def fillGaps(image):
                 # 过滤掉当前图像
                 sourceCollection = imageCollection.filter(
@@ -120,15 +144,12 @@ class ToolService:
                 return filled
             
             # 对每个图像进行填补处理
-
             filled_images = imageCollection.map(fillGaps)
-
-            # filled_images = []
-            # for img in images:
-            #     filled = fillGaps(ee.Image(img), imageCollection)
-            #     filled_images.append(filled)
                 
             return filled_images
             
         except Exception as e:
-            raise Exception(f"Tool_service.py - Error in image_filling: {str(e)}")
+            return {
+                'success': False,
+                'message': f'影像填补失败: {str(e)}'
+            }

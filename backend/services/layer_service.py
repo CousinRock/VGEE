@@ -26,6 +26,10 @@ def update_vis_params_service(data, current_dataset):
 
         # 获取选择的波段
         selected_bands = vis_params.get('bands', [])
+        
+        # 打印当前数据集的波段信息，用于调试
+        print(f"Layer_service.py - Current dataset bands: {selected_bands}")
+        
         img = current_dataset.select(selected_bands)
         
         # 如果是单波段且提供了调色板
@@ -47,7 +51,7 @@ def update_vis_params_service(data, current_dataset):
                 'gamma': float(vis_params.get('gamma', 1.4))
             }
         
-        print(f"Layer_service.py - update_vis_params_service-vis_params: {img.bandNames().getInfo()}")
+        print(f"Layer_service.py - Selected bands for visualization: {vis_params['bands']}")
         map_id = img.getMapId(vis_params)
         return {
             'tileUrl': map_id['tile_fetcher'].url_format

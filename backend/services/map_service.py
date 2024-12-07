@@ -41,6 +41,7 @@ def compute_image_stats(dataset, bands,region=None):
     try:
         if region is None:
             return None
+        
         band_img = dataset.select(bands)
         # 如果没有指定region，使用全球范围
         
@@ -93,8 +94,14 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
             
             dataset = dataset.median()
             
+            # 保存原始波段名称
+            original_band_names = dataset.bandNames()
+            
             if region:
                 dataset = dataset.clip(region)
+                
+            # 确保波段名称保持一致
+            dataset = dataset.rename(original_band_names)
                 
             vis_params = {
                 'bands': ['B4', 'B3', 'B2'],
@@ -111,8 +118,14 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
                 
             dataset = dataset.median()
             
+            # 保存原始波段名称
+            original_band_names = dataset.bandNames()
+            
             if region:
                 dataset = dataset.clip(region)
+                
+            # 确保波段名称保持一致
+            dataset = dataset.rename(original_band_names)
                 
             vis_params = {
                 'bands': ['B4', 'B3', 'B2'],
@@ -128,8 +141,14 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
                 
             dataset = dataset.first()
             
+            # 保存原始波段名称
+            original_band_names = dataset.bandNames()
+            
             if region:
                 dataset = dataset.clip(region)
+                
+            # 确保波段名称保持一致
+            dataset = dataset.rename(original_band_names)
                 
             vis_params = {
                 'min': -2000,
@@ -141,6 +160,9 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
                            '011D01', '011301']
             }
             layer_name = f'MODIS NDVI ({start_date} to {end_date})'
+
+        # 打印波段信息用于调试
+        print(f"Map_service.py - Dataset bands: {dataset.bandNames().getInfo()}")
 
         # 计算统计值
         stats = compute_image_stats(dataset, vis_params['bands'], region)

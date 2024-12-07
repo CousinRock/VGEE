@@ -652,11 +652,11 @@ const openLayerSettings = async (layer) => {
             bandMode.value = layer.visParams.bands.length === 1 ? 1 : 3
             
             // 更新范围和参数
-            updateRangeBasedOnBands(layer.visParams)
             Object.assign(visParams, {
                 bands: [...layer.visParams.bands],
-                min: visParams.range[0],
-                max: visParams.range[1],
+                min: layer.visParams.min,
+                max: layer.visParams.max,
+                range: [layer.visParams.min, layer.visParams.max],
                 gamma: layer.visParams.gamma || 1.4
             })
             
@@ -670,10 +670,60 @@ const openLayerSettings = async (layer) => {
     }
 }
 
-// 添加一个函数来更新范围设置
-const updateRangeBasedOnBands = (vis) => {
-    visParams.range = [vis.min, vis.max]
-    console.log('MapView.vue - updateRangeBasedOnBands - visParams.range:', visParams.range);
+// 修改更新范围函数
+const updateRangeBasedOnBands = async (vis) => {
+    try {
+        if (!currentLayer.value) return;
+        
+        // 添加加载状态到 Apply 按钮
+        const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
+        if (applyButton) {
+            applyButton.disabled = true
+            applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 计算中...'
+        }
+        
+        // 调用后端接口计算统计值
+        const response = await fetch('http://localhost:5000/compute-stats', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                layer_id: currentLayer.value.id,
+                bands: visParams.bands
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // 更新当前图层最大最小值
+            currentLayer.value.min = result.min;
+            currentLayer.value.max = result.max;
+            
+            console.log('MapView.vue - updateRangeBasedOnBands - new range:', visParams.range);
+        } else {
+            // 如果计算失败，使用传入的值
+            // visParams.range = [vis.min, vis.max];
+            currentLayer.value.min = vis.min;
+            currentLayer.value.max = vis.max;
+            console.warn('MapView.vue - Failed to compute stats, using provided values');
+        }
+        visParams.range = [vis.min, vis.max];
+    } catch (error) {
+        console.error('MapView.vue - Error updating range:', error);
+        // 发生错误时使用传入的值
+        visParams.range = [vis.min, vis.max];
+        currentLayer.value.min = vis.min;
+        currentLayer.value.max = vis.max;
+    } finally {
+        // 恢复按钮状态
+        const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
+        if (applyButton) {
+            applyButton.disabled = false
+            applyButton.innerHTML = 'Apply'
+        }
+    }
 }
 
 // 应用可视化参数
@@ -780,6 +830,9 @@ const applyVisParams = async () => {
 // 修改波段变化的监听
 watch(() => visParams.bands, (newBands) => {
     if (!currentLayer.value || !currentLayer.value.bandInfo) return
+
+    console.log('MapView-watch',visParams);
+    
     updateRangeBasedOnBands(visParams)
 }, { deep: true })
 

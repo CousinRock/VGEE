@@ -287,7 +287,7 @@ const handleLayerSelect = async () => {
             showLayerSelect.value = false
             selectedLayerName.value = []
         } else {
-            ElMessage.error(data.error || '处理失败')
+            ElMessage.error(data.message || '处理失败')
         }
     } catch (error) {
         console.error('Tools.vue - Error processing layers:', error)

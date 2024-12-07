@@ -88,9 +88,12 @@ def calculate_index():
             }), 400
             
         # 获取所有选中的图层数据
-        selected_images = ee.ImageCollection([datasets[layer_id] for layer_id in layer_ids])
+        selected_images = [datasets[layer_id] for layer_id in layer_ids]
+        print('Tool_routes.py - calculate_index-layer_ids',layer_ids)
         
-        results = selected_images.map(lambda image: ToolService.calculate_index(image, index_type)).toList(selected_images.size())
+        results = ee.ImageCollection(selected_images).map(lambda image: ToolService.calculate_index(image, index_type))
+        print('Tool_routes.py - calculate_index-results.size()',results.size().getInfo())
+        results = results.toList(results.size())
 
         return common_process(layer_ids, results, vis_params, f'已添加 {index_type.upper()} 波段')
     except Exception as e:
@@ -127,13 +130,22 @@ def image_filling():
         selected_images = [datasets[layer_id] for layer_id in layer_ids]
         
         # 调用服务进行图像填补
-        results = ToolService.image_filling(selected_images).toList(len(selected_images))
+        results = ToolService.image_filling(selected_images)
         
+        # 检查返回值是否表示错误
+        if isinstance(results, dict):
+            return jsonify(results)
+            
+        # 如果是正常的结果，继续处理
+        results = results.toList(results.size())
         return common_process(layer_ids, results, vis_params, '图像填补处理完成')
         
     except Exception as e:
         print(f"Error in image_filling: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'message': f'影像填补失败: {str(e)}'
+        }), 500
 
 @tool_bp.route('/get-layers', methods=['GET'])
 def get_layers():
