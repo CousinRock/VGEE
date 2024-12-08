@@ -29,16 +29,11 @@
         <div class="layer-select-content">
             <!-- 添加全选复选框 -->
             <div class="select-all-option">
-                <el-checkbox 
-                    v-model="selectAll"
-                    @change="handleSelectAllChange"
-                    :indeterminate="isIndeterminate">
+                <el-checkbox v-model="selectAll" @change="handleSelectAllChange" :indeterminate="isIndeterminate">
                     全选
                 </el-checkbox>
             </div>
-            <el-checkbox-group 
-                v-model="selectedLayerName"
-                @change="handleCheckedLayersChange">
+            <el-checkbox-group v-model="selectedLayerName" @change="handleCheckedLayersChange">
                 <div v-for="layer in availableLayers" :key="layer.id" class="layer-option">
                     <el-checkbox :label="layer.id">{{ layer.name }}</el-checkbox>
                 </div>
@@ -47,9 +42,7 @@
         <template #footer>
             <span class="dialog-footer">
                 <el-button @click="showLayerSelect = false">取消</el-button>
-                <el-button type="primary" 
-                    :loading="isProcessing" 
-                    @click="handleLayerSelect">
+                <el-button type="primary" :loading="isProcessing" @click="handleLayerSelect">
                     {{ isProcessing ? '处理中...' : '确定' }}
                 </el-button>
             </span>
@@ -62,6 +55,7 @@ import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { menuItems } from '../config/tools-config'
 import L from 'leaflet'
+import { API_ROUTES } from '../api/routes'
 
 const props = defineProps({
     mapView: {
@@ -110,7 +104,7 @@ const handleSubMenuClick = (item) => {
 // 获取可用图层的通用方法
 const getAvailableLayers = async () => {
     try {
-        const response = await fetch('http://localhost:5000/tools/get-layers')
+        const response = await fetch(API_ROUTES.TOOLS.GET_LAYERS)
         const data = await response.json()
 
         if (!data.success) {
@@ -164,7 +158,7 @@ const handleToolClick = async (tool) => {
 async function handleIndexCalculation(tool) {
     const layers = await getAvailableLayers()
     if (!layers) return
-    
+
     selectedLayerName.value = []  // 清空之前的选择
     availableLayers.value = layers
     currentTool.value = tool
@@ -175,7 +169,7 @@ async function handleIndexCalculation(tool) {
 async function handleCloudRemoval(tool) {
     const layers = await getAvailableLayers()
     if (!layers) return
-    
+
     selectedLayerName.value = []  // 清空之前的选择
     availableLayers.value = layers
     currentTool.value = tool
@@ -186,7 +180,7 @@ async function handleCloudRemoval(tool) {
 async function handleImageFilling(tool) {
     const layers = await getAvailableLayers()
     if (!layers) return
-    
+
     // 允许多选图层
     selectedLayerName.value = []  // 清空之前的选择
     availableLayers.value = layers
@@ -213,20 +207,20 @@ const handleLayerSelect = async () => {
         ElMessage.warning('请选择至少一个图层')
         return
     }
-    
+
     try {
         isProcessing.value = true
 
         // 根据当前工具类型选择不同的处理端点和参数
         let endpoint = ''
         let requestData = {}
-        
+
         switch (currentTool.value.id) {
             case 'cloud-removal':
-                endpoint = 'cloud-removal'               
+                endpoint = API_ROUTES.TOOLS.CLOUD_REMOVAL
                 break
             case 'image-filling':
-                endpoint = 'image-filling'
+                endpoint = API_ROUTES.TOOLS.IMAGE_FILLING
                 break
             // 添加指数计算的处理
             case 'ndvi':
@@ -236,23 +230,23 @@ const handleLayerSelect = async () => {
             case 'savi':
             case 'mndwi':
             case 'bsi':
-                endpoint = 'calculate-index'
+                endpoint = API_ROUTES.TOOLS.CALCULATE_INDEX
                 break
             default:
                 throw new Error('未知的工具类型')
         }
 
         // 构建请求数据
-        if (endpoint === 'calculate-index') {
+        if (endpoint === API_ROUTES.TOOLS.CALCULATE_INDEX) {
             requestData = {
                 ...createRequestData(selectedLayerName.value),
-                index_type: currentTool.value.id  // 添加指数类型
+                index_type: currentTool.value.id
             }
         } else {
             requestData = createRequestData(selectedLayerName.value)
         }
 
-        const result = await fetch(`http://localhost:5000/tools/${endpoint}`, {
+        const result = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -266,10 +260,10 @@ const handleLayerSelect = async () => {
             if (Array.isArray(data.results)) {
                 for (const layerResult of data.results) {
                     // 计算指数后重新获取波段信息
-                    if (endpoint === 'calculate-index') {
+                    if (endpoint === API_ROUTES.TOOLS.CALCULATE_INDEX) {
                         const layer = props.mapView.layers.find(l => l.id === layerResult.layer_id)
                         if (layer) {
-                            const response = await fetch(`http://localhost:5000/layer-info?id=${layer.id}&satellite=${layer.satellite}`)
+                            const response = await fetch(`${API_ROUTES.LAYER.GET_LAYER_INFO}?id=${layer.id}&satellite=${layer.satellite}`)
                             const layerInfo = await response.json()
                             if (layerInfo.success) {
                                 layer.bandInfo = layerInfo.bands
@@ -282,7 +276,7 @@ const handleLayerSelect = async () => {
                 // 处理单个图层结果
                 await updateMapLayer(data.tileUrl, selectedLayerName.value[0])
             }
-            
+
             ElMessage.success(data.message)
             showLayerSelect.value = false
             selectedLayerName.value = []
@@ -359,7 +353,7 @@ watch(showLayerSelect, (newVal) => {
     }
 })
 
-// 暴露方法��父组件
+// 暴露方法父组件
 defineExpose({
     closeAllMenus: () => {
         showSubmenu.value = ''

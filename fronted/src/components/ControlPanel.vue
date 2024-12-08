@@ -54,6 +54,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { API_ROUTES } from '../api/routes'
 
 // 定义emit事件 'add-layer' 用于向父组件 Map.vue 发送添加新图层的事件
 // 当用户点击添加图层按钮时,会触发此事件并传递图层名称和地图数据
@@ -97,7 +98,7 @@ const addNewLayer = async () => {
             _t: Date.now()
         })
 
-        const response = await fetch(`http://localhost:5000/map-data?${params}`)
+        const response = await fetch(`${API_ROUTES.MAP.GET_MAP_DATA}?${params}`)
         const mapData = await response.json()
         console.log('ControlPanel.vue - mapData:', mapData);
         if (!mapData?.overlayLayers?.length) {

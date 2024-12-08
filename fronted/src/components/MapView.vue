@@ -83,11 +83,9 @@
                     <!-- 只在单波段模式下显示调色板选择器 -->
                     <div class="palette-select" style="margin-top: 10px;">
                         <label>Color Palette</label>
-                        <el-select v-model="selectedPalette" style="width: 100%;" popper-class="palette-select-dropdown">
-                            <el-option v-for="(colors, name) in palettes" 
-                                :key="name" 
-                                :label="name" 
-                                :value="name">
+                        <el-select v-model="selectedPalette" style="width: 100%;"
+                            popper-class="palette-select-dropdown">
+                            <el-option v-for="(colors, name) in palettes" :key="name" :label="name" :value="name">
                                 <div class="palette-preview-item">
                                     <div class="palette-preview" :style="getPalettePreviewStyle(colors)"></div>
                                     <span>{{ name }}</span>
@@ -134,13 +132,8 @@
                 <!-- 数值范围设置 -->
                 <div class="range-setting">
                     <label>Range:</label>
-                    <el-slider 
-                        v-model="visParams.range" 
-                        range
-                        :min="currentLayer.min"
-                        :max="currentLayer.max"
-                        :step="getSliderStep(currentLayer.satellite)"
-                        :format-tooltip="val => formatSliderValue(val)"
+                    <el-slider v-model="visParams.range" range :min="currentLayer.min" :max="currentLayer.max"
+                        :step="getSliderStep(currentLayer.satellite)" :format-tooltip="val => formatSliderValue(val)"
                         @change="handleRangeChange" />
                     <div class="range-values">
                         {{ formatSliderValue(visParams.range[0]) }} – {{ formatSliderValue(visParams.range[1]) }}
@@ -176,13 +169,14 @@
 <script setup>
 import { onMounted, ref, watch, nextTick, reactive, onUnmounted } from 'vue'
 // 引入底图配置
-import { baseMaps,palettes } from '../config/map-config'
+import { baseMaps, palettes } from '../config/map-config'
 import { normalizeRange } from '../util/methods'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import '@fortawesome/fontawesome-free/css/all.css'
 import 'leaflet-draw'
 import 'leaflet-draw/dist/leaflet.draw.css'
+import { API_ROUTES } from '../api/routes'
 
 const props = defineProps({
     mapData: {
@@ -200,7 +194,6 @@ const showLayerSettings = ref(false)
 const selectedBaseMap = ref('satellite')
 const currentLayer = ref(null)
 const availableBands = ref([])
-const bandStats = ref({})
 const bandMode = ref(3)
 const stretchType = ref('custom')
 const visParams = reactive({
@@ -237,7 +230,7 @@ const addNewLayer = async (layerName, mapData) => {
 
         console.log('MapView.vue - addNewLayer - mapData:', mapData.overlayLayers[0].id);
         // 1. 预取波段信息并缓存
-        const response = await fetch(`http://localhost:5000/layer-info?id=${mapData.overlayLayers[0].id}&satellite=${mapData.satellite}`)
+        const response = await fetch(`${API_ROUTES.LAYER.GET_LAYER_INFO}?id=${mapData.overlayLayers[0].id}&satellite=${mapData.satellite}`)
         const layerInfo = await response.json()
         console.log('MapView.vue - addNewLayer - layerInfo:', layerInfo);
 
@@ -308,7 +301,7 @@ const addNewLayer = async (layerName, mapData) => {
 }
 
 // 移除选定的图层
-const removeLayer =async (layerId, layerName) => {
+const removeLayer = async (layerId, layerName) => {
     console.log('MapView.vue - remove layer:', layerName);
     console.log('MapView.vue - layerId:', layerId);
 
@@ -316,7 +309,7 @@ const removeLayer =async (layerId, layerName) => {
 
     try {
         // 先调用后端移除据集中的图层
-        const response = await fetch('http://localhost:5000/remove-layer', {
+        const response = await fetch(API_ROUTES.MAP.REMOVE_LAYER, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -555,7 +548,7 @@ onMounted(async () => {
 
             try {
                 // 发送绘制的区域到后端
-                const response = await fetch('http://localhost:5000/filter-by-geometry', {
+                const response = await fetch(API_ROUTES.MAP.FILTER_BY_GEOMETRY, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -591,7 +584,7 @@ onMounted(async () => {
                 }
 
                 // 然后再发送请求到后端
-                const response = await fetch('http://localhost:5000/remove-geometry', {
+                const response = await fetch(API_ROUTES.MAP.REMOVE_GEOMETRY, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -656,14 +649,14 @@ const openLayerSettings = async (layer) => {
     try {
         currentLayer.value = layer
         console.log('MapView.vue - openLayerSettings - currentLayer:', currentLayer.value);
-        
+
         // 如果已经有波段信息，直接使用
         if (layer.bandInfo) {
             availableBands.value = layer.bandInfo
-            
+
             // 设置波段模式
             bandMode.value = layer.visParams.bands.length === 1 ? 1 : 3
-            
+
             // 更新范围和参数
             Object.assign(visParams, {
                 bands: [...layer.visParams.bands],
@@ -676,7 +669,7 @@ const openLayerSettings = async (layer) => {
                 ],
                 gamma: layer.visParams.gamma || 1.4
             })
-            
+
             showLayerSettings.value = true
             return
         }
@@ -691,16 +684,16 @@ const openLayerSettings = async (layer) => {
 const updateRangeBasedOnBands = async (vis) => {
     try {
         if (!currentLayer.value) return;
-        
+
         // 添加加载状态到 Apply 按钮
         const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
         if (applyButton) {
             applyButton.disabled = true
             applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 计算中...'
         }
-        
+
         // 调用后端接口计算统计值
-        const response = await fetch('http://localhost:5000/compute-stats', {
+        const response = await fetch(API_ROUTES.MAP.COMPUTE_STATS, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -710,18 +703,18 @@ const updateRangeBasedOnBands = async (vis) => {
                 bands: visParams.bands
             })
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
             // 使用范围标准化函数处理最大最小值
             const normalizedRange = normalizeRange(result.min, result.max);
-            
-            // 更新当前图层最大��小值
-            currentLayer.value.min = normalizedRange.min;
-            currentLayer.value.max = normalizedRange.max;          
 
-            
+            // 更新当前图层最大小值
+            currentLayer.value.min = normalizedRange.min;
+            currentLayer.value.max = normalizedRange.max;
+
+
             console.log('MapView.vue - updateRangeBasedOnBands - new range:', normalizedRange);
         } else {
             // 如果计算失败，使用传入的值
@@ -775,7 +768,7 @@ const applyVisParams = async () => {
             updatedVisParams.gamma = null
         }
 
-        const response = await fetch('http://localhost:5000/update-vis-params', {
+        const response = await fetch(API_ROUTES.LAYER.UPDATE_VIS_PARAMS, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -811,7 +804,7 @@ const applyVisParams = async () => {
                     });
                 }
 
-                // 创建��图层
+                // 创建新图层
                 const newLeafletLayer = L.tileLayer(data.tileUrl, {
                     opacity: currentLayer.value.opacity,
                     maxZoom: 20,
@@ -848,12 +841,12 @@ const applyVisParams = async () => {
     }
 }
 
-// ��改波段变化的监听
+// 修改波段变化的监听
 watch(() => visParams.bands, (newBands) => {
     if (!currentLayer.value || !currentLayer.value.bandInfo) return
 
-    console.log('MapView-watch',visParams);
-    
+    console.log('MapView-watch', visParams);
+
     updateRangeBasedOnBands(visParams)
 }, { deep: true })
 
@@ -936,7 +929,7 @@ const initDrawControl = () => {
         // position 可选值: 'topleft', 'topright', 'bottomleft', 'bottomright'
         position: 'topleft',
         draw: {
-            // 明确设置每个工具的启用/禁用状态
+            // 明确置每个工具的启用/禁用状态
             polyline: true,
             polygon: true,
             circle: false,      // 明确禁用圆形
