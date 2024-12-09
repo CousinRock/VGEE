@@ -153,3 +153,28 @@ class ToolService:
                 'success': False,
                 'message': f'影像填补失败: {str(e)}'
             }
+
+    @staticmethod
+    def kmeans_clustering(image, num_clusters=5):
+        """K-means聚类分类"""
+        try:
+            # 获取训练样本
+            training = image.sample(
+                numPixels=5000,
+                scale=30,
+                seed=0,
+                geometries=True
+            )
+            
+            # 创建并训练聚类器
+            clusterer = ee.Clusterer.wekaKMeans(num_clusters).train(training)
+            
+            # 执行聚类
+            result = image.cluster(clusterer)
+            
+            # 添加随机可视化
+            return result.randomVisualizer()
+            # return image.addBands(result.rename('cluster'))
+            
+        except Exception as e:
+            raise Exception(f"Error in kmeans clustering: {str(e)}")

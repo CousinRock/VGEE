@@ -673,6 +673,9 @@ const openLayerSettings = async (layer) => {
             showLayerSettings.value = true
             return
         }
+        else {
+            console.log('MapView.vue - openLayerSettings - no bandInfo:', layer);
+        }
 
     } catch (error) {
         console.error('MapView.vue - Error opening layer settings:', error)

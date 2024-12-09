@@ -26,7 +26,7 @@ export const menuItems = [
                         id: 'evi',
                         label: '增强植被指数(EVI)',
                         icon: 'fas fa-seedling',
-                        description: '增强型植被指数，改进了NDVI在高生物量区域的饱和问题'
+                        description: '增强型植被指数，改进了NDVI在高生物量区域的饱��问题'
                     },
                     {
                         id: 'savi',
@@ -56,8 +56,21 @@ export const menuItems = [
                         id: 'bsi',
                         label: '裸土指数(BSI)',
                         icon: 'fas fa-globe',
-                        description: '裸土指数，用于识别裸露土壤区域'
+                        description: '裸��指数，用于识别裸露土壤区域'
                     }
+                ]
+            },
+            {
+                id: 'classification',
+                label: '分类工具',
+                children: [
+                    {
+                        id: 'kmeans',
+                        label: 'K-means聚类',
+                        icon: 'fas fa-brain',
+                        description: '使用K-means算法对影像进行无监督分类'
+                    },
+                    { id: 'supervised', label: '监督分类', icon: 'fas fa-brain' }
                 ]
             },
         ]

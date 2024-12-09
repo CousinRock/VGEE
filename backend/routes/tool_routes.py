@@ -181,3 +181,65 @@ def get_layers():
             'error': str(e),
             'message': 'Failed to get Landsat layers'
         }), 500 
+
+@tool_bp.route('/kmeans-clustering', methods=['POST'])
+def kmeans_clustering():
+    try:
+        data = request.json
+        layer_ids = data.get('layer_ids')
+        print('Tool_routes.py - kmeans_clustering-layer_ids', layer_ids)
+        num_clusters = data.get('num_clusters', 5)  # 默认5类
+        
+        if not layer_ids or not all(layer_id in datasets for layer_id in layer_ids):
+            return jsonify({
+                'success': False,
+                'error': 'Invalid layer ID'
+            }), 400
+            
+        # 获取选中的图层数据
+        selected_images = ee.ImageCollection([datasets[layer_id] for layer_id in layer_ids])       
+        num = len(layer_ids)  # 获取图层数量
+        
+        # 对每个图像执行聚类
+        results = selected_images.map(
+            lambda img: ToolService.kmeans_clustering(img, num_clusters)
+        ).toList(num)
+        
+        # 为每个聚类结果创建新的图层ID并存储
+        layer_results = []
+        bandInfo = ['cluster']
+        for i in range(num):
+            # 创建新的图层ID，添加 _kmeans 后缀
+            kmeans_id = f"{layer_ids[i]}_kmeans"
+            # 存储聚类结果到 datasets
+            datasets[kmeans_id] = ee.Image(results.get(i)).select(bandInfo)
+            
+            # 使用随机可视化参数
+            map_id = datasets[kmeans_id].getMapId({
+                'min': 0,
+                'max': num_clusters - 1
+            })
+            
+            layer_results.append({
+                'layer_id': kmeans_id,  # 返回新的图层ID
+                'tileUrl': map_id['tile_fetcher'].url_format,
+                'bandInfo': bandInfo,
+                'visParams': {
+                    'bands': bandInfo,
+                    'min': 0,
+                    'max': num_clusters - 1
+                }
+            })
+
+        return jsonify({
+            'success': True,
+            'message': 'K-means聚类分析完成',
+            'results': layer_results  # 返回所有结果
+        })
+        
+    except Exception as e:
+        print(f"Error in kmeans_clustering: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'聚类分析失败: {str(e)}'
+        }), 500 
