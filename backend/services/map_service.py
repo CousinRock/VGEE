@@ -17,6 +17,13 @@ def get_all_datasets():
     '''
     return datasets,datasetsNames
 
+def save_dataset(layer_id, dataset, layer_name):
+    '''
+    保存图层
+    '''
+    datasets[layer_id] = dataset
+    datasetsNames[layer_id] = layer_name
+
 def remove_dataset(layer_id):
     '''
     移除图层
@@ -184,8 +191,7 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
         print(f"Map_service.py - Final stats: min={img_min}, max={img_max}")
 
         # 存储 dataset
-        datasets[layer_id] = dataset
-        datasetsNames[layer_id] = layerName
+        save_dataset(layer_id, dataset, layerName)
 
         map_id = dataset.getMapId(vis_params)
         tile_url = map_id['tile_fetcher'].url_format

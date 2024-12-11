@@ -19,8 +19,57 @@
     overflow-y: auto;
 }
 
-.layer-option {
-    padding: 4px 16px;
+/* 只有在显示设置面板时才应用flex布局 */
+.layer-select-content.with-settings {
+    display: flex;
+    gap: 20px;
+    min-height: 300px;
+}
+
+.layer-select-left {
+    flex: 1;
+    border-right: 1px solid #dcdfe6;
+    padding-right: 20px;
+}
+
+.layer-select-right {
+    flex: 1;
+    padding-left: 20px;
+}
+
+.kmeans-options h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #409EFF;
+}
+
+.layer-option-item {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f5f7fa;
+    border-radius: 4px;
+}
+
+.layer-name {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #409EFF;
+}
+
+.option-item {
+    margin-bottom: 10px;
+}
+
+.option-item label {
+    display: block;
+    margin-bottom: 8px;
+    color: #606266;
+}
+
+/* 确保滑块在容器内正确显示 */
+.el-slider {
+    width: 100%;
+    margin: 10px 0;
 }
 
 /* 添加处理中的按钮样式 */

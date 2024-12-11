@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from services.tool_service import ToolService
+from services.map_service import save_dataset
 import ee
 
 tool_bp = Blueprint('tool', __name__)
@@ -187,8 +188,7 @@ def kmeans_clustering():
     try:
         data = request.json
         layer_ids = data.get('layer_ids')
-        print('Tool_routes.py - kmeans_clustering-layer_ids', layer_ids)
-        num_clusters = data.get('num_clusters', 5)  # 默认5类
+        cluster_counts = data.get('cluster_counts', {})  # 获取每个图层的分类数量
         
         if not layer_ids or not all(layer_id in datasets for layer_id in layer_ids):
             return jsonify({
@@ -200,28 +200,33 @@ def kmeans_clustering():
         selected_images = ee.ImageCollection([datasets[layer_id] for layer_id in layer_ids])       
         num = len(layer_ids)  # 获取图层数量
         
-        # 对每个图像执行聚类
-        results = selected_images.map(
-            lambda img: ToolService.kmeans_clustering(img, num_clusters)
-        ).toList(num)
+        # 为每个图像执行聚类，使用对应的分类数量
+        results = []
+        for i, layer_id in enumerate(layer_ids):
+            num_clusters = cluster_counts.get(layer_id, 5)  # 获取该图层的分类数量，默认5类
+            result = ToolService.kmeans_clustering(
+                ee.Image(selected_images.toList(num).get(i)), 
+                num_clusters
+            )
+            results.append(result)
         
         # 为每个聚类结果创建新的图层ID并存储
         layer_results = []
         bandInfo = ['cluster']
-        for i in range(num):
-            # 创建新的图层ID，添加 _kmeans 后缀
-            kmeans_id = f"{layer_ids[i]}_kmeans"
-            # 存储聚类结果到 datasets
-            datasets[kmeans_id] = ee.Image(results.get(i)).select(bandInfo)
+        for i, layer_id in enumerate(layer_ids):
+            num_clusters = cluster_counts.get(layer_id, 5)
+            kmeans_id = f"{layer_id}_kmeans"
             
-            # 使用随机可视化参数
+            # 存储聚类结果到 datasets
+            save_dataset(kmeans_id, results[i].select(bandInfo), 'kmeans')
+            
             map_id = datasets[kmeans_id].getMapId({
                 'min': 0,
                 'max': num_clusters - 1
             })
             
             layer_results.append({
-                'layer_id': kmeans_id,  # 返回新的图层ID
+                'layer_id': kmeans_id,
                 'tileUrl': map_id['tile_fetcher'].url_format,
                 'bandInfo': bandInfo,
                 'visParams': {
@@ -234,7 +239,7 @@ def kmeans_clustering():
         return jsonify({
             'success': True,
             'message': 'K-means聚类分析完成',
-            'results': layer_results  # 返回所有结果
+            'results': layer_results
         })
         
     except Exception as e:

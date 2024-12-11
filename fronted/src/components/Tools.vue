@@ -24,21 +24,47 @@
         </div>
     </div>
 
-    <!-- 添加图层选择对话框 -->
-    <el-dialog v-model="showLayerSelect" title="选择需要处理的图层" width="400px">
-        <div class="layer-select-content">
-            <!-- 添加全选复选框 -->
-            <div class="select-all-option">
-                <el-checkbox v-model="selectAll" @change="handleSelectAllChange" :indeterminate="isIndeterminate">
-                    全选
-                </el-checkbox>
-            </div>
-            <el-checkbox-group v-model="selectedLayerName" @change="handleCheckedLayersChange">
-                <div v-for="layer in availableLayers" :key="layer.id" class="layer-option">
-                    <el-checkbox :label="layer.id">{{ layer.name }}</el-checkbox>
+    <!-- 修改图层选择对话框 -->
+    <el-dialog v-model="showLayerSelect" :title="getDialogTitle"
+        :width="currentTool?.id === 'kmeans' ? '800px' : '400px'" width="800px">
+        <div class="layer-select-content" :class="{ 'with-settings': currentTool?.id === 'kmeans' }">
+            <div class="layer-select-left">
+                <!-- 添加全选复选框 -->
+                <div class="select-all-option">
+                    <el-checkbox v-model="selectAll" @change="handleSelectAllChange" :indeterminate="isIndeterminate">
+                        全选
+                    </el-checkbox>
                 </div>
-            </el-checkbox-group>
+
+                <el-checkbox-group v-model="selectedLayerName" @change="handleCheckedLayersChange">
+                    <div v-for="layer in availableLayers" :key="layer.id" class="layer-option">
+                        <el-checkbox :label="layer.id">{{ layer.name }}</el-checkbox>
+                    </div>
+                </el-checkbox-group>
+            </div>
+
+            <!-- 右侧分类设置区域 -->
+            <div v-if="currentTool?.id === 'kmeans' && selectedLayerName.length > 0" class="layer-select-right">
+                <div class="kmeans-options">
+                    <h4>分类设置</h4>
+                    <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
+                        <div class="layer-name">
+                            {{ availableLayers.find(l => l.id === layerId)?.name }}
+                        </div>
+                        <div class="option-item">
+                            <label>分类数量：</label>
+                            <el-slider v-model="clusterCounts[layerId]" :min="2" :max="20" :step="1" show-input :marks="{
+                                2: '2',
+                                5: '5',
+                                10: '10',
+                                20: '20',
+                            }" />
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+
         <template #footer>
             <span class="dialog-footer">
                 <el-button @click="showLayerSelect = false">取消</el-button>
@@ -51,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { menuItems } from '../config/tools-config'
 import L from 'leaflet'
@@ -75,6 +101,7 @@ const selectedLayerName = ref([])
 const currentTool = ref(null)
 const selectAll = ref(false)
 const isIndeterminate = ref(false)
+const clusterCounts = ref({})  // 用于存储每个图层的分类数量
 
 // 菜单操作方法
 const toggleMenu = (item) => {
@@ -113,7 +140,7 @@ const getAvailableLayers = async () => {
         }
 
         if (!data.layers || data.layers.length === 0) {
-            ElMessage.warning('没有可用的 Landsat 图层')
+            ElMessage.warning('没有可用的图层')
             return null
         }
 
@@ -196,7 +223,7 @@ async function handleKMeansClustering(tool) {
     const layers = await getAvailableLayers()
     if (!layers) return
 
-    selectedLayerName.value = []  // 清空之前的选择
+    selectedLayerName.value = []  // 清除之前的选择
     availableLayers.value = layers
     currentTool.value = tool
     showLayerSelect.value = true
@@ -215,6 +242,14 @@ const createRequestData = (selectedIds) => {
     }
 }
 
+// 添加对话框标题计算属性
+const getDialogTitle = computed(() => {
+    if (currentTool.value?.id === 'kmeans') {
+        return '选择需要分类的图层'
+    }
+    return '选择需要处理的图'
+})
+
 // 图层选择处理
 const handleLayerSelect = async () => {
     if (selectedLayerName.value.length === 0) {
@@ -224,20 +259,25 @@ const handleLayerSelect = async () => {
 
     try {
         isProcessing.value = true
-
-        // 根据当前工具类型选择不同的处理端点和参数
         let endpoint = ''
         let requestData = {}
 
+        //工具功能选择
         switch (currentTool.value.id) {
+            case 'kmeans':
+                endpoint = API_ROUTES.TOOLS.KMEANS_CLUSTERING
+                requestData = {
+                    ...createRequestData(selectedLayerName.value),
+                    cluster_counts: clusterCounts.value  // 传递每个图层的分类数量
+                }
+                break
             case 'cloud-removal':
                 endpoint = API_ROUTES.TOOLS.CLOUD_REMOVAL
+                requestData = createRequestData(selectedLayerName.value)
                 break
             case 'image-filling':
                 endpoint = API_ROUTES.TOOLS.IMAGE_FILLING
-                break
-            case 'kmeans':
-                endpoint = API_ROUTES.TOOLS.KMEANS_CLUSTERING
+                requestData = createRequestData(selectedLayerName.value)
                 break
             // 添加指数计算处理
             case 'ndvi':
@@ -248,19 +288,13 @@ const handleLayerSelect = async () => {
             case 'mndwi':
             case 'bsi':
                 endpoint = API_ROUTES.TOOLS.CALCULATE_INDEX
+                requestData = {
+                    ...createRequestData(selectedLayerName.value),
+                    index_type: currentTool.value.id
+                }
                 break
             default:
                 throw new Error('未知的工具类型')
-        }
-
-        // 构建请求数据
-        if (endpoint === API_ROUTES.TOOLS.CALCULATE_INDEX) {
-            requestData = {
-                ...createRequestData(selectedLayerName.value),
-                index_type: currentTool.value.id
-            }
-        } else {
-            requestData = createRequestData(selectedLayerName.value)
         }
 
         const result = await fetch(endpoint, {
@@ -371,7 +405,7 @@ async function updateMapLayer(layerResult) {
             satellite: originalLayer?.satellite || 'LANDSAT',
         }
 
-        // 创建新的 Leaflet 图层
+        // 创建新的 Leaflet ���层
         newLayer.leafletLayer = L.tileLayer(layerResult.tileUrl, {
             opacity: newLayer.opacity,
             maxZoom: 20,
@@ -408,12 +442,32 @@ const handleCheckedLayersChange = (value) => {
     isIndeterminate.value = checkedCount > 0 && checkedCount < availableLayers.value.length
 }
 
-// 在显示对话框时重置选择状态
+// 在显示对话框时重置状态
 watch(showLayerSelect, (newVal) => {
     if (newVal) {
         selectAll.value = false
         isIndeterminate.value = false
         selectedLayerName.value = []
+        // 重置分类数量
+        clusterCounts.value = {}
+    }
+})
+
+// 监听选中图层的变化，初始化分类数量
+watch(selectedLayerName, (newVal) => {
+    if (currentTool.value?.id === 'kmeans') {
+        // 为新选中的图层设置默认值
+        newVal.forEach(layerId => {
+            if (!clusterCounts.value[layerId]) {
+                clusterCounts.value[layerId] = 5  // 默认5类
+            }
+        })
+        // 清理未选中的图层
+        Object.keys(clusterCounts.value).forEach(layerId => {
+            if (!newVal.includes(layerId)) {
+                delete clusterCounts.value[layerId]
+            }
+        })
     }
 })
 
