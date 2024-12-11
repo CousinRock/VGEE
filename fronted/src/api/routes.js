@@ -23,6 +23,7 @@ export const API_ROUTES = {
         CLOUD_REMOVAL: `${BASE_URL}/tools/cloud-removal`,
         CALCULATE_INDEX: `${BASE_URL}/tools/calculate-index`,
         IMAGE_FILLING: `${BASE_URL}/tools/image-filling`,
-        KMEANS_CLUSTERING: `${BASE_URL}/tools/kmeans-clustering`
+        KMEANS_CLUSTERING: `${BASE_URL}/tools/kmeans-clustering`,
+        HISTOGRAM_EQUALIZATION: `${BASE_URL}/tools/histogram-equalization`,
     }
 } 

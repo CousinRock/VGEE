@@ -8,7 +8,8 @@ export const menuItems = [
                 label: '预处理工具',
                 children: [
                     { id: 'cloud-removal', label: '影像除云', icon: 'fas fa-cloud-sun' },
-                    { id: 'image-filling', label: '影像填补', icon: 'fas fa-fill-drip' }
+                    { id: 'image-filling', label: '影像填补', icon: 'fas fa-fill-drip' },
+                    { id: 'histogram-equalization', label: '直方图均值化', icon: 'fas fa-chart-line' },
                 ]
             },
             {

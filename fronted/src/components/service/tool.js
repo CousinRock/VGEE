@@ -118,7 +118,7 @@ export const updateMapLayer = async (layerResult, mapView) => {
 }
 
 // 处理图层选择
-export const handleLayerSelect = async (selectedLayerName, currentTool, mapView, clusterCounts, isProcessing) => {
+export const processLayerSelect = async (selectedLayerName, currentTool, mapView, clusterCounts, isProcessing) => {
     if (selectedLayerName.length === 0) {
         ElMessage.warning('请选择至少一个图层')
         return false
@@ -157,6 +157,10 @@ export const handleLayerSelect = async (selectedLayerName, currentTool, mapView,
                     ...createRequestData(selectedLayerName, mapView.layers),
                     index_type: currentTool.id
                 }
+                break
+            case 'histogram-equalization':
+                endpoint = API_ROUTES.TOOLS.HISTOGRAM_EQUALIZATION
+                requestData = createRequestData(selectedLayerName, mapView.layers)
                 break
             default:
                 throw new Error('未知的工具类型')

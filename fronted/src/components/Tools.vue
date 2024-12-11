@@ -150,6 +150,9 @@ const handleToolClick = async (tool) => {
             case 'bsi':
                 await handleIndexCalculation(tool)
                 break
+            case 'histogram-equalization':
+                await handleHistogramEqualization(tool)
+                break
             default:
                 ElMessage.warning('该功能尚未实现')
         }
@@ -199,6 +202,17 @@ async function handleKMeansClustering(tool) {
     if (!layers) return
 
     selectedLayerName.value = []  // 清除之前的选择
+    availableLayers.value = layers
+    currentTool.value = tool
+    showLayerSelect.value = true
+}
+
+// 添加直方图均衡化处理函数
+async function handleHistogramEqualization(tool) {
+    const layers = await getAvailableLayers()
+    if (!layers) return
+
+    selectedLayerName.value = []  // 清空之前的选择
     availableLayers.value = layers
     currentTool.value = tool
     showLayerSelect.value = true
