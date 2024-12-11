@@ -80,8 +80,7 @@
 import { ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { menuItems } from '../config/tools-config'
-import L from 'leaflet'
-import { API_ROUTES } from '../api/routes'
+import { getAvailableLayers, processLayerSelect } from './service/tool'
 
 const props = defineProps({
     mapView: {
@@ -125,30 +124,6 @@ const handleSubMenuClick = (item) => {
     } else {
         showSubmenu.value = ''
         activeSubMenu.value = ''
-    }
-}
-
-// 获取可用图层的通用方法
-const getAvailableLayers = async () => {
-    try {
-        const response = await fetch(API_ROUTES.TOOLS.GET_LAYERS)
-        const data = await response.json()
-
-        if (!data.success) {
-            ElMessage.error('获取图层失败')
-            return null
-        }
-
-        if (!data.layers || data.layers.length === 0) {
-            ElMessage.warning('没有可用的图层')
-            return null
-        }
-
-        return data.layers
-    } catch (error) {
-        console.error('Tools.vue - Error getting layers:', error)
-        ElMessage.error('获取图层失败')
-        return null
     }
 }
 
@@ -229,19 +204,6 @@ async function handleKMeansClustering(tool) {
     showLayerSelect.value = true
 }
 
-// 创建通用的请求数据构建函数
-const createRequestData = (selectedIds) => {
-    return {
-        layer_ids: selectedIds,
-        vis_params: props.mapView.layers
-            .filter(l => selectedIds.includes(l.id))
-            .map(l => ({
-                id: l.id,
-                visParams: l.visParams
-            }))
-    }
-}
-
 // 添加对话框标题计算属性
 const getDialogTitle = computed(() => {
     if (currentTool.value?.id === 'kmeans') {
@@ -252,180 +214,17 @@ const getDialogTitle = computed(() => {
 
 // 图层选择处理
 const handleLayerSelect = async () => {
-    if (selectedLayerName.value.length === 0) {
-        ElMessage.warning('请选择至少一个图层')
-        return
-    }
+    const result = await processLayerSelect(
+        selectedLayerName.value,
+        currentTool.value,
+        props.mapView,
+        clusterCounts.value,
+        isProcessing
+    )
 
-    try {
-        isProcessing.value = true
-        let endpoint = ''
-        let requestData = {}
-
-        //工具功能选择
-        switch (currentTool.value.id) {
-            case 'kmeans':
-                endpoint = API_ROUTES.TOOLS.KMEANS_CLUSTERING
-                requestData = {
-                    ...createRequestData(selectedLayerName.value),
-                    cluster_counts: clusterCounts.value  // 传递每个图层的分类数量
-                }
-                break
-            case 'cloud-removal':
-                endpoint = API_ROUTES.TOOLS.CLOUD_REMOVAL
-                requestData = createRequestData(selectedLayerName.value)
-                break
-            case 'image-filling':
-                endpoint = API_ROUTES.TOOLS.IMAGE_FILLING
-                requestData = createRequestData(selectedLayerName.value)
-                break
-            // 添加指数计算处理
-            case 'ndvi':
-            case 'ndwi':
-            case 'ndbi':
-            case 'evi':
-            case 'savi':
-            case 'mndwi':
-            case 'bsi':
-                endpoint = API_ROUTES.TOOLS.CALCULATE_INDEX
-                requestData = {
-                    ...createRequestData(selectedLayerName.value),
-                    index_type: currentTool.value.id
-                }
-                break
-            default:
-                throw new Error('未知的工具类型')
-        }
-
-        const result = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestData)
-        })
-
-        const data = await result.json()
-        if (data.success) {
-            // 确保 data.results 始终是数组
-            const results = Array.isArray(data.results) ? data.results : [{
-                layer_id: selectedLayerName.value[0],
-                tileUrl: data.tileUrl,
-                bandInfo: data.bandInfo  // 如果是单个结果的情况
-            }]
-
-            // 处理所有图层结果
-            for (const layerResult of results) {
-                // 对于所有工具的结果都重新获取波段信息
-                const layer = props.mapView.layers.find(l => l.id === layerResult.layer_id)
-                if (layer) {
-                    const response = await fetch(`${API_ROUTES.LAYER.GET_LAYER_INFO}?id=${layer.id}&satellite=${layer.satellite}`)
-                    const layerInfo = await response.json()
-                    if (layerInfo.success) {
-                        layer.bandInfo = layerInfo.bands
-                    }
-                }
-                await updateMapLayer(layerResult)
-            }
-
-            ElMessage.success(data.message)
-            showLayerSelect.value = false
-            selectedLayerName.value = []
-        } else {
-            ElMessage.error(data.message || '处理失败')
-        }
-    } catch (error) {
-        console.error('Tools.vue - Error processing layers:', error)
-        ElMessage.error('处理失败')
-    } finally {
-        isProcessing.value = false
-    }
-}
-
-// 更新地图图层
-async function updateMapLayer(layerResult) {
-    // 查找现有图层
-    const layer = props.mapView.layers.find(l => l.id === layerResult.layer_id)
-
-    if (layer) {
-        // 更新现有图层
-        // 移除旧图层
-        if (layer.leafletLayer && props.mapView.map._layers) {
-            let mapLayers = Object.values(props.mapView.map._layers)
-            mapLayers.forEach((mapLayer) => {
-                if (mapLayer instanceof L.TileLayer &&
-                    mapLayer._url === layer.leafletLayer._url) {
-                    mapLayer.options.zoomAnimation = false
-                    props.mapView.map.removeLayer(mapLayer)
-                }
-            })
-        }
-
-        // 创建新图层
-        const newLeafletLayer = L.tileLayer(layerResult.tileUrl, {
-            opacity: layer.opacity,
-            maxZoom: 20,
-            maxNativeZoom: 20,
-            tileSize: 256,
-            updateWhenIdle: false,
-            updateWhenZooming: false,
-            keepBuffer: 2,
-            zIndex: layer.zIndex
-        })
-
-        // 更新图层引用
-        layer.leafletLayer = newLeafletLayer
-
-        // 如果图层是可见的，则添加到地图
-        if (layer.visible) {
-            newLeafletLayer.addTo(props.mapView.map)
-            newLeafletLayer.setZIndex(layer.zIndex)
-        }
-    } else {
-        // 处理新图层的情况
-        // 从layerId中获取原始图层ID（假设格式为 "originalId_processType"）
-        const [originalId] = layerResult.layer_id.split('_')
-        const originalLayer = props.mapView.layers.find(l => l.id === originalId)
-
-        // 创建新的图层对象
-        const newLayer = {
-            id: layerResult.layer_id,
-            name: `${originalLayer?.name || 'Unknown'} (Processed)`, // 可以根据处理类型设置不同的后缀
-            icon: 'fas fa-layer-group',
-            visible: true,
-            opacity: 1,
-            leafletLayer: null,
-            bandInfo: layerResult.bandInfo,
-            visParams: {
-                bands: layerResult.bandInfo,
-                min: layerResult.visParams.min,
-                max: layerResult.visParams.max
-            },
-            zIndex: 1000 + props.mapView.layers.length,
-            satellite: originalLayer?.satellite || 'LANDSAT',
-        }
-
-        // 创建新的 Leaflet ���层
-        newLayer.leafletLayer = L.tileLayer(layerResult.tileUrl, {
-            opacity: newLayer.opacity,
-            maxZoom: 20,
-            maxNativeZoom: 20,
-            tileSize: 256,
-            updateWhenIdle: false,
-            updateWhenZooming: false,
-            keepBuffer: 2,
-            zIndex: newLayer.zIndex
-        })
-
-        // 添加到地图
-        if (props.mapView.map) {
-            newLayer.leafletLayer.addTo(props.mapView.map)
-        }
-
-        // 添加到图层数组
-        props.mapView.layers.push(newLayer)
-
-        console.log('Added new layer:', newLayer)
+    if (result) {
+        showLayerSelect.value = false
+        selectedLayerName.value = []
     }
 }
 
