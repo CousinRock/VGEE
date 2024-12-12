@@ -2,38 +2,78 @@ from .base_tool import BaseTool
 import ee
 
 class IndexTool(BaseTool):
+    # 定义不同卫星的波段映射
+    BAND_MAPPINGS = {
+        'LANDSAT_8': {
+            'BLUE': 'B2',
+            'GREEN': 'B3',
+            'RED': 'B4',
+            'NIR': 'B5',
+            'SWIR1': 'B6',
+            'SWIR2': 'B7'
+        },
+        'LANDSAT_5': {
+            'BLUE': 'B1',
+            'GREEN': 'B2',
+            'RED': 'B3',
+            'NIR': 'B4',
+            'SWIR1': 'B5',
+            'SWIR2': 'B7'
+        },
+        'LANDSAT_7': {
+            'BLUE': 'B1',
+            'GREEN': 'B2',
+            'RED': 'B3',
+            'NIR': 'B4',
+            'SWIR1': 'B5',
+            'SWIR2': 'B7'
+        },
+        'SENTINEL_2': {
+            'BLUE': 'B2',
+            'GREEN': 'B3',
+            'RED': 'B4',
+            'NIR': 'B8',
+            'SWIR1': 'B11',
+            'SWIR2': 'B12'
+        }
+    }
+
     @staticmethod
-    def calculate_index(image, index_type):
+    def calculate_index(image, index_type, layer_id):
         """计算各种遥感指数"""
         try:
+            # 从layer_id获取卫星类型
+            satellite = layer_id.split('-')[-1]  # 获取最后一部分作为卫星类型
+            bands = IndexTool.BAND_MAPPINGS.get(satellite, IndexTool.BAND_MAPPINGS['LANDSAT_8'])
+            
             index_functions = {
-                'ndvi': lambda img: img.normalizedDifference(['B5', 'B4']).rename('NDVI'),
-                'ndwi': lambda img: img.normalizedDifference(['B3', 'B5']).rename('NDWI'),
-                'ndbi': lambda img: img.normalizedDifference(['B6', 'B5']).rename('NDBI'),
+                'ndvi': lambda img: img.normalizedDifference([bands['NIR'], bands['RED']]).rename('NDVI'),
+                'ndwi': lambda img: img.normalizedDifference([bands['GREEN'], bands['NIR']]).rename('NDWI'),
+                'ndbi': lambda img: img.normalizedDifference([bands['SWIR1'], bands['NIR']]).rename('NDBI'),
                 'evi': lambda img: img.expression(
                     '2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))',
                     {
-                        'NIR': img.select('B5'),
-                        'RED': img.select('B4'),
-                        'BLUE': img.select('B2')
+                        'NIR': img.select(bands['NIR']),
+                        'RED': img.select(bands['RED']),
+                        'BLUE': img.select(bands['BLUE'])
                     }
                 ).rename('EVI'),
                 'savi': lambda img: img.expression(
                     '((NIR - RED) * (1 + L)) / (NIR + RED + L)',
                     {
-                        'NIR': img.select('B5'),
-                        'RED': img.select('B4'),
+                        'NIR': img.select(bands['NIR']),
+                        'RED': img.select(bands['RED']),
                         'L': 0.5
                     }
                 ).rename('SAVI'),
-                'mndwi': lambda img: img.normalizedDifference(['B3', 'B6']).rename('MNDWI'),
+                'mndwi': lambda img: img.normalizedDifference([bands['GREEN'], bands['SWIR1']]).rename('MNDWI'),
                 'bsi': lambda img: img.expression(
-                    '((SWIR + RED) - (NIR + BLUE)) / ((SWIR + RED) + (NIR + BLUE))',
+                    '((SWIR1 + RED) - (NIR + BLUE)) / ((SWIR1 + RED) + (NIR + BLUE))',
                     {
-                        'SWIR': img.select('B6'),
-                        'RED': img.select('B4'),
-                        'NIR': img.select('B5'),
-                        'BLUE': img.select('B2')
+                        'SWIR1': img.select(bands['SWIR1']),
+                        'RED': img.select(bands['RED']),
+                        'NIR': img.select(bands['NIR']),
+                        'BLUE': img.select(bands['BLUE'])
                     }
                 ).rename('BSI')
             }

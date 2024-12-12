@@ -68,12 +68,18 @@ def calculate_index():
         vis_params = data.get('vis_params', [])
         
         IndexTool.validate_inputs(layer_ids, datasets)
-        selected_images = IndexTool.get_image_collection(layer_ids, datasets)
-        results = selected_images.map(
-            lambda image: IndexTool.calculate_index(image, index_type)
-        ).toList(selected_images.size())
-
+        selected_images = IndexTool.get_image_collection(layer_ids, datasets).toList(len(layer_ids))
+        
+        # 修改这里，传入layer_id
+        results = []
+        for i, layer_id in enumerate(layer_ids):
+            image = ee.Image(selected_images.get(i))
+            result = IndexTool.calculate_index(image, index_type, layer_id)
+            results.append(result)
+            
+        results = ee.List(results)
         return common_process(layer_ids, results, vis_params, f'已添加 {index_type.upper()} 波段')
+        
     except Exception as e:
         print(f"Error in calculate_index: {str(e)}")
         return jsonify({

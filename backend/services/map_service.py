@@ -1,4 +1,5 @@
 import ee
+from config.satellite_config import SATELLITE_CONFIGS
 
 # 使用字典存储每个图层的 dataset
 datasets = {}
@@ -85,116 +86,70 @@ def compute_image_stats(dataset, bands,region=None):
         print(f"Warning: Could not compute image statistics: {stats_error}")
         return None, None
 
-def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=None,layerName=None):
+def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=None, layerName=None):
     """获取地图数据服务"""
     try:
         global index
         index += 1
         layer_id = f"layer-{index}-{satellite}"
-        print(f"Map_service.py - Generated layer ID: {layer_id}")
         
-        # 根据不同的卫星类型返回不同的数据
-        if satellite == 'LANDSAT':
-            dataset = ee.ImageCollection('LANDSAT/LC08/C02/T1_TOA') \
-                .filterDate(start_date, end_date) \
-                .filter(ee.Filter.lt('CLOUD_COVER', cloud_cover))
+        # 获取卫星配置
+        satellite_config = SATELLITE_CONFIGS.get(satellite)
+        if not satellite_config:
+            raise ValueError(f"Unsupported satellite type: {satellite}")
             
-            dataset = dataset.median()
+        # 获取图像集合
+        collection = ee.ImageCollection(satellite_config['collection'])
+        
+        # 时间过滤
+        if start_date and end_date:
+            collection = collection.filterDate(start_date, end_date)
             
-            # 保存原始波段名称
-            original_band_names = dataset.bandNames()
+        # 云量过滤
+        if cloud_cover is not None and 'cloud_band' in satellite_config:
+            collection = collection.filter(ee.Filter.lt('CLOUD_COVER', cloud_cover))
             
-            if region:
-                dataset = dataset.clip(region)
-                
-            # 确保波段名称保持一致
-            dataset = dataset.rename(original_band_names)
-                
-            vis_params = {
-                'bands': ['B4', 'B3', 'B2'],
-                'min': 0,
-                'max': 0.3,
-                'gamma': 1.4
-            }
-            layer_name = f'Landsat 8 ({start_date} to {end_date})'
+        # 获取中值图像
+        dataset = collection.median()
+        
+        # 保存原始波段名称
+        original_band_names = dataset.bandNames()
+        
+        # 区域裁剪
+        if region:
+            dataset = dataset.clip(region)
             
-        elif satellite == 'SENTINEL':
-            dataset = ee.ImageCollection('COPERNICUS/S2_SR') \
-                .filterDate(start_date, end_date) \
-                .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_cover))
-                
-            dataset = dataset.median()
-            
-            # 保存原始波段名称
-            original_band_names = dataset.bandNames()
-            
-            if region:
-                dataset = dataset.clip(region)
-                
-            # 确保波段名称保持一致
-            dataset = dataset.rename(original_band_names)
-                
-            vis_params = {
-                'bands': ['B4', 'B3', 'B2'],
-                'min': 0,
-                'max': 3000,
-                'gamma': 1.4
-            }
-            layer_name = f'Sentinel-2 ({start_date} to {end_date})'
-            
-        else:  # MODIS
-            dataset = ee.ImageCollection('MODIS/006/MOD13A2') \
-                .filterDate(start_date, end_date)
-                
-            dataset = dataset.first()
-            
-            # 保存原始波段名称
-            original_band_names = dataset.bandNames()
-            
-            if region:
-                dataset = dataset.clip(region)
-                
-            # 确保波段名称保持一致
-            dataset = dataset.rename(original_band_names)
-                
-            vis_params = {
-                'min': -2000,
-                'max': 10000,
-                'bands': ['NDVI'],
-                'palette': ['FFFFFF', 'CE7E45', 'DF923D', 'F1B555', 'FCD163', 
-                           '99B718', '74A901', '66A000', '529400', '3E8601', 
-                           '207401', '056201', '004C00', '023B01', '012E01', 
-                           '011D01', '011301']
-            }
-            layer_name = f'MODIS NDVI ({start_date} to {end_date})'
-
-        # 打印波段信息用于调试
-        print(f"Map_service.py - Dataset bands: {dataset.bandNames().getInfo()}")
-
+        # 确保波段名称保持一致
+        dataset = dataset.rename(original_band_names)
+        
+        # 获取可视化参数
+        vis_params = satellite_config['vis_params']
+        
         # 计算统计值
         stats = compute_image_stats(dataset, vis_params['bands'], region)
         
-        # 如果计算成功,使用计算值
+        # 如果计算成功，使用计算值
         if stats:
-            stats_dict = stats.getInfo()  # 只调用一次 getInfo
+            stats_dict = stats.getInfo()
             img_min = stats_dict.get('global_min')
             img_max = stats_dict.get('global_max')
-        else:
-            # 使用默认值
-            if satellite == 'LANDSAT':
-                img_min, img_max = 0, 1
-            elif satellite == 'SENTINEL':
-                img_min, img_max = 0, 3000
-            else:  # MODIS
-                img_min, img_max = -2000, 10000
-
-        print(f"Map_service.py - Final stats: min={img_min}, max={img_max}")
-
-        # 存储 dataset
-        save_dataset(layer_id, dataset, layerName)
-
+            
+            # 更新可视化参数
+            if 'palette' not in vis_params:
+                vis_params.update({
+                    'min': img_min,
+                    'max': img_max
+                })
+        
+        # 存储数据集
+        layer_name = satellite_config['name_template'].format(
+            start_date=start_date,
+            end_date=end_date
+        )
+        save_dataset(layer_id, dataset, layerName or layer_name)
+        
+        # 获取地图ID
         map_id = dataset.getMapId(vis_params)
-        tile_url = map_id['tile_fetcher'].url_format
         
         return {
             'center': [20, 0],
@@ -206,16 +161,16 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
             },
             'overlayLayers': [{
                 'name': layer_name,
-                'url': tile_url,
+                'url': map_id['tile_fetcher'].url_format,
                 'visible': True,
                 'opacity': 1.0,
                 'id': layer_id,
-                'min': img_min,
-                'max': img_max
+                'min': img_min if stats else vis_params.get('min'),
+                'max': img_max if stats else vis_params.get('max')
             }],
             'satellite': satellite,
             'visParams': vis_params
         }
         
     except Exception as e:
-        raise Exception(f"Map_service.py - Error in get_map_data_service: {str(e)}")
+        raise Exception(f"Error in get_map_data_service: {str(e)}")

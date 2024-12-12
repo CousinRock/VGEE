@@ -43,6 +43,7 @@ export const createRequestData = (selectedIds, layers) => {
 export const updateMapLayer = async (layerResult, mapView) => {
     // 查找现有图层
     const layer = mapView.layers.find(l => l.id === layerResult.layer_id)
+    console.log('Tool.js - updateMapLayer - layerResult', layerResult)
 
     if (layer) {
         // 更新现有图层
@@ -79,6 +80,7 @@ export const updateMapLayer = async (layerResult, mapView) => {
     } else {
         // 处理新图层
         const [originalId] = layerResult.layer_id.split('_')
+        console.log('Tool.js - updateMapLayer - originalId', originalId)
         const originalLayer = mapView.layers.find(l => l.id === originalId)
 
         const newLayer = {

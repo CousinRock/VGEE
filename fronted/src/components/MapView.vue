@@ -329,7 +329,7 @@ const removeLayer = async (layerId, layerName) => {
         let mapLayers = Object.values(map.value._layers);
 
         mapLayers.forEach((mapLayer) => {
-            // 检查是否是我们要删的图层且不是底图
+            // 检查是否是我们要��的图层且不是底图
             //确保删除的是瓦片图层的实例
             if (mapLayer instanceof L.TileLayer &&
                 mapLayer !== baseLayer &&
@@ -352,36 +352,41 @@ const removeLayer = async (layerId, layerName) => {
 };
 
 
-// 获取滑块步长
+// 获取滑块步长和范围
 const getSliderStep = (satelliteType) => {
     if (!satelliteType) return 0.1;
 
     switch (satelliteType) {
-        case 'LANDSAT':
-            return 0.001;  // Landsat 数据范围通常在 0-1 ，需要精细的控制
-        case 'SENTINEL':
-            return 1;      // Sentinel 数据范围较大，使用整数步长
-        case 'MODIS':
-            return 1;      // MODIS 数据也使用整数步长
+        case 'SENTINEL-2':
+            return 100;  // Sentinel-2 反射率数据范围较大，用100作为步长
+        case 'MODIS-NDVI':
+            return 100;  // MODIS NDVI 数据范围在 -2000 到 10000
+        case 'LANDSAT-8':
+        case 'LANDSAT-7':
+        case 'LANDSAT-5':
+            return 0.001;  // Landsat TOA 反射率数据范围在 0-1
         default:
-            return 0.1;
+            return 0.001;
     }
-};
+}
 
 // 格式化显示
 const formatSliderValue = (value) => {
-    if (!currentLayer.value) return value.toFixed(1);
+    if (!currentLayer.value) return value.toFixed(3);
 
     switch (currentLayer.value.satellite) {
-        case 'LANDSAT':
-            return value.toFixed(3);  // Landsat 显示3位小数
-        case 'SENTINEL':
-        case 'MODIS':
-            return value.toFixed(0);  // Sentinel 和 MODIS 显示数
+        case 'SENTINEL-2':
+            return Math.round(value);  // 整数显示
+        case 'MODIS-NDVI':
+            return Math.round(value);  // 整数显示
+        case 'LANDSAT-8':
+        case 'LANDSAT-7':
+        case 'LANDSAT-5':
+            return value.toFixed(3);  // 显示3位小数
         default:
-            return value.toFixed(1);
+            return value.toFixed(3);
     }
-};
+}
 
 // 添加防抖函数
 const debounce = (fn, delay) => {
@@ -637,7 +642,7 @@ defineExpose({
 
 // 添加范围变化处理函数
 const handleRangeChange = (value) => {
-    // 确保范围不超过限制
+    // 确保范围不超出限制
     visParams.range = [
         Math.max(value[0], currentLayer.value.min),
         Math.min(value[1], currentLayer.value.max)
@@ -992,7 +997,7 @@ const initDrawControl = () => {
 // 在 script setup 中添加
 const emit = defineEmits(['map-initialized'])
 
-// 添加获取调色板预览样���的方法
+// 添加获取调色板预览样的方法
 const getPalettePreviewStyle = (colors) => {
     return {
         background: `linear-gradient(to right, ${colors.join(',')})`

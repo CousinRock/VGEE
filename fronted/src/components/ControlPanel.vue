@@ -3,13 +3,14 @@
         <h3>遥感影像查询</h3>
 
         <div class="control-section">
-            <h4>数据源选择</h4>
+            <h4>卫星选择</h4>
             <div class="control-item">
-                <select v-model="selectedImage">
-                    <option value="LANDSAT">Landsat 8</option>
-                    <option value="SENTINEL">Sentinel 2</option>
-                    <option value="MODIS">MODIS</option>
-                </select>
+                <el-select v-model="satellite" placeholder="选择卫星" @change="handleSatelliteChange">
+                    <el-option-group v-for="group in satelliteOptions" :key="group.label" :label="group.label">
+                        <el-option v-for="item in group.options" :key="item.value" :label="item.label"
+                            :value="item.value" />
+                    </el-option-group>
+                </el-select>
             </div>
         </div>
 
@@ -55,11 +56,12 @@
 <script setup>
 import { ref } from 'vue'
 import { API_ROUTES } from '../api/routes'
+import { SATELLITE_OPTIONS } from '../config/satellite-config'
 
 // 定义emit事件 'add-layer' 用于向父组件 Map.vue 发送添加新图层的事件
 // 当用户点击添加图层按钮时,会触发此事件并传递图层名称和地图数据
 // Map.vue 中的 handleAddLayer 方法会接收这些数据并调用 MapView 组件的 addNewLayer 方法来实际添加图层
-const emit = defineEmits(['add-layer'])
+const emit = defineEmits(['add-layer', 'update-map'])
 
 // 日期控制
 const currentYear = new Date().getFullYear()
@@ -69,7 +71,8 @@ const startDate = ref(`${currentYear}-01-01`)
 const endDate = ref(`${currentYear}-12-31`)
 
 // 其他变量
-const selectedImage = ref('LANDSAT')
+const satellite = ref('LANDSAT-8')  // 默认选择
+const satelliteOptions = ref(SATELLITE_OPTIONS)
 const cloudCover = ref(20)
 const layerName = ref('')
 
@@ -90,7 +93,7 @@ const addNewLayer = async () => {
 
         // 每次添加图层时都重新获取地图数据
         const params = new URLSearchParams({
-            satellite: selectedImage.value,
+            satellite: satellite.value,
             startDate: startDate.value,
             endDate: endDate.value,
             cloudCover: cloudCover.value,
@@ -124,6 +127,25 @@ const addNewLayer = async () => {
         }
     }
 }
+
+// 处理卫星选择变化
+const handleSatelliteChange = (value) => {
+    // 触发更新地图
+    emit('update-map', {
+        satellite: value,
+        startDate: startDate.value,
+        endDate: endDate.value,
+        cloudCover: cloudCover.value
+    })
+}
+
+// 导出属性供父组件使用
+defineExpose({
+    satellite,
+    startDate,
+    endDate,
+    cloudCover
+})
 </script>
 
 <style src="../styles/control-panel.css"></style>

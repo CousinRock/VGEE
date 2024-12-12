@@ -5,7 +5,7 @@ import ee
 from routes.map_routes import map_bp
 from routes.layer_routes import layer_bp
 from routes.tool_routes import tool_bp
-from config import init_earth_engine
+from setting import init_earth_engine
 
 app = Flask(__name__)
 CORS(app)
