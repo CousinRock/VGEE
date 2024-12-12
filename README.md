@@ -69,7 +69,7 @@ earthengine authenticate
 1. 启动后端服务
 ```bash
 cd backend
-flask run
+flask run/python app.py
 ```
 
 2. 启动前端服务
