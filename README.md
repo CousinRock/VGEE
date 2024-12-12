@@ -1,4 +1,4 @@
-![image]()
+![image](imgaes/9c5adff2cbcf6724f27b8dcbe3abc23.png)
 # 遥感影像处理系统
 
 一个基于 Google Earth Engine 平台，使用 Vue 3 和 Flask 的遥感影像处理系统，集成了 Earth Engine API，提供了影像浏览、处理和分析功能。
