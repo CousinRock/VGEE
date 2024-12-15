@@ -25,5 +25,8 @@ export const API_ROUTES = {
         IMAGE_FILLING: `${BASE_URL}/tools/image-filling`,
         KMEANS_CLUSTERING: `${BASE_URL}/tools/kmeans-clustering`,
         HISTOGRAM_EQUALIZATION: `${BASE_URL}/tools/histogram-equalization`,
+        GET_ASSETS: `${BASE_URL}/tools/get-assets`,
+        ADD_VECTOR_ASSET: `${BASE_URL}/tools/add-vector-asset`,
+        ADD_IMAGE_ASSET: `${BASE_URL}/tools/add-image-asset`,
     }
 } 

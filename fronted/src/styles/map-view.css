@@ -89,7 +89,8 @@
 }
 
 /* 4. 图层操作按钮 */
-.layer-settings, .remove-layer {
+.layer-settings,
+.remove-layer {
     background: none;
     border: none;
     color: #666;
@@ -203,4 +204,189 @@
     top: 50%;
     transform: translateY(150%);
     z-index: 1000;
+}
+
+/* 添加矢量图层样式设置相关样式 */
+.vector-style-settings {
+    padding: 10px;
+}
+
+.style-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.style-item span {
+    width: 100px;
+    margin-right: 10px;
+}
+
+.style-item .el-slider {
+    flex: 1;
+}
+
+.layer-actions .el-button {
+    padding: 5px 10px;
+    margin-right: 5px;
+}
+
+.layer-actions .el-button+.el-button {
+    margin-left: 0;
+}
+
+/* 添加下拉菜单样式 */
+.el-dropdown-menu {
+    padding: 5px 0;
+}
+
+.el-dropdown-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.el-dropdown-menu__item i {
+    font-size: 16px;
+}
+
+.el-dropdown-menu__item:hover {
+    background-color: #f5f7fa;
+    color: #409EFF;
+}
+
+/* 修改设置按钮样式，确保下拉菜单位置正确 */
+.layer-settings {
+    position: relative;
+}
+
+/* 添加颜色预览样式 */
+.color-preview {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    margin-right: 8px;
+    border: 1px solid #dcdfe6;
+    vertical-align: middle;
+}
+
+/* 调整颜色选择器下拉菜单样式 */
+.el-dropdown-menu .el-color-picker {
+    padding: 6px;
+}
+
+.style-item .el-dropdown {
+    width: 150px;
+}
+
+.style-item .el-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* 修改颜色选择器相关样式 */
+.color-picker-wrapper {
+    position: relative;
+    width: 150px;
+}
+
+.color-preview-button {
+    width: 100%;
+    height: 32px;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    background-color: #fff;
+    transition: all 0.3s;
+}
+
+.color-preview-button:hover {
+    border-color: #409EFF;
+}
+
+.color-preview {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    margin-right: 8px;
+    border: 1px solid #dcdfe6;
+}
+
+.color-preview-button i {
+    margin-left: auto;
+}
+
+/* 调整 popover 中颜色选择器的位置 */
+.el-color-picker {
+    padding: 6px;
+}
+
+/* 修改颜色选择器样式 */
+.style-item .el-color-picker {
+    width: calc(100% - 220px);
+}
+
+.style-item .el-color-picker__trigger {
+    width: 100%;
+    height: 32px;
+    padding: 2px;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+}
+
+/* 修改颜色显示区域样式 */
+.style-item .el-color-picker__color {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.style-item .el-color-picker__color-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 2px;
+}
+
+/* 移除默认的小三角图标 */
+.style-item .el-color-picker__icon {
+    display: none;
+}
+
+/* 确保颜色选择面板位置正确 */
+.color-picker-popper {
+    position: fixed !important;
+}
+
+/* 颜色选择器组合样式 */
+.style-item .el-input-group {
+    display: flex;
+    align-items: center;
+    width: calc(100% - 110px);
+}
+
+.style-item .el-color-picker {
+    margin-right: 8px;
+}
+
+.style-item .color-input {
+    width: 120px;
+}
+
+/* 调整颜色选择器样式 */
+.el-color-picker__trigger {
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+}
+
+.el-color-picker__color {
+    border: none;
 }

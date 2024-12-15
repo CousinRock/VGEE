@@ -76,11 +76,28 @@ class PreprocessingTool(BaseTool):
             raise Exception(f"Error in histogram equalization: {str(e)}")
 
     @staticmethod
-    def image_filling(image):
-        """图像填补处理"""
+    def image_filling(image, collection=None):
+        """
+        填补图像中的缺失值
+        :param image: 需要填补的图像
+        :param collection: 用于填补的图像集合
+        :return: 填补后的图像
+        """
         try:
-            # 实现图像填补逻辑
-            return image
+            # 如果没有提供图像集合，直接返回原图像
+            if collection is None:
+                return image
+
+            # 从集合中排除当前图像
+            source_collection = collection.filter(
+                ee.Filter.neq('system:index', image.get('system:index'))
+            )
             
+            # 使用其他图像的镶嵌来填补当前图像的缺失值
+            filled_image = image.unmask(source_collection.mosaic())
+            
+            return filled_image
+
         except Exception as e:
-            raise Exception(f"Error in image filling: {str(e)}")
+            print(f"Error in image_filling: {str(e)}")
+            raise e

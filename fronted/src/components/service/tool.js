@@ -210,3 +210,162 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
         isProcessing.value = false
     }
 }
+
+// 添加矢量数据相关方法
+export const handleVectorAsset = async (selectedAsset, mapView) => {
+    try {
+        // 获取矢量数据
+        const response = await fetch(`${API_ROUTES.TOOLS.ADD_VECTOR_ASSET}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ asset_id: selectedAsset.id })
+        })
+
+        const data = await response.json()
+        if (!data.success) {
+            throw new Error(data.message)
+        }
+
+        // 创建新图层对象
+        const newLayer = {
+            id: selectedAsset.id,
+            name: selectedAsset.name,
+            type: 'vector',
+            visible: true,
+            opacity: 1,
+            visParams: {
+                color: '#3388ff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.2
+            },
+            zIndex: 1000 + mapView.layers.length
+        }
+
+        // 创建 Leaflet 图层
+        const vectorLayer = L.geoJSON(data.features, {
+            style: newLayer.visParams
+        })
+
+        // 添加到地图
+        newLayer.leafletLayer = vectorLayer
+        mapView.layers.push(newLayer)
+        vectorLayer.addTo(mapView.map)
+
+        // 定位到矢量图层的范围
+        const bounds = vectorLayer.getBounds()
+        if (bounds.isValid()) {
+            // 添加一些padding，使图层不会紧贴边缘
+            mapView.map.fitBounds(bounds, {
+                padding: [50, 50],
+                maxZoom: 13  // 限制最大缩放级别，避免缩放过近
+            })
+        }
+
+        return true
+    } catch (error) {
+        console.error('Error adding vector asset:', error)
+        ElMessage.error('添加矢量图层失败')
+        return false
+    }
+}
+
+// 添加研究区域相关方法
+export const toggleStudyArea = async (layer) => {
+    try {
+        if (layer.isStudyArea) {
+            // 取消研究区域
+            await fetch(API_ROUTES.MAP.REMOVE_GEOMETRY, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    asset_id: layer.id
+                })
+            })
+            layer.isStudyArea = false
+            ElMessage.success('已取消研究区域设置')
+        } else {
+            // 设置为研究区域
+            await fetch(API_ROUTES.MAP.FILTER_BY_GEOMETRY, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    asset_id: layer.id,
+                    type: 'vector'
+                })
+            })
+            layer.isStudyArea = true
+            ElMessage.success('已设置为研究区域')
+        }
+        return true
+    } catch (error) {
+        console.error('Error toggling study area:', error)
+        ElMessage.error('设置研究区域失败')
+        return false
+    }
+}
+
+// 添加栅格影像相关方法
+export const handleImageAsset = async (selectedAsset, mapView) => {
+    try {
+        // 获取栅格数据
+        const response = await fetch(`${API_ROUTES.TOOLS.ADD_IMAGE_ASSET}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ asset_id: selectedAsset.id })
+        })
+
+        const data = await response.json()
+        if (!data.success) {
+            throw new Error(data.message)
+        }
+
+        // 创建新图层对象
+        const newLayer = {
+            id: selectedAsset.id,
+            name: selectedAsset.name,
+            type: 'raster',
+            visible: true,
+            opacity: 1,
+            leafletLayer: null,
+            zIndex: 1000 + mapView.layers.length,
+            visParams: {
+                bands: ['B4', 'B3', 'B2'],
+                min: 0,
+                max: 3000,
+                gamma: 1.4
+            }
+        }
+
+        // 创建 Leaflet 瓦片图层
+        const imageLayer = L.tileLayer(data.tileUrl, {
+            opacity: newLayer.opacity,
+            maxZoom: 20,
+            maxNativeZoom: 20,
+            tileSize: 256,
+            updateWhenIdle: false,
+            updateWhenZooming: false,
+            keepBuffer: 2,
+            zIndex: newLayer.zIndex
+        })
+
+        // 添加到地图
+        newLayer.leafletLayer = imageLayer
+        mapView.layers.push(newLayer)
+        imageLayer.addTo(mapView.map)
+
+        return true
+    } catch (error) {
+        console.error('Error adding image asset:', error)
+        ElMessage.error('添加栅格图层失败')
+        return false
+    }
+}

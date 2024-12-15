@@ -74,13 +74,46 @@
             </span>
         </template>
     </el-dialog>
+
+    <!-- 资产选择对话框 -->
+    <el-dialog v-model="showAssetsDialog" :title="selectedAsset ? `选择资产: ${selectedAsset.name}` : '选择资产'"
+        :width="currentTool?.id === 'kmeans' ? '800px' : '400px'" width="800px">
+        <div class="assets-select-content">
+            <el-tree :data="assetsList" :props="{
+                label: 'name',
+                children: 'children'
+            }" @node-click="handleAssetSelect" node-key="id" :default-expand-all="false" :highlight-current="true">
+                <template #default="{ node, data }">
+                    <span class="custom-tree-node">
+                        <span>
+                            <i :class="data.type === 'FOLDER' ? 'el-icon-folder' : 'el-icon-document'" />
+                            {{ data.name }}
+                        </span>
+                        <el-tooltip v-if="data.description" :content="data.description" placement="right">
+                            <i class="el-icon-info" />
+                        </el-tooltip>
+                    </span>
+                </template>
+            </el-tree>
+        </div>
+
+        <template #footer>
+            <span class="dialog-footer">
+                <el-button @click="showAssetsDialog = false">取消</el-button>
+                <el-button type="primary" :loading="isLoadingAssets" @click="confirmAssetSelect">
+                    {{ isLoadingAssets ? '添加中...' : '确定' }}
+                </el-button>
+            </span>
+        </template>
+    </el-dialog>
 </template>
 
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { menuItems } from '../config/tools-config'
-import { getAvailableLayers, processLayerSelect } from './service/tool'
+import { getAvailableLayers, processLayerSelect, handleVectorAsset, handleImageAsset } from './service/tool'
+import { API_ROUTES } from '../api/routes'
 
 const props = defineProps({
     mapView: {
@@ -101,6 +134,11 @@ const currentTool = ref(null)
 const selectAll = ref(false)
 const isIndeterminate = ref(false)
 const clusterCounts = ref({})  // 用于存储每个图层的分类数量
+const showAssetsDialog = ref(false)
+const assetsList = ref([])
+const selectedAsset = ref(null)
+const isLoadingAssets = ref(false)
+const selectedAssetIds = ref([])  // 用于存储选中的资产ID
 
 // 菜单操作方法
 const toggleMenu = (item) => {
@@ -152,6 +190,10 @@ const handleToolClick = async (tool) => {
                 break
             case 'histogram-equalization':
                 await handleHistogramEqualization(tool)
+                break
+            case 'upload-vector-assets':
+                showAssetsDialog.value = true
+                await loadAssets()
                 break
             default:
                 ElMessage.warning('该功能尚未实现')
@@ -283,6 +325,99 @@ watch(selectedLayerName, (newVal) => {
         })
     }
 })
+
+// 修改 loadAssets 方法
+const loadAssets = async (folder = null) => {
+    try {
+        isLoadingAssets.value = true
+        const url = new URL(API_ROUTES.TOOLS.GET_ASSETS)
+        if (folder) {
+            url.searchParams.append('folder', folder)
+        }
+
+        const response = await fetch(url)
+        const data = await response.json()
+
+        if (!data.success) {
+            ElMessage.error(data.message || '获取资产列表失败')
+            return
+        }
+
+        assetsList.value = data.assets
+        console.log('Tools.vue - loadAssets - assets:', data.assets)
+    } catch (error) {
+        console.error('Tools.vue - Error loading assets:', error)
+        ElMessage.error('获取资产列表失败')
+    } finally {
+        isLoadingAssets.value = false
+    }
+}
+
+// 修改资产选择处理方法
+const handleAssetSelect = async (data) => {
+    try {
+        // 如果是文件夹，不进行选择
+        if (data.type === 'FOLDER') {
+            return
+        }
+
+        // 只更新选中状态，不关闭对话框
+        selectedAsset.value = data
+        console.log('Tools.vue - handleAssetSelect - selected asset:', data)
+    } catch (error) {
+        console.error('Tools.vue - Error selecting asset:', error)
+        ElMessage.error('选择资产失败')
+    }
+}
+
+// 修改确认选择方法
+const confirmAssetSelect = async () => {
+    try {
+        if (!selectedAsset.value) {
+            ElMessage.warning('请选择一个资产')
+            return
+        }
+
+        // 设置加载状态
+        isLoadingAssets.value = true
+
+        console.log('Tools.vue - confirmAssetSelect - selectedAsset:', selectedAsset.value)
+        // 根据资产类型处理
+        if (selectedAsset.value.type === 'TABLE') {
+            // 处理矢量数据
+            const loadingMessage = ElMessage({
+                message: '正在添加矢量图层...',
+                type: 'info',
+                duration: 0
+            })
+            const success = await handleVectorAsset(selectedAsset.value, props.mapView)
+            loadingMessage.close()  // 只关闭加载消息
+            if (success) {
+                ElMessage.success(`已添加矢量图层: ${selectedAsset.value.name}`)
+            }
+        } else if (selectedAsset.value.type === 'IMAGE') {
+            // 处理栅格影像
+            const loadingMessage = ElMessage({
+                message: '正在添加栅格图层...',
+                type: 'info',
+                duration: 0
+            })
+            const success = await handleImageAsset(selectedAsset.value, props.mapView)
+            loadingMessage.close()  // 只关闭加载消息
+            if (success) {
+                ElMessage.success(`已添加栅格图层: ${selectedAsset.value.name}`)
+            }
+        }
+
+        showAssetsDialog.value = false
+    } catch (error) {
+        console.error('Tools.vue - Error confirming asset selection:', error)
+        ElMessage.error('添加图层失败')
+    } finally {
+        // 清除加载状态
+        isLoadingAssets.value = false
+    }
+}
 
 // 暴露方法父组件
 defineExpose({

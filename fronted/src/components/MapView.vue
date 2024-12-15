@@ -34,10 +34,31 @@
                             <span>{{ layer.name }}</span>
                         </label>
                         <div class="layer-actions">
-                            <button class="layer-settings" @click="openLayerSettings(layer)">
-                                <i class="fas fa-cog"></i>
-                            </button>
-                            <button class="remove-layer" @click="removeLayer(layer.id, layer.name)">
+                            <template v-if="layer.type === 'vector'">
+                                <el-dropdown trigger="click">
+                                    <button class="layer-settings" title="图层设置">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <template #dropdown>
+                                        <el-dropdown-menu>
+                                            <el-dropdown-item @click="toggleStudyArea(layer)">
+                                                <i :class="layer.isStudyArea ? 'el-icon-check' : 'el-icon-crop'"></i>
+                                                {{ layer.isStudyArea ? '取消研究区域' : '设为研究区域' }}
+                                            </el-dropdown-item>
+                                            <el-dropdown-item @click="openVectorStyleSettings(layer)">
+                                                <i class="el-icon-setting"></i>
+                                                样式设置
+                                            </el-dropdown-item>
+                                        </el-dropdown-menu>
+                                    </template>
+                                </el-dropdown>
+                            </template>
+                            <template v-else>
+                                <button class="layer-settings" @click="openLayerSettings(layer)" title="图层设置">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </template>
+                            <button class="remove-layer" @click="removeLayer(layer.id)" title="移除图层">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -48,7 +69,7 @@
             </div>
         </div>
 
-        <!-- 添加底图设置对话框 -->
+        <!-- 底图设置对话框 -->
         <el-dialog v-model="showBaseMapSettings" title="底图设置" width="300px">
             <div class="basemap-settings">
                 <div class="setting-item">
@@ -97,7 +118,7 @@
 
                 <!-- 多波段选择区域 -->
                 <div class="band-selection" v-else>
-                    <!-- 原有的RGB波段选择保持不变 -->
+                    <!-- 原有的RGB波段选择不变 -->
                     <div class="band-select">
                         <label>vis-red</label>
                         <el-select v-model="visParams.bands[0]">
@@ -163,6 +184,34 @@
                 </div>
             </div>
         </el-dialog>
+
+        <!-- 添加矢量样式设置对话框 -->
+        <el-dialog v-model="showVectorStyleDialog" title="矢量图层样式设置" width="400px">
+            <div class="vector-style-settings">
+                <div class="style-item">
+                    <span>边框颜色</span>
+                    <el-color-picker v-model="vectorStyle.color" show-alpha popper-class="color-picker-popper" />
+                </div>
+                <div class="style-item">
+                    <span>边框宽度</span>
+                    <el-slider v-model="vectorStyle.weight" :min="1" :max="5" :step="0.5" />
+                </div>
+                <div class="style-item">
+                    <span>边框透明度</span>
+                    <el-slider v-model="vectorStyle.opacity" :min="0" :max="1" :step="0.1" />
+                </div>
+                <div class="style-item">
+                    <span>填充透明度</span>
+                    <el-slider v-model="vectorStyle.fillOpacity" :min="0" :max="1" :step="0.1" />
+                </div>
+            </div>
+            <template #footer>
+                <span class="dialog-footer">
+                    <el-button @click="showVectorStyleDialog = false">取消</el-button>
+                    <el-button type="primary" @click="applyVectorStyle">确定</el-button>
+                </span>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -215,6 +264,19 @@ const selectedPalette = ref('default')
 const drawnItems = ref(null)
 const drawControl = ref(null)
 
+// 添加新的状态变量
+const showVectorStyleDialog = ref(false)
+const currentVectorLayer = ref(null)
+const vectorStyle = ref({
+    color: '#3388ff',
+    weight: 2,
+    opacity: 1,
+    fillOpacity: 0.2
+})
+
+// 添加颜色选择器显示状态
+const showColorPicker = ref(false)
+
 // 切换图层控制面板显示
 const toggleLayerControl = () => {
     showLayerControl.value = !showLayerControl.value
@@ -244,13 +306,13 @@ const addNewLayer = async (layerName, mapData) => {
                 defaultBands = ['B4', 'B3', 'B2']  // Sentinel-2 自然色
                 break
             case 'MODIS':
-                defaultBands = ['NDVI']  // MODIS 默认显示 NDVI
+                defaultBands = ['NDVI']  // MODIS 默认示 NDVI
                 break
             default:
                 defaultBands = layerInfo.bands.slice(0, 3)  // 默认使用前三个波段
         }
 
-        // 3. 为每个图层创建新的图层对象
+        // 3. 为每个图层创建新的图层对
         mapData.overlayLayers.forEach(layerData => {
             const newLayer = {
                 id: `layer-${index}-${layerInfo.satellite}`,
@@ -284,7 +346,7 @@ const addNewLayer = async (layerName, mapData) => {
                 zIndex: newLayer.zIndex
             })
 
-            // 5. 添加到地图和图层数组
+            // 5. 添加到地图图层数组
             newLayer.leafletLayer.addTo(map.value)
             layers.value.push(newLayer)
             console.log('MapView.vue - newLayer.visParams:', newLayer.visParams);
@@ -292,7 +354,7 @@ const addNewLayer = async (layerName, mapData) => {
 
         index += 1
 
-        // 6. 更新图层顺序
+        // 更新图层顺序
         updateLayerOrder()
     } catch (error) {
         console.error('MapView.vue - Error adding layer:', error)
@@ -301,14 +363,11 @@ const addNewLayer = async (layerName, mapData) => {
 }
 
 // 移除选定的图层
-const removeLayer = async (layerId, layerName) => {
-    console.log('MapView.vue - remove layer:', layerName);
-    console.log('MapView.vue - layerId:', layerId);
-
-    if (!map) return;
+const removeLayer = async (layerId) => {
+    if (!map.value) return;
 
     try {
-        // 先调用后端移除据集中的图层
+        // 先调用后端移除数据集中的图层
         const response = await fetch(API_ROUTES.MAP.REMOVE_LAYER, {
             method: 'POST',
             headers: {
@@ -325,21 +384,14 @@ const removeLayer = async (layerId, layerName) => {
             ElMessage.warning('从数据集移除图层失败，但会继续移除显示图层');
         }
 
-        // 继续移除地图上的图层
-        let mapLayers = Object.values(map.value._layers);
-
-        mapLayers.forEach((mapLayer) => {
-            // 检查是否是我们要��的图层且不是底图
-            //确保删除的是瓦片图层的实例
-            if (mapLayer instanceof L.TileLayer &&
-                mapLayer !== baseLayer &&
-                mapLayer._leaflet_id === layers.value.find(l => l.id === layerId)?.leafletLayer._leaflet_id) {
-                // 禁用动画
-                mapLayer.options.zoomAnimation = false;
-                // 移除图层
-                map.value.removeLayer(mapLayer);
+        // 找到要移除的图层
+        const layer = layers.value.find(l => l.id === layerId);
+        if (layer && layer.leafletLayer) {
+            // 从地图中移除图层
+            if (map.value.hasLayer(layer.leafletLayer)) {
+                map.value.removeLayer(layer.leafletLayer);
             }
-        });
+        }
 
         // 从数组中移除图层
         const layerIndex = layers.value.findIndex(l => l.id === layerId);
@@ -348,11 +400,12 @@ const removeLayer = async (layerId, layerName) => {
         }
     } catch (error) {
         console.error('MapView.vue - Error removing layer:', error);
+        ElMessage.error('移除图层失败');
     }
 };
 
 
-// 获取滑块步长和范围
+// 取滑块步长和范围
 const getSliderStep = (satelliteType) => {
     if (!satelliteType) return 0.1;
 
@@ -388,7 +441,7 @@ const formatSliderValue = (value) => {
     }
 }
 
-// 添加防抖函数
+// 添加防抖函数,防止缩放移动时图层卡死
 const debounce = (fn, delay) => {
     let timer = null;
     return function (...args) {
@@ -406,24 +459,44 @@ watch(layers, debounce((newLayers) => {
     nextTick(() => {
         newLayers.forEach(layer => {
             if (layer.leafletLayer) {
-                layer.leafletLayer.setOpacity(layer.opacity)
-
-                if (layer.visible) {
-                    // 如果图层应该可见，直接使用 layer.leafletLayer
-                    if (!map.value.hasLayer(layer.leafletLayer)) {
-                        layer.leafletLayer.addTo(map.value)
-                    }
-                    layer.leafletLayer.setZIndex(1000 + newLayers.indexOf(layer))
-                } else {
-                    // 如果图层应该隐藏遍历查找并移除
-                    let mapLayers = Object.values(map.value._layers);
-                    mapLayers.forEach((mapLayer) => {
-                        if (mapLayer instanceof L.TileLayer &&
-                            mapLayer !== baseLayer &&
-                            mapLayer._leaflet_id === layer.leafletLayer._leaflet_id) {
-                            map.value.removeLayer(mapLayer)
+                if (layer.type === 'vector') {
+                    if (layer.visible) {
+                        if (!map.value.hasLayer(layer.leafletLayer)) {
+                            layer.leafletLayer.addTo(map.value)
                         }
-                    });
+                        // 使用保存的样式
+                        if (layer.vectorStyle) {
+                            layer.leafletLayer.setStyle({
+                                ...layer.vectorStyle,
+                                opacity: layer.opacity,
+                                fillOpacity: layer.opacity * layer.vectorStyle.fillOpacity
+                            })
+                        }
+                    } else {
+                        if (map.value.hasLayer(layer.leafletLayer)) {
+                            map.value.removeLayer(layer.leafletLayer)
+                        }
+                    }
+                } else {
+                    // 对于栅格图层，使用 setOpacity
+                    layer.leafletLayer.setOpacity(layer.opacity)
+
+                    if (layer.visible) {
+                        if (!map.value.hasLayer(layer.leafletLayer)) {
+                            layer.leafletLayer.addTo(map.value)
+                        }
+                        layer.leafletLayer.setZIndex(1000 + newLayers.indexOf(layer))
+                    } else {
+                        // 如果图层应该隐藏遍历查找并移除
+                        let mapLayers = Object.values(map.value._layers);
+                        mapLayers.forEach((mapLayer) => {
+                            if (mapLayer instanceof L.TileLayer &&
+                                mapLayer !== baseLayer &&
+                                mapLayer._leaflet_id === layer.leafletLayer._leaflet_id) {
+                                map.value.removeLayer(mapLayer)
+                            }
+                        });
+                    }
                 }
             }
         })
@@ -501,10 +574,10 @@ onMounted(async () => {
             preferCanvas: true,
             wheelDebounceTime: 150,
             wheelPxPerZoomLevel: 120,
-            // 添加投影相关配置
-            crs: L.CRS.EPSG3857,  // 明确指定投影系统
+            // 添加投影关配置
+            crs: L.CRS.EPSG3857,  // 明确定投影系统
             continuousWorld: true, // 确保连续的世界地图
-            worldCopyJump: true,   // 允许在经度方向环
+            worldCopyJump: true,   // 允许在经度方向��
             maxBounds: L.latLngBounds(L.latLng(-85.06, -180), L.latLng(85.06, 180)), // 限制范围
             minZoom: 1,
             maxZoom: 20
@@ -518,7 +591,7 @@ onMounted(async () => {
 
         // 添加滚动优化
         map.value.on('zoomstart', () => {
-            // 禁用所有图层的动画
+            // 禁用所有图层的画
             layers.value.forEach(layer => {
                 if (layer.leafletLayer) {
                     layer.leafletLayer.options.zoomAnimation = false;
@@ -649,7 +722,7 @@ const handleRangeChange = (value) => {
     ];
 };
 
-// 修改打开图层设置方法
+// 修改打开层设置方法
 const openLayerSettings = async (layer) => {
     try {
         currentLayer.value = layer
@@ -688,7 +761,7 @@ const openLayerSettings = async (layer) => {
     }
 }
 
-// 修改更新范围函数
+// 修改更新围函数
 const updateRangeBasedOnBands = async (vis) => {
     try {
         if (!currentLayer.value) return;
@@ -700,7 +773,7 @@ const updateRangeBasedOnBands = async (vis) => {
             applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 计算中...'
         }
 
-        // 调用后端接口计算统计值
+        // 调用后端口计算统计值
         const response = await fetch(API_ROUTES.MAP.COMPUTE_STATS, {
             method: 'POST',
             headers: {
@@ -866,7 +939,7 @@ const importSettings = () => {
 
 // 修改组件卸载时的清理代码
 onUnmounted(() => {
-    // 确保所有图层都被正确清理
+    // 确保所有图层都被正���清理
     layers.value.forEach(layer => {
         if (layer.leafletLayer) {
             try {
@@ -893,7 +966,7 @@ onUnmounted(() => {
         }
     })
 
-    // 清理底图
+    // 清理图
     if (baseLayer) {
         try {
             baseLayer.options.zoomAnimation = false
@@ -963,7 +1036,7 @@ const initDrawControl = () => {
         allowIntersection: false,
         drawError: {
             color: '#e1e100',
-            message: '<strong>错误：</strong>多边形不能自相交！'
+            message: '<strong>误：</strong>多边形不自相交！'
         },
         shapeOptions: {
             color: '#bada55',
@@ -1002,6 +1075,81 @@ const getPalettePreviewStyle = (colors) => {
     return {
         background: `linear-gradient(to right, ${colors.join(',')})`
     }
+}
+
+// 添加矢量图层相关方法
+const toggleStudyArea = async (layer) => {
+    try {
+        if (layer.isStudyArea) {
+            // 取消研究区域
+            await fetch(API_ROUTES.MAP.REMOVE_GEOMETRY, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    asset_id: layer.id
+                })
+            })
+            layer.isStudyArea = false
+            ElMessage.success('已取消研究区域设置')
+        } else {
+            // 设置为研究区域
+            await fetch(API_ROUTES.MAP.FILTER_BY_GEOMETRY, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    asset_id: layer.id,
+                    type: 'vector'
+                })
+            })
+            layer.isStudyArea = true
+            ElMessage.success('已设置为研究区域')
+        }
+    } catch (error) {
+        console.error('Error toggling study area:', error)
+        ElMessage.error('设置研究区域失败')
+    }
+}
+
+const openVectorStyleSettings = (layer) => {
+    currentVectorLayer.value = layer
+
+    // 获取当前图层的样式
+    const style = layer.leafletLayer.options.style || {};
+
+    // 设置当前样式值
+    vectorStyle.value.color = style.color || '#3388ff'
+    vectorStyle.value.weight = style.weight || 2
+    vectorStyle.value.opacity = style.opacity || 1
+    vectorStyle.value.fillOpacity = style.fillOpacity || 0.2
+
+    showVectorStyleDialog.value = true
+}
+
+const applyVectorStyle = () => {
+    if (!currentVectorLayer.value) return
+
+    // 直接设置图层样式
+    currentVectorLayer.value.leafletLayer.setStyle({
+        color: vectorStyle.value.color,
+        weight: vectorStyle.value.weight,
+        opacity: vectorStyle.value.opacity,
+        fillOpacity: vectorStyle.value.fillOpacity
+    })
+
+    // 保存当前样式到图层选项中
+    currentVectorLayer.value.leafletLayer.options.style = {
+        color: vectorStyle.value.color,
+        weight: vectorStyle.value.weight,
+        opacity: vectorStyle.value.opacity,
+        fillOpacity: vectorStyle.value.fillOpacity
+    }
+
+    showVectorStyleDialog.value = false
+    ElMessage.success('样式已更新')
 }
 </script>
 

@@ -1,5 +1,19 @@
 export const menuItems = [
     {
+        id: 'file',
+        label: '文件',
+        children: [
+            {
+                id: 'upload-vector',
+                label: '上传矢量',
+                children: [
+                    { id: 'upload-vector-local', label: 'Local' },
+                    { id: 'upload-vector-assets', label: 'Assets' }
+                ]
+            },
+        ]
+    },
+    {
         id: 'tools',
         label: '工具箱',
         children: [
@@ -15,7 +29,6 @@ export const menuItems = [
             {
                 id: 'indices',
                 label: '指数计算',
-                icon: 'fas fa-calculator',
                 children: [
                     {
                         id: 'ndvi',

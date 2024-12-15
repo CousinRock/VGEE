@@ -26,7 +26,7 @@ def get_map_data():
             # 将所有多边形合并成一个
             merged_area = ee.Geometry.MultiPolygon(study_areas)
 
-        # 传入合并后的研究区域进行筛选和裁剪
+        # 传入合并后的研究区域进行筛选和裁���
         result = get_map_data_service(satellite, start_date, end_date, 
                                       cloud_cover, merged_area,layerName)
         return jsonify(result)
@@ -41,15 +41,26 @@ def get_map_data():
 def filter_by_geometry():
     try:
         global study_areas
-       
         data = request.json
-        geometry = data['geometry']
         
-        # 将新的多边形坐标添加到列表中
-        study_areas.append(geometry['coordinates'][0])
+        if data.get('type') == 'vector':
+            # 处理矢量资产
+            asset_id = data.get('asset_id')
+            vector_asset = ee.FeatureCollection(asset_id)
             
-        print(f"Map_routes.py - Added new study area. Total areas: {len(study_areas)}")
-        
+            # 获取矢量的几何信息
+            geometry = vector_asset.geometry().getInfo()
+            
+            # 将几何信息添加到研究区域列表
+            study_areas.append(geometry['coordinates'][0])
+            
+            print(f"Map_routes.py - Added vector asset as study area. Total areas: {len(study_areas)}")
+            
+        else:
+            # 处理手动绘制的几何图形（原有逻辑）
+            geometry = data['geometry']
+            study_areas.append(geometry['coordinates'][0])
+            
         return jsonify({
             'success': True,
             'message': f'Study area added successfully. Total areas: {len(study_areas)}'
