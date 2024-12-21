@@ -48,28 +48,39 @@ def filter_by_geometry():
             asset_id = data.get('asset_id')
             vector_asset = ee.FeatureCollection(asset_id)
             
-            # 获取所有特征的几何信息
-            features = vector_asset.toList(vector_asset.size()).getInfo()
+            # 在服务器端处理几何信息
+            def extract_geometry(feature):
+                geometry = feature.geometry()
+                coordinates = ee.List([])
+                
+                # 判断几何类型并提取外环坐标
+                geometry_type = geometry.type()
+                coordinates = ee.Algorithms.If(
+                    geometry_type.equals('Polygon'),
+                    ee.List([geometry.coordinates().get(0)]),
+                    ee.Algorithms.If(
+                        geometry_type.equals('MultiPolygon'),
+                        geometry.coordinates().map(lambda poly: ee.List(poly).get(0)),
+                        ee.List([])
+                    )
+                )
+                return ee.Feature(None, {
+                    'coordinates': coordinates,
+                    'asset_id': asset_id
+                })
             
-            # 遍历每个特征并添加其几何信息
-            for feature in features:
-                geometry = feature['geometry']
-                if geometry['type'] == 'Polygon':
-                    # 对于单个多边形，添加其外环坐标和资产ID
-                    study_areas.append({
-                        'asset_id': asset_id,
-                        'coordinates': [geometry['coordinates'][0]]
-                    })
-                elif geometry['type'] == 'MultiPolygon':
-                    # 对于多多边形，添加每个子多边形的外环坐标和资产ID
-                    for polygon in geometry['coordinates']:
-                        study_areas.append({
-                            'asset_id': asset_id,
-                            'coordinates': [polygon[0]]
-                        })
+            # 将处理后的几何信息提取到列表
+            processed_features = vector_asset.map(extract_geometry).getInfo()
+            
+            # 添加到 study_areas 列表
+            for feature in processed_features['features']:
+                study_areas.append({
+                    'asset_id': feature['properties']['asset_id'],
+                    'coordinates': feature['properties']['coordinates']
+                })
             
             print(f"Map_routes.py - Added vector asset as study area. Total areas: {len(study_areas)}")
-            
+        
         else:
             # 处理手动绘制的几何图形
             geometry = data['geometry']
@@ -86,6 +97,7 @@ def filter_by_geometry():
     except Exception as e:
         print(f"Map_routes.py - Error in filter_by_geometry: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
 
 @map_bp.route('/remove-geometry', methods=['POST'])
 def remove_geometry():
