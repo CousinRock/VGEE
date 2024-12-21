@@ -35,17 +35,17 @@
                         </label>
                         <div class="layer-actions">
                             <template v-if="layer.type === 'vector'">
-                                <el-dropdown trigger="click">
-                                    <button class="layer-settings" title="图层设置">
+                                <el-dropdown trigger="click" :teleported="false">
+                                    <button class="layer-settings" title="图层设置" tabindex="0">
                                         <i class="fas fa-cog"></i>
                                     </button>
                                     <template #dropdown>
                                         <el-dropdown-menu>
-                                            <el-dropdown-item @click="toggleStudyArea(layer)">
+                                            <el-dropdown-item @click="toggleStudyArea(layer)" tabindex="0">
                                                 <i :class="layer.isStudyArea ? 'el-icon-check' : 'el-icon-crop'"></i>
                                                 {{ layer.isStudyArea ? '取消研究区域' : '设为研究区域' }}
                                             </el-dropdown-item>
-                                            <el-dropdown-item @click="openVectorStyleSettings(layer)">
+                                            <el-dropdown-item @click="openVectorStyleSettings(layer)" tabindex="0">
                                                 <i class="el-icon-setting"></i>
                                                 样式设置
                                             </el-dropdown-item>
@@ -217,6 +217,7 @@
 
 <script setup>
 import { onMounted, ref, watch, nextTick, reactive, onUnmounted } from 'vue'
+import { ElMessage } from 'element-plus'
 // 引入底图配置
 import { baseMaps, palettes } from '../config/map-config'
 import { normalizeRange } from '../util/methods'
@@ -577,7 +578,7 @@ onMounted(async () => {
             // 添加投影关配置
             crs: L.CRS.EPSG3857,  // 明确定投影系统
             continuousWorld: true, // 确保连续的世界地图
-            worldCopyJump: true,   // 允许在经度方向��
+            worldCopyJump: true,   // 允许在经度方向
             maxBounds: L.latLngBounds(L.latLng(-85.06, -180), L.latLng(85.06, 180)), // 限制范围
             minZoom: 1,
             maxZoom: 20
@@ -939,7 +940,7 @@ const importSettings = () => {
 
 // 修改组件卸载时的清理代码
 onUnmounted(() => {
-    // 确保所有图层都被正���清理
+    // 确保所有图层都被正确清理
     layers.value.forEach(layer => {
         if (layer.leafletLayer) {
             try {
@@ -1088,11 +1089,12 @@ const toggleStudyArea = async (layer) => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    asset_id: layer.id
+                    asset_id: layer.id,
+                    type: 'vector'
                 })
             })
             layer.isStudyArea = false
-            ElMessage.success('已取消研究区域设置')
+            ElMessage.success(`已取消${layer.name}研究区域设置`)
         } else {
             // 设置为研究区域
             await fetch(API_ROUTES.MAP.FILTER_BY_GEOMETRY, {
@@ -1106,7 +1108,7 @@ const toggleStudyArea = async (layer) => {
                 })
             })
             layer.isStudyArea = true
-            ElMessage.success('已设置为研究区域')
+            ElMessage.success(`已设置${layer.name}为研究区域`)
         }
     } catch (error) {
         console.error('Error toggling study area:', error)
@@ -1120,11 +1122,12 @@ const openVectorStyleSettings = (layer) => {
     // 获取当前图层的样式
     const style = layer.leafletLayer.options.style || {};
 
+
     // 设置当前样式值
     vectorStyle.value.color = style.color || '#3388ff'
-    vectorStyle.value.weight = style.weight || 2
-    vectorStyle.value.opacity = style.opacity || 1
-    vectorStyle.value.fillOpacity = style.fillOpacity || 0.2
+    vectorStyle.value.weight = style.weight
+    vectorStyle.value.opacity = style.opacity
+    vectorStyle.value.fillOpacity = style.fillOpacity
 
     showVectorStyleDialog.value = true
 }

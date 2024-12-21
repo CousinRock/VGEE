@@ -120,11 +120,14 @@ def image_filling():
         # 创建图像集合用于填补
         image_collection = ee.ImageCollection.fromImages(images_list)
         
-        # 对每个图像进行填补处理
+        # 对每个图像进行填补处理，并添加状态标记
         results = images_list.map(
             lambda img: PreprocessingTool.image_filling(ee.Image(img), image_collection)
         )
         
+        #防止填补失败时出错
+        print('Tool_routes.py - image_filling-results:',results.size().getInfo())
+        # 使用 common_process 处理结果
         return common_process(layer_ids, results, vis_params, '图像填补处理完成')
         
     except Exception as e:

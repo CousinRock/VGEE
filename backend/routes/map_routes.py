@@ -23,10 +23,10 @@ def get_map_data():
         # 如果有多个研究区域，将它们合并成一个多边形
         merged_area = None
         if study_areas:
-            # 将所有多边形合并成一个
-            merged_area = ee.Geometry.MultiPolygon(study_areas)
+            # 将所有多边形合并成一个，只使用坐标部分
+            merged_area = ee.Geometry.MultiPolygon([area['coordinates'] for area in study_areas])
 
-        # 传入合并后的研究区域进行筛选和裁���
+        # 传入合并后的研究区域进行筛选和裁
         result = get_map_data_service(satellite, start_date, end_date, 
                                       cloud_cover, merged_area,layerName)
         return jsonify(result)
@@ -48,18 +48,35 @@ def filter_by_geometry():
             asset_id = data.get('asset_id')
             vector_asset = ee.FeatureCollection(asset_id)
             
-            # 获取矢量的几何信息
-            geometry = vector_asset.geometry().getInfo()
+            # 获取所有特征的几何信息
+            features = vector_asset.toList(vector_asset.size()).getInfo()
             
-            # 将几何信息添加到研究区域列表
-            study_areas.append(geometry['coordinates'][0])
+            # 遍历每个特征并添加其几何信息
+            for feature in features:
+                geometry = feature['geometry']
+                if geometry['type'] == 'Polygon':
+                    # 对于单个多边形，添加其外环坐标和资产ID
+                    study_areas.append({
+                        'asset_id': asset_id,
+                        'coordinates': [geometry['coordinates'][0]]
+                    })
+                elif geometry['type'] == 'MultiPolygon':
+                    # 对于多多边形，添加每个子多边形的外环坐标和资产ID
+                    for polygon in geometry['coordinates']:
+                        study_areas.append({
+                            'asset_id': asset_id,
+                            'coordinates': [polygon[0]]
+                        })
             
             print(f"Map_routes.py - Added vector asset as study area. Total areas: {len(study_areas)}")
             
         else:
-            # 处理手动绘制的几何图形（原有逻辑）
+            # 处理手动绘制的几何图形
             geometry = data['geometry']
-            study_areas.append(geometry['coordinates'][0])
+            study_areas.append({
+                'asset_id': 'manual',
+                'coordinates': [geometry['coordinates'][0]]
+            })
             
         return jsonify({
             'success': True,
@@ -75,15 +92,28 @@ def remove_geometry():
     try:
         global study_areas
         data = request.json
-        deleted_coordinates = data['coordinates']
         
-        # 将要删除的坐标转换为字符串进行比较
-        deleted_str = [str(coords) for coords in deleted_coordinates]
-        
-        # 过滤掉被删除的坐标
-        study_areas = [area for area in study_areas 
-                      if str(area) not in deleted_str]
-        
+        if data.get('type') == 'vector':
+            # 处理矢量资产
+            asset_id = data.get('asset_id')
+            # 获取移除前的数量
+            before_count = len(study_areas)
+            
+            # 直接根据资产ID过滤
+            study_areas = [area for area in study_areas if area['asset_id'] != asset_id]
+            
+            # 获取移除后的数量
+            after_count = len(study_areas)
+            print(f"Map_routes.py - Removed {before_count - after_count} areas for asset {asset_id}")
+            
+        else:
+            # 处理手动绘制的几何图形
+            deleted_coordinates = data['coordinates']
+            # 将要删除的坐标转换为字符串进行比较
+            deleted_str = [str(coords) for coords in deleted_coordinates]
+            # 过滤掉被删除的坐标
+            study_areas = [area for area in study_areas 
+                          if str(area['coordinates'][0]) not in deleted_str]
         
         print(f"Map_routes.py - Removed geometries. Remaining areas: {len(study_areas)}")
         
