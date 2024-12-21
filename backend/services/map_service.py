@@ -53,7 +53,6 @@ def compute_image_stats(dataset, bands,region=None):
             return None
         
         band_img = dataset.select(bands)
-        # 如果没有指定region，使用全球范围
         
        # 使用 ee.Reducer.minMax 计算每个波段的最小值和最大值
         stats = band_img.reduceRegion(
