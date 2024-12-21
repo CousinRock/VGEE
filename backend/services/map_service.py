@@ -10,6 +10,8 @@ def get_dataset(layer_id):
     '''
     获取图层对应的数据集
     '''
+    print(f"Map_service.py - get_dataset-layer_id: {layer_id}")
+    print(f"Map_service.py - get_dataset-datasets: {datasets}")
     return datasets.get(layer_id)
 
 def get_all_datasets():

@@ -178,7 +178,9 @@ def compute_band_stats():
         # 获取当前的研究区域
         merged_area = None
         if study_areas:
-            merged_area = ee.Geometry.MultiPolygon(study_areas)
+            # 从新的数据结构中提取坐标信息
+            coordinates = [area['coordinates'] for area in study_areas]
+            merged_area = ee.Geometry.MultiPolygon(coordinates)
             
         # 计算统计值
         stats = compute_image_stats(dataset, bands, merged_area)

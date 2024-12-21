@@ -35,17 +35,17 @@
                         </label>
                         <div class="layer-actions">
                             <template v-if="layer.type === 'vector'">
-                                <el-dropdown trigger="click" :teleported="false">
-                                    <button class="layer-settings" title="图层设置" tabindex="0">
+                                <el-dropdown trigger="click">
+                                    <button class="layer-settings" title="图层设置">
                                         <i class="fas fa-cog"></i>
                                     </button>
                                     <template #dropdown>
                                         <el-dropdown-menu>
-                                            <el-dropdown-item @click="toggleStudyArea(layer)" tabindex="0">
+                                            <el-dropdown-item @click="toggleStudyArea(layer)">
                                                 <i :class="layer.isStudyArea ? 'el-icon-check' : 'el-icon-crop'"></i>
                                                 {{ layer.isStudyArea ? '取消研究区域' : '设为研究区域' }}
                                             </el-dropdown-item>
-                                            <el-dropdown-item @click="openVectorStyleSettings(layer)" tabindex="0">
+                                            <el-dropdown-item @click="openVectorStyleSettings(layer)">
                                                 <i class="el-icon-setting"></i>
                                                 样式设置
                                             </el-dropdown-item>
