@@ -275,8 +275,17 @@ const vectorStyle = ref({
     fillOpacity: 0.2
 })
 
-// 添加颜色选择器显示状态
-const showColorPicker = ref(false)
+//彻底移除图层实例
+const layerChangeRemove = (layer) => {
+    let mapLayers = Object.values(map.value._layers);
+    mapLayers.forEach((mapLayer) => {
+        if (mapLayer instanceof L.TileLayer &&
+            mapLayer !== baseLayer &&
+            mapLayer._leaflet_id === layer._leaflet_id) {
+            map.value.removeLayer(mapLayer)
+        }
+    });
+}
 
 // 切换图层控制面板显示
 const toggleLayerControl = () => {
@@ -489,14 +498,7 @@ watch(layers, debounce((newLayers) => {
                         layer.leafletLayer.setZIndex(1000 + newLayers.indexOf(layer))
                     } else {
                         // 如果图层应该隐藏遍历查找并移除
-                        let mapLayers = Object.values(map.value._layers);
-                        mapLayers.forEach((mapLayer) => {
-                            if (mapLayer instanceof L.TileLayer &&
-                                mapLayer !== baseLayer &&
-                                mapLayer._leaflet_id === layer.leafletLayer._leaflet_id) {
-                                map.value.removeLayer(mapLayer)
-                            }
-                        });
+                        layerChangeRemove(layer.leafletLayer)
                     }
                 }
             }
@@ -504,35 +506,30 @@ watch(layers, debounce((newLayers) => {
     })
 }, 100), { deep: true })
 
+
+
 // 修改 changeBaseMap 函数
 const changeBaseMap = () => {
-    // 移除底图
+    // 正确移除旧底图
     if (baseLayer) {
-        map.value.removeLayer(baseLayer)
+        layerChangeRemove(baseLayer)
         baseLayer = null
     }
 
     // 创建新底图
     const selectedMap = baseMaps.find(m => m.id === selectedBaseMap.value)
     if (selectedMap) {
-        if (selectedMap.wmsParams) {
-            // 处理WMS服务
-            baseLayer = L.tileLayer.wms(selectedMap.url, {
-                ...selectedMap.wmsParams,
-                attribution: selectedMap.attribution
-            })
-        } else {
-            // 处理普通瓦片服务
-            baseLayer = L.tileLayer(selectedMap.url, {
-                subdomains: selectedMap.subdomains || 'abc',
-                attribution: selectedMap.attribution,
-                maxZoom: 20,
-                maxNativeZoom: 20
-            })
-        }
+        // 处理普通瓦片服务
+        baseLayer = L.tileLayer(selectedMap.url, {
+            subdomains: selectedMap.subdomains || 'abc',
+            attribution: selectedMap.attribution,
+            maxZoom: 20,
+            maxNativeZoom: 20
+        })
 
         if (baseLayerVisible.value) {
             baseLayer.addTo(map.value)
+            baseLayer.setZIndex(0)
         }
     }
 }
@@ -869,21 +866,7 @@ const applyVisParams = async () => {
             if (layer) {
                 // 先移除旧图层
                 if (layer.leafletLayer) {
-                    let mapLayers = Object.values(map.value._layers);
-
-                    mapLayers.forEach((mapLayer) => {
-                        // 检查是否是我们要删除的图层且不是底图
-                        // 确保删除的是瓦片图层的例且是当前在修改的图层
-                        if (mapLayer instanceof L.TileLayer &&
-                            mapLayer !== baseLayer &&
-                            mapLayer._url === layer.leafletLayer._url) {  // 通过URL匹配确保是同一个图层
-
-                            // 禁用动画
-                            mapLayer.options.zoomAnimation = false;
-                            // 移除图层
-                            map.value.removeLayer(mapLayer);
-                        }
-                    });
+                    layerChangeRemove(layer.leafletLayer)
                 }
 
                 // 创建新图层
