@@ -35,17 +35,17 @@
                         </label>
                         <div class="layer-actions">
                             <template v-if="layer.type === 'vector'">
-                                <el-dropdown trigger="click">
-                                    <button class="layer-settings" title="图层设置">
+                                <el-dropdown trigger="click" :teleported="false">
+                                    <button class="layer-settings" title="图层设置" tabindex="0">
                                         <i class="fas fa-cog"></i>
                                     </button>
                                     <template #dropdown>
                                         <el-dropdown-menu>
-                                            <el-dropdown-item @click="toggleStudyArea(layer)">
+                                            <el-dropdown-item @click="toggleStudyArea(layer)" tabindex="0">
                                                 <i :class="layer.isStudyArea ? 'el-icon-check' : 'el-icon-crop'"></i>
                                                 {{ layer.isStudyArea ? '取消研究区域' : '设为研究区域' }}
                                             </el-dropdown-item>
-                                            <el-dropdown-item @click="openVectorStyleSettings(layer)">
+                                            <el-dropdown-item @click="openVectorStyleSettings(layer)" tabindex="0">
                                                 <i class="el-icon-setting"></i>
                                                 样式设置
                                             </el-dropdown-item>
@@ -220,7 +220,7 @@ import { onMounted, ref, watch, nextTick, reactive, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 // 引入底图配置
 import { baseMaps, palettes } from '../config/map-config'
-import { normalizeRange } from '../util/methods'
+import { normalizeRange, layerChangeRemove } from '../util/methods'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import '@fortawesome/fontawesome-free/css/all.css'
@@ -275,17 +275,7 @@ const vectorStyle = ref({
     fillOpacity: 0.2
 })
 
-//彻底移除图层实例
-const layerChangeRemove = (layer) => {
-    let mapLayers = Object.values(map.value._layers);
-    mapLayers.forEach((mapLayer) => {
-        if (mapLayer instanceof L.TileLayer &&
-            mapLayer !== baseLayer &&
-            mapLayer._leaflet_id === layer._leaflet_id) {
-            map.value.removeLayer(mapLayer)
-        }
-    });
-}
+
 
 // 切换图层控制面板显示
 const toggleLayerControl = () => {
@@ -441,7 +431,7 @@ const formatSliderValue = (value) => {
         case 'SENTINEL-2':
             return Math.round(value);  // 整数显示
         case 'MODIS-NDVI':
-            return Math.round(value);  // 整数显示
+            return Math.round(value);  // 整数显���
         case 'LANDSAT-8':
         case 'LANDSAT-7':
         case 'LANDSAT-5':
@@ -498,7 +488,7 @@ watch(layers, debounce((newLayers) => {
                         layer.leafletLayer.setZIndex(1000 + newLayers.indexOf(layer))
                     } else {
                         // 如果图层应该隐藏遍历查找并移除
-                        layerChangeRemove(layer.leafletLayer)
+                        layerChangeRemove(map.value, layer.leafletLayer)
                     }
                 }
             }
@@ -512,7 +502,7 @@ watch(layers, debounce((newLayers) => {
 const changeBaseMap = () => {
     // 正确移除旧底图
     if (baseLayer) {
-        layerChangeRemove(baseLayer)
+        layerChangeRemove(map.value, baseLayer)
         baseLayer = null
     }
 
@@ -866,7 +856,7 @@ const applyVisParams = async () => {
             if (layer) {
                 // 先移除旧图层
                 if (layer.leafletLayer) {
-                    layerChangeRemove(layer.leafletLayer)
+                    layerChangeRemove(map.value, layer.leafletLayer)
                 }
 
                 // 创建新图层
