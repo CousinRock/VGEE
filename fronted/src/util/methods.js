@@ -45,9 +45,10 @@ export const normalizeRange = (min, max) => {
 export const layerChangeRemove = (map, layer) => {
     let mapLayers = Object.values(map._layers);
     mapLayers.forEach((mapLayer) => {
-        if (mapLayer instanceof L.TileLayer &&
-            mapLayer !== layer &&
-            mapLayer._leaflet_id === layer._leaflet_id) {
+        // console.log('test-mapLayer',mapLayer._leaflet_id);
+        // console.log('test-layer',layer._leaflet_id);    
+        if (mapLayer instanceof L.TileLayer &&  
+            mapLayer._leaflet_id == layer._leaflet_id) {
             map.removeLayer(mapLayer)
         }
     });

@@ -431,7 +431,7 @@ const formatSliderValue = (value) => {
         case 'SENTINEL-2':
             return Math.round(value);  // 整数显示
         case 'MODIS-NDVI':
-            return Math.round(value);  // 整数显���
+            return Math.round(value);  // 整数显示
         case 'LANDSAT-8':
         case 'LANDSAT-7':
         case 'LANDSAT-5':
@@ -487,7 +487,9 @@ watch(layers, debounce((newLayers) => {
                         }
                         layer.leafletLayer.setZIndex(1000 + newLayers.indexOf(layer))
                     } else {
-                        // 如果图层应该隐藏遍历查找并移除
+                        // 如果图层应该隐藏遍历查找并移除    
+                        console.log('watch-layers-layer.leafletLayer',layer.leafletLayer);
+                                        
                         layerChangeRemove(map.value, layer.leafletLayer)
                     }
                 }
@@ -501,7 +503,7 @@ watch(layers, debounce((newLayers) => {
 // 修改 changeBaseMap 函数
 const changeBaseMap = () => {
     // 正确移除旧底图
-    if (baseLayer) {
+    if (baseLayer) {   
         layerChangeRemove(map.value, baseLayer)
         baseLayer = null
     }
@@ -854,9 +856,9 @@ const applyVisParams = async () => {
         if (data.tileUrl) {
             const layer = layers.value.find(l => l.id === currentLayer.value.id)
             if (layer) {
-                // 先移除旧图层
-                if (layer.leafletLayer) {
-                    layerChangeRemove(map.value, layer.leafletLayer)
+                // 修改图层移除逻辑
+                if (layer.leafletLayer && map.value.hasLayer(layer.leafletLayer)) {
+                        layerChangeRemove(map.value, layer.leafletLayer);
                 }
 
                 // 创建新图层
