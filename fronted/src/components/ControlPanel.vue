@@ -16,6 +16,9 @@
 
         <div class="control-section">
             <h4>时间范围</h4>
+            <div class="date-range-info">
+                {{ getDateRangeText }}
+            </div>
             <div class="control-item">
                 <label>开始日期</label>
                 <input type="date" v-model="startDate" :min="minDate" :max="endDate">
@@ -54,9 +57,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { API_ROUTES } from '../api/routes'
-import { SATELLITE_OPTIONS } from '../config/satellite-config'
 
 // 定义emit事件 'add-layer' 用于向父组件 Map.vue 发送添加新图层的事件
 // 当用户点击添加图层按钮时,会触发此事件并传递图层名称和地图数据
@@ -72,9 +74,43 @@ const endDate = ref(`${currentYear}-12-31`)
 
 // 其他变量
 const satellite = ref('LANDSAT-8')  // 默认选择
-const satelliteOptions = ref(SATELLITE_OPTIONS)
+const satelliteOptions = ref([])
 const cloudCover = ref(20)
 const layerName = ref('')
+
+// 获取卫星配置
+const fetchSatelliteConfig = async () => {
+    try {
+        const response = await fetch(API_ROUTES.MAP.GET_SATELLITE_CONFIG)
+        const data = await response.json()
+        if (data.success) {
+            satelliteOptions.value = data.satelliteOptions
+        } else {
+            console.error('Failed to get satellite config:', data.message)
+        }
+    } catch (error) {
+        console.error('Error fetching satellite config:', error)
+    }
+}
+
+// 在组件挂载时获取配置
+onMounted(() => {
+    fetchSatelliteConfig()
+})
+
+// 修改计算属性以使用后端数据
+const getDateRangeText = computed(() => {
+    const satelliteConfig = satelliteOptions.value
+        .flatMap(group => group.options)
+        .find(option => option.value === satellite.value)
+        
+    if (!satelliteConfig) return ''
+    
+    const startDate = satelliteConfig.startDate || '未知'
+    const endDate = satelliteConfig.endDate || '至今'
+    
+    return `${startDate} 至 ${endDate}`
+})
 
 // 添加新图层
 const addNewLayer = async () => {

@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from services.map_service import get_map_data_service,remove_dataset,compute_image_stats,get_dataset
+from config.satellite_config import SATELLITE_CONFIGS
 import ee
 
 map_bp = Blueprint('map', __name__)
@@ -209,4 +210,67 @@ def compute_band_stats():
         return jsonify({
             'success': False,
             'message': f'计算统计值时发生错误: {str(e)}'
+        }), 500
+
+@map_bp.route('/satellite-config', methods=['GET'])
+def get_satellite_config():
+    try:
+        # 从 SATELLITE_CONFIGS 中提取配置信息
+        satellite_options = []
+        
+        # Landsat 系列
+        landsat_options = {
+            'label': 'Landsat系列',
+            'options': []
+        }
+        for sat_id, config in SATELLITE_CONFIGS.items():
+            if 'LANDSAT' in sat_id:
+                landsat_options['options'].append({
+                    'value': sat_id,
+                    'label': config['name_template'].split('(')[0].strip(),
+                    'startDate': config['start_date'],
+                    'endDate': config['end_date']
+                })
+        satellite_options.append(landsat_options)
+        
+        # Sentinel 系列
+        sentinel_options = {
+            'label': 'Sentinel系列',
+            'options': []
+        }
+        for sat_id, config in SATELLITE_CONFIGS.items():
+            if 'SENTINEL' in sat_id:
+                sentinel_options['options'].append({
+                    'value': sat_id,
+                    'label': config['name_template'].split('(')[0].strip(),
+                    'startDate': config['start_date'],
+                    'endDate': config['end_date']
+                })
+        satellite_options.append(sentinel_options)
+        
+        # MODIS 系列
+        modis_options = {
+            'label': 'MODIS系列',
+            'options': []
+        }
+        for sat_id, config in SATELLITE_CONFIGS.items():
+            if 'MODIS' in sat_id:
+                modis_options['options'].append({
+                    'value': sat_id,
+                    'label': config['name_template'].split('(')[0].strip(),
+                    'startDate': config['start_date'],
+                    'endDate': config['end_date']
+                })
+        satellite_options.append(modis_options)
+        
+        return jsonify({
+            'success': True,
+            'satelliteOptions': satellite_options
+        })
+        
+    except Exception as e:
+        print(f"Error getting satellite config: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
         }), 500

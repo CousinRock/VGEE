@@ -8,7 +8,8 @@ export const API_ROUTES = {
         FILTER_BY_GEOMETRY: `${BASE_URL}/filter-by-geometry`,
         REMOVE_GEOMETRY: `${BASE_URL}/remove-geometry`,
         REMOVE_LAYER: `${BASE_URL}/remove-layer`,
-        COMPUTE_STATS: `${BASE_URL}/compute-stats`
+        COMPUTE_STATS: `${BASE_URL}/compute-stats`,
+        GET_SATELLITE_CONFIG: `${BASE_URL}/satellite-config`
     },
 
     // 图层相关

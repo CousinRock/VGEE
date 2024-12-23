@@ -41,7 +41,7 @@
 
 .control-item select,
 .control-item input {
-    width: 100%;
+    width: 90%;
     padding: 4px 8px;
     border: 1px solid #ddd;
     border-radius: 3px;
@@ -109,4 +109,11 @@
 
 .add-layer-btn i {
     font-size: 0.85rem;
+}
+
+.date-range-info {
+    color: #999;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+    padding: 0 5px;
 }
