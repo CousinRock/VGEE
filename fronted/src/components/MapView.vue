@@ -425,20 +425,7 @@ const getSliderStep = (satelliteType) => {
 
 // 格式化显示
 const formatSliderValue = (value) => {
-    if (!currentLayer.value) return value.toFixed(3);
-
-    switch (currentLayer.value.satellite) {
-        case 'SENTINEL-2':
-            return Math.round(value);  // 整数显示
-        case 'MODIS-NDVI':
-            return Math.round(value);  // 整数显示
-        case 'LANDSAT-8':
-        case 'LANDSAT-7':
-        case 'LANDSAT-5':
-            return value.toFixed(3);  // 显示3位小数
-        default:
-            return value.toFixed(3);
-    }
+    return value.toFixed(3);
 }
 
 // 添加防抖函数,防止缩放移动时图层卡死

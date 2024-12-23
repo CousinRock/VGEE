@@ -73,8 +73,10 @@ const startDate = ref(`${currentYear}-01-01`)
 const endDate = ref(`${currentYear}-12-31`)
 
 // 其他变量
-const satellite = ref('LANDSAT-8')  // 默认选择
+const satellite = ref([])  // 默认选择
 const satelliteOptions = ref([])
+
+
 const cloudCover = ref(20)
 const layerName = ref('')
 
