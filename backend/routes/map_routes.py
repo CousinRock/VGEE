@@ -43,6 +43,7 @@ def filter_by_geometry():
     try:
         global study_areas
         data = request.json
+        print(f"Map_routes.py - Received data: {data}")
         
         if data.get('type') == 'vector':
             # 处理矢量资产
@@ -105,6 +106,7 @@ def remove_geometry():
     try:
         global study_areas
         data = request.json
+        print(f"Map_routes.py - Received data: {data}")
         
         if data.get('type') == 'vector':
             # 处理矢量资产
@@ -121,7 +123,7 @@ def remove_geometry():
             
         else:
             # 处理手动绘制的几何图形
-            deleted_coordinates = data['coordinates']
+            deleted_coordinates = data['geometry']['coordinates']
             # 将要删除的坐标转换为字符串进行比较
             deleted_str = [str(coords) for coords in deleted_coordinates]
             # 过滤掉被删除的坐标

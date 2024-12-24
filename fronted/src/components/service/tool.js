@@ -241,7 +241,8 @@ export const handleVectorAsset = async (selectedAsset, mapView) => {
                 opacity: 1,
                 fillOpacity: 0.2
             },
-            zIndex: 1000 + mapView.layers.length
+            zIndex: 1000 + mapView.layers.length,
+            geometry: null
         }
 
         // 创建 Leaflet 图层
@@ -268,45 +269,6 @@ export const handleVectorAsset = async (selectedAsset, mapView) => {
     } catch (error) {
         console.error('Error adding vector asset:', error)
         ElMessage.error('添加矢量图层失败')
-        return false
-    }
-}
-
-// 添加研究区域相关方法
-export const toggleStudyArea = async (layer) => {
-    try {
-        if (layer.isStudyArea) {
-            // 取消研究区域
-            await fetch(API_ROUTES.MAP.REMOVE_GEOMETRY, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    asset_id: layer.id
-                })
-            })
-            layer.isStudyArea = false
-            ElMessage.success('已取消研究区域设置')
-        } else {
-            // 设置为研究区域
-            await fetch(API_ROUTES.MAP.FILTER_BY_GEOMETRY, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    asset_id: layer.id,
-                    type: 'vector'
-                })
-            })
-            layer.isStudyArea = true
-            ElMessage.success('已设置为研究区域')
-        }
-        return true
-    } catch (error) {
-        console.error('Error toggling study area:', error)
-        ElMessage.error('设置研究区域失败')
         return false
     }
 }

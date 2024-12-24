@@ -390,3 +390,12 @@
 .el-color-picker__color {
     border: none;
 }
+
+.layer-controls button.active {
+    background-color: #ff3333;
+    color: white;
+}
+
+.layer-controls button:hover {
+    opacity: 0.8;
+}
