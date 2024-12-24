@@ -676,7 +676,7 @@ onMounted(async () => {
                 if (!pointLayer) {
                     // 创建新的点图层
                     pointLayer = {
-                        id: 'points_layer',
+                        id: `points_layer`,
                         name: '绘制点集合',
                         type: 'manual',
                         visible: true,
@@ -1091,21 +1091,16 @@ const initDrawControl = () => {
 
     // 配置绘制控件
     const drawOptions = {
-        // position 可选值: 'topleft', 'topright', 'bottomleft', 'bottomright'
         position: 'topleft',
         draw: {
-            // 明确置每个工具的启用/禁用状态
             polyline: false,
             polygon: true,
-            circle: false,      // 明确禁用圆形
-            circlemarker: false, // 明确禁用圆形标记
+            circle: false,
+            circlemarker: false,
             rectangle: true,
             marker: true,
         },
-        edit: {
-            featureGroup: drawnItems.value,
-            remove: true
-        }
+        edit: false  // 禁用编辑工具栏（包括删除工具）
     };
 
     // // 单独配置每个绘制具

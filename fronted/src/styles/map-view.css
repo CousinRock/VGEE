@@ -202,8 +202,9 @@
     position: absolute;
     left: 0px;
     top: 50%;
-    transform: translateY(150%);
+    transform: translateY(240%);
     z-index: 1000;
+    margin-top: 80px;
 }
 
 /* 添加矢量图层样式设置相关样式 */
