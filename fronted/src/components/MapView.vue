@@ -49,6 +49,14 @@
                                                 <i :class="layer.isStudyArea ? 'el-icon-check' : 'el-icon-crop'"></i>
                                                 {{ layer.isStudyArea ? '取消研究区域' : '设为研究区域' }}
                                             </el-dropdown-item>
+                                            <el-dropdown-item 
+                                                v-if="layer.geometryType === 'Polygon' || layer.type === 'vector' || layer.geometryType === 'Point'"
+                                                @click="toggleSample(layer)" 
+                                                tabindex="0"
+                                            >
+                                                <i :class="layer.isSample ? 'el-icon-check' : 'el-icon-collection-tag'"></i>
+                                                {{ layer.isSample ? '取消样本' : '设为样本' }}
+                                            </el-dropdown-item>
                                             <el-dropdown-item @click="openVectorStyleSettings(layer)" tabindex="0">
                                                 <i class="el-icon-setting"></i>
                                                 样式设置
@@ -216,6 +224,23 @@
                 </span>
             </template>
         </el-dialog>
+
+        <!-- 添加样本类别输入对话框 -->
+        <el-dialog v-model="showSampleDialog" title="设置样本类别" width="400px">
+            <div class="sample-settings">
+                <el-form :model="sampleForm">
+                    <el-form-item label="样本类别">
+                        <el-input v-model="sampleForm.className" placeholder="请输入样本类别（如：水体、建筑、植被等）"></el-input>
+                    </el-form-item>
+                </el-form>
+            </div>
+            <template #footer>
+                <span class="dialog-footer">
+                    <el-button @click="showSampleDialog = false">取消</el-button>
+                    <el-button type="primary" @click="confirmSetSample">确定</el-button>
+                </span>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -231,6 +256,8 @@ import '@fortawesome/fontawesome-free/css/all.css'
 import 'leaflet-draw'
 import 'leaflet-draw/dist/leaflet.draw.css'
 import { API_ROUTES } from '../api/routes'
+import { handleSample, handleStudyArea, handleStyle
+    ,getPalettePreviewStyle,getSliderStep,formatSliderValue,debounce } from './service/mapview'
 
 const props = defineProps({
     mapData: {
@@ -281,7 +308,16 @@ const vectorStyle = ref({
 
 // 在 script setup 顶部添加新的 ref
 const pointFeatures = ref([]);  // 存储所有点要素
-const lineFeatures = ref([]);   // 存储所有线要素
+
+//样本数据
+const showSampleDialog = ref(false);
+const sampleForm = ref({
+    className: ''
+});
+const currentSampleLayer = ref(null);
+
+// 在 script setup 顶部添加计数器
+const pointLayerCounter = ref(0);
 
 // 切换图层控制面板显示
 const toggleLayerControl = () => {
@@ -427,40 +463,6 @@ const removeLayer = async (layerId) => {
     }
 };
 
-
-// 取滑块步长和范围
-const getSliderStep = (satelliteType) => {
-    if (!satelliteType) return 0.1;
-
-    switch (satelliteType) {
-        case 'SENTINEL-2':
-            return 100;  // Sentinel-2 反射率数据范围较大，用100作为步长
-        case 'MODIS-NDVI':
-            return 100;  // MODIS NDVI 数据范围在 -2000 到 10000
-        case 'LANDSAT-8':
-        case 'LANDSAT-7':
-        case 'LANDSAT-5':
-            return 0.001;  // Landsat TOA 反射率数据范围在 0-1
-        default:
-            return 0.001;
-    }
-}
-
-// 格式化显示
-const formatSliderValue = (value) => {
-    return value.toFixed(3);
-}
-
-// 添加防抖函数,防止缩放移动时图层卡死
-const debounce = (fn, delay) => {
-    let timer = null;
-    return function (...args) {
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(() => {
-            fn.apply(this, args);
-        }, delay);
-    };
-};
 
 // 监听图层变化时使用防抖
 watch(layers, debounce((newLayers) => {
@@ -608,164 +610,7 @@ onMounted(async () => {
             }, 250);
         });
 
-        // 修改绘制完成事件处理
-        map.value.on(L.Draw.Event.CREATED, async (event) => {
-            const layer = event.layer;
-            drawnItems.value.addLayer(layer);
-
-            let coordinates;
-            let geometryType;
-
-            // 根据类型处理坐标
-            if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
-                // 多边形处理保持不变
-                coordinates = {
-                    type: 'Polygon',
-                    coordinates: [layer.getLatLngs()[0].map(latLng => [latLng.lng, latLng.lat])]
-                };
-                geometryType = 'Polygon';
-
-                // 多边形仍然创建独立图层
-                const newLayer = {
-                    id: `drawn_${Date.now()}`,
-                    name: '绘制区域',
-                    type: 'manual',
-                    visible: true,
-                    isStudyArea: false,
-                    opacity: 1,
-                    visParams: {
-                        color: '#3388ff',
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.2
-                    },
-                    geometry: coordinates,
-                    geometryType: geometryType,
-                    zIndex: 1000 + layers.value.length
-                };
-
-                const vectorLayer = L.geoJSON(coordinates, {
-                    style: newLayer.visParams
-                });
-
-                newLayer.leafletLayer = vectorLayer;
-                layers.value.push(newLayer);
-                vectorLayer.addTo(map.value);
-            }
-            else if (layer instanceof L.Marker) {
-                coordinates = {
-                    type: 'Point',
-                    coordinates: [layer.getLatLng().lng, layer.getLatLng().lat]
-                };
-                
-                //点样式
-                let visParams = {
-                    radius: 6,
-                    fillColor: "#3388ff",
-                    color: "#ffffff",
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                }
-
-                // 将新点添加到点集合
-                pointFeatures.value.push(coordinates);
-
-                // 查找或创建点图层
-                let pointLayer = layers.value.find(l => l.id === 'points_layer');
-                if (!pointLayer) {
-                    // 创建新的点图层
-                    pointLayer = {
-                        id: `points_layer`,
-                        name: '绘制点集合',
-                        type: 'manual',
-                        visible: true,
-                        opacity: 1,
-                        geometryType: 'Point',
-                        features: pointFeatures.value,
-                        // 添加样式信息
-                        visParams: visParams
-                    };
-
-                    // 创建 GeoJSON 图层
-                    const geoJsonLayer = L.geoJSON({
-                        type: 'FeatureCollection',
-                        features: pointFeatures.value.map(point => ({
-                            type: 'Feature',
-                            geometry: point,
-                            properties: {}
-                        }))
-                    }, {
-                        pointToLayer: (feature, latlng) => {
-                            return L.circleMarker(latlng, visParams);
-                        }
-                    });
-
-                    pointLayer.leafletLayer = geoJsonLayer;
-                    layers.value.push(pointLayer);
-                    geoJsonLayer.addTo(map.value);
-                } 
-                else {
-                    // 更新现有图层
-                    map.value.removeLayer(pointLayer.leafletLayer);
-                    pointLayer.leafletLayer = L.geoJSON({
-                        type: 'FeatureCollection',
-                        features: pointFeatures.value.map(point => ({
-                            type: 'Feature',
-                            geometry: point,
-                            properties: {}
-                        }))
-                    }, {
-                        pointToLayer: (feature, latlng) => {
-                            return L.circleMarker(latlng, visParams);
-                        }
-                    }).addTo(map.value);
-                }
-            }
-        });
-
-        // 修改删除事监听
-        map.value.on(L.Draw.Event.DELETED, async (event) => {
-            try {
-                const deletedLayers = event.layers;
-
-                deletedLayers.eachLayer((layer) => {
-                    if (layer instanceof L.Marker) {
-                        // 从点集合中移除被删除的点
-                        const point = [layer.getLatLng().lng, layer.getLatLng().lat];
-                        pointFeatures.value = pointFeatures.value.filter(p => 
-                            p.coordinates[0] !== point[0] || p.coordinates[1] !== point[1]
-                        );
-
-                        // 更新点图层
-                        const pointLayer = layers.value.find(l => l.id === 'points_layer');
-                        if (pointLayer && pointFeatures.value.length > 0) {
-                            map.value.removeLayer(pointLayer.leafletLayer);
-                            pointLayer.leafletLayer = L.geoJSON({
-                                type: 'FeatureCollection',
-                                features: pointFeatures.value.map(point => ({
-                                    type: 'Feature',
-                                    geometry: point,
-                                    properties: {}
-                                }))
-                            }, {
-                                pointToLayer: (feature, latlng) => {
-                                    return L.circleMarker(latlng, visParams);
-                                }
-                            }).addTo(map.value);
-                        } else if (pointLayer && pointFeatures.value.length === 0) {
-                            // 如果没有点了，移除整个图层
-                            const layerIndex = layers.value.findIndex(l => l.id === 'points_layer');
-                            if (layerIndex > -1) {
-                                layers.value.splice(layerIndex, 1);
-                            }
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error('Error removing geometries:', error);
-            }
-        });
+       
 
         // 触发初化完成事件
         emit('map-initialized', map.value)
@@ -1144,123 +989,138 @@ const initDrawControl = () => {
     drawControl.value = new L.Control.Draw(drawOptions);
 
     map.value.addControl(drawControl.value)
+
+     // 修改绘制完成事件处理
+     map.value.on(L.Draw.Event.CREATED, async (event) => {
+            const layer = event.layer;
+            drawnItems.value.addLayer(layer);
+
+            let coordinates;
+            let geometryType;
+
+            // 根据类型处理坐标
+            if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
+                // 多边形处理保持不变
+                coordinates = {
+                    type: 'Polygon',
+                    coordinates: [layer.getLatLngs()[0].map(latLng => [latLng.lng, latLng.lat])]
+                };
+                geometryType = 'Polygon';
+
+                // 多边形仍然创建独立图层
+                const newLayer = {
+                    id: `drawn_${Date.now()}`,
+                    name: '绘制区域',
+                    type: 'manual',
+                    visible: true,
+                    isStudyArea: false,
+                    opacity: 1,
+                    visParams: {
+                        color: '#3388ff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.2
+                    },
+                    geometry: coordinates,
+                    geometryType: geometryType,
+                    zIndex: 1000 + layers.value.length
+                };
+
+                const vectorLayer = L.geoJSON(coordinates, {
+                    style: newLayer.visParams
+                });
+
+                newLayer.leafletLayer = vectorLayer;
+                layers.value.push(newLayer);
+                vectorLayer.addTo(map.value);
+            }
+            else if (layer instanceof L.Marker) {
+                coordinates = {
+                    type: 'Point',
+                    coordinates: [layer.getLatLng().lng, layer.getLatLng().lat]
+                };
+                
+                // 查找或创建点图层
+                let pointLayer = layers.value.find(l => l.id === `points_layer_${pointLayerCounter.value}`);
+                if (!pointLayer) {
+                    // 创建新的点图层
+                    pointLayer = {
+                        id: `points_layer_${pointLayerCounter.value}`,
+                        name: `点集合 ${pointLayerCounter.value + 1}`,
+                        icon: 'fas fa-map-marker-alt',
+                        type: 'manual',
+                        geometryType: 'Point',
+                        visible: true,
+                        opacity: 1,
+                        features: [],
+                        visParams: {
+                            radius: 6,
+                            fillColor: "#3388ff",
+                            color: "#ffffff",
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        }
+                    };
+
+                    // 创建 Leaflet 图层
+                    pointLayer.leafletLayer = L.geoJSON({
+                        type: 'FeatureCollection',
+                        features: []
+                    }, {
+                        pointToLayer: (feature, latlng) => {
+                            return L.circleMarker(latlng, pointLayer.visParams);
+                        }
+                    }).addTo(map.value);
+
+                    // 添加到图层列表
+                    layers.value.push(pointLayer);
+                }
+
+                // 添加新点到特征集合
+                pointLayer.features.push(coordinates);
+                pointFeatures.value = [...pointLayer.features];
+
+                // 只添加新点，而不是重新创建整个图层
+                pointLayer.leafletLayer.addData({
+                    type: 'Feature',
+                    geometry: coordinates,
+                    properties: {}
+                });
+            }
+        });
 }
 
 // 在 script setup 中添加
 const emit = defineEmits(['map-initialized'])
 
-// 添加获取调色板预览样的方法
-const getPalettePreviewStyle = (colors) => {
-    return {
-        background: `linear-gradient(to right, ${colors.join(',')})`
-    }
-}
-
 // 添加矢量图层相关方法
+const toggleSample = (layer) => {
+    console.log('MapView.vue - toggleSample - layer:', layer);
+    handleSample.toggleSample(layer, showSampleDialog, currentSampleLayer);
+};
+
+// 确认设置样本
+const confirmSetSample = async () => {
+    await handleSample.confirmSetSample(sampleForm, currentSampleLayer, showSampleDialog);
+    if (currentSampleLayer.value?.geometryType === 'Point') {
+        pointLayerCounter.value++;  // 增加计数器
+        pointFeatures.value = [];   // 清空当前点集合
+    }
+};
+
 const toggleStudyArea = async (layer) => {
-    try {
-        console.log('MapView.vue - toggleStudyArea - layer:', layer);
-        // 切换研究区域状态
-        layer.isStudyArea = !layer.isStudyArea
+    await handleStudyArea.toggleStudyArea(layer);
+};
 
-        // 准备请求参数
-        const endpoint = layer.isStudyArea ? 
-        API_ROUTES.MAP.FILTER_BY_GEOMETRY : API_ROUTES.MAP.REMOVE_GEOMETRY
-
-        const requestBody = {
-            asset_id: layer.id,
-            type: layer.type, 
-            geometry: layer.geometry
-        }
-
-        // 发送请求
-        await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        })
-
-        // 显示结果消息
-        ElMessage.success(`已${layer.isStudyArea ? '设置' : '取消'}${layer.name}${layer.isStudyArea ? '为' : ''}研究区域${layer.isStudyArea ? '' : '设置'}`)
-    } catch (error) {
-        console.error('Error toggling study area:', error)
-        ElMessage.error('设置研究区域失败')
-    }
-}
-
-// 打开矢量图层样式设置
 const openVectorStyleSettings = (layer) => {
-    currentVectorLayer.value = layer;
-    console.log('MapView.vue - openVectorStyleSettings - currentVectorLayer:', currentVectorLayer.value);
-
-    if (layer.geometryType === 'Point') {
-        // 从点图层的 visParams 读取样式
-        vectorStyle.value = {
-            color: layer.visParams.fillColor,
-            weight: layer.visParams.radius / 3, // 将半径转换回 weight
-            opacity: layer.visParams.opacity,
-            fillOpacity: layer.visParams.fillOpacity
-        };
-    } else {
-        // 获取当前图层的样式
-        const style = layer.leafletLayer.options.style || {};
-        vectorStyle.value = {
-            color: style.color || '#3388ff',
-            weight: style.weight || 2,
-            opacity: style.opacity || 1,
-            fillOpacity: style.fillOpacity || 0.2
-        };
-    }
-
-    showVectorStyleDialog.value = true;
+    handleStyle.openVectorStyleSettings(layer, currentVectorLayer, vectorStyle, showVectorStyleDialog);
 };
 
-// 应用矢量图层样式
 const applyVectorStyle = () => {
-    if (!currentVectorLayer.value) return;
-
-    if (currentVectorLayer.value.geometryType === 'Point') {
-        // 更新点图层的样式参数
-        currentVectorLayer.value.visParams = {
-            radius: vectorStyle.value.weight * 3,
-            fillColor: vectorStyle.value.color,
-            color: "#ffffff",
-            weight: 2,
-            opacity: vectorStyle.value.opacity,
-            fillOpacity: vectorStyle.value.fillOpacity
-        };
-
-        // 更新点图层
-        map.value.removeLayer(currentVectorLayer.value.leafletLayer);
-        currentVectorLayer.value.leafletLayer = L.geoJSON({
-            type: 'FeatureCollection',
-            features: pointFeatures.value.map(point => ({
-                type: 'Feature',
-                geometry: point,
-                properties: {}
-            }))
-        }, {
-            pointToLayer: (feature, latlng) => {
-                return L.circleMarker(latlng, currentVectorLayer.value.visParams);
-            }
-        }).addTo(map.value);
-    } else {
-        // 线和面要素的处理保持不变
-        const style = {
-            color: vectorStyle.value.color,
-            weight: vectorStyle.value.weight,
-            opacity: vectorStyle.value.opacity,
-            fillOpacity: vectorStyle.value.fillOpacity
-        };
-        currentVectorLayer.value.leafletLayer.setStyle(style);
-        currentVectorLayer.value.visParams = style;
-    }
-    
-    showVectorStyleDialog.value = false;
-    ElMessage.success('样式已更新');
+    handleStyle.applyVectorStyle(currentVectorLayer, vectorStyle, showVectorStyleDialog, map.value);
 };
+
 </script>
 
 <style src="../styles/map-view.css"></style>

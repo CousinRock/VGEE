@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from services.map_service import get_map_data_service,remove_dataset,compute_image_stats,get_dataset
 from config.satellite_config import SATELLITE_CONFIGS
 import ee
+from services.sample_service import add_sample_service, remove_sample_service
 
 map_bp = Blueprint('map', __name__)
 
@@ -272,6 +273,38 @@ def get_satellite_config():
         
     except Exception as e:
         print(f"Error getting satellite config: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@map_bp.route('/add-sample', methods=['POST'])
+def add_sample():
+    try:
+        data = request.json
+        result = add_sample_service(
+            layer_id=data.get('layer_id'),
+            class_name=data.get('class_name'),
+            geometry_type=data.get('geometry_type'),
+            features=data.get('features'),
+            layer_type=data.get('type')
+        )
+        return jsonify(result)
+    except Exception as e:
+        print(f"Map_routes.py - Error in add_sample: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@map_bp.route('/remove-sample', methods=['POST'])
+def remove_sample():
+    try:
+        data = request.json
+        result = remove_sample_service(data.get('layer_id'))
+        return jsonify(result)
+    except Exception as e:
+        print(f"Map_routes.py - Error in remove_sample: {str(e)}")
         return jsonify({
             'success': False,
             'message': str(e)

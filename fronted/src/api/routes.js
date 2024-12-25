@@ -9,7 +9,9 @@ export const API_ROUTES = {
         REMOVE_GEOMETRY: `${BASE_URL}/remove-geometry`,
         REMOVE_LAYER: `${BASE_URL}/remove-layer`,
         COMPUTE_STATS: `${BASE_URL}/compute-stats`,
-        GET_SATELLITE_CONFIG: `${BASE_URL}/satellite-config`
+        GET_SATELLITE_CONFIG: `${BASE_URL}/satellite-config`,
+        ADD_SAMPLE: `${BASE_URL}/add-sample`,
+        REMOVE_SAMPLE: `${BASE_URL}/remove-sample`
     },
 
     // 图层相关
