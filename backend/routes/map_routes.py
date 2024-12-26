@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from services.map_service import get_map_data_service,remove_dataset,compute_image_stats,get_dataset
 from config.satellite_config import SATELLITE_CONFIGS
 import ee
-from services.sample_service import add_sample_service, remove_sample_service
+from services.sample_service import add_sample_service, remove_sample_service,get_all_samples
 
 map_bp = Blueprint('map', __name__)
 
@@ -305,6 +305,22 @@ def remove_sample():
         return jsonify(result)
     except Exception as e:
         print(f"Map_routes.py - Error in remove_sample: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@map_bp.route('/get-samples', methods=['GET'])
+def get_samples():
+    try:
+        # 从 sample_service 获取所有样本
+        samples = get_all_samples()
+        return jsonify({
+            'success': True,
+            'samples': samples
+        })
+    except Exception as e:
+        print(f"Error getting samples: {str(e)}")
         return jsonify({
             'success': False,
             'message': str(e)

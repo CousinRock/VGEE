@@ -164,6 +164,10 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
                 endpoint = API_ROUTES.TOOLS.HISTOGRAM_EQUALIZATION
                 requestData = createRequestData(selectedLayerName, mapView.layers)
                 break
+            case 'random-forest':
+                endpoint = API_ROUTES.TOOLS.RANDOM_FOREST;
+                requestData = createRequestData(selectedLayerName, mapView.layers);
+                break;
             default:
                 throw new Error('未知的工具类型')
         }

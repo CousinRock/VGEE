@@ -11,7 +11,8 @@ export const API_ROUTES = {
         COMPUTE_STATS: `${BASE_URL}/compute-stats`,
         GET_SATELLITE_CONFIG: `${BASE_URL}/satellite-config`,
         ADD_SAMPLE: `${BASE_URL}/add-sample`,
-        REMOVE_SAMPLE: `${BASE_URL}/remove-sample`
+        REMOVE_SAMPLE: `${BASE_URL}/remove-sample`,
+        GET_SAMPLES: `${BASE_URL}/get-samples`
     },
 
     // 图层相关
@@ -31,5 +32,6 @@ export const API_ROUTES = {
         GET_ASSETS: `${BASE_URL}/tools/get-assets`,
         ADD_VECTOR_ASSET: `${BASE_URL}/tools/add-vector-asset`,
         ADD_IMAGE_ASSET: `${BASE_URL}/tools/add-image-asset`,
+        RANDOM_FOREST: `${BASE_URL}/tools/random-forest`,
     }
 } 

@@ -195,17 +195,19 @@ const handleToolClick = async (tool) => {
                 showAssetsDialog.value = true
                 await loadAssets()
                 break
+            case 'random-forest':
+                await handleRandomForest(tool)
+                break
             default:
                 ElMessage.warning('该功能尚未实现')
         }
     } catch (error) {
-        console.error('Tools.vue - Error handling tool click:', error)
+        console.error('Error handling tool click:', error)
         ElMessage.error('工具执行失败')
     }
 }
 
-// 添加指数计算处理函数
-async function handleIndexCalculation(tool) {
+const commonMethod = async (tool) => {
     const layers = await getAvailableLayers()
     if (!layers) return
 
@@ -213,51 +215,36 @@ async function handleIndexCalculation(tool) {
     availableLayers.value = layers
     currentTool.value = tool
     showLayerSelect.value = true
+}
+
+// 添加指数计算处理函数
+async function handleIndexCalculation(tool) {
+    commonMethod(tool)
 }
 
 // 云去除功能处理函数
 async function handleCloudRemoval(tool) {
-    const layers = await getAvailableLayers()
-    if (!layers) return
-
-    selectedLayerName.value = []  // 清空之前的选择
-    availableLayers.value = layers
-    currentTool.value = tool
-    showLayerSelect.value = true
+    commonMethod(tool)
 }
 
 // 图像填补功能处理函数
 async function handleImageFilling(tool) {
-    const layers = await getAvailableLayers()
-    if (!layers) return
-
-    // 允许多选图层
-    selectedLayerName.value = []  // 清空之前的选择
-    availableLayers.value = layers
-    currentTool.value = tool
-    showLayerSelect.value = true
+    commonMethod(tool)
 }
 
 // 添加K-means聚类处理函数
 async function handleKMeansClustering(tool) {
-    const layers = await getAvailableLayers()
-    if (!layers) return
-
-    selectedLayerName.value = []  // 清除之前的选择
-    availableLayers.value = layers
-    currentTool.value = tool
-    showLayerSelect.value = true
+    commonMethod(tool)
 }
 
 // 添加直方图均衡化处理函数
 async function handleHistogramEqualization(tool) {
-    const layers = await getAvailableLayers()
-    if (!layers) return
+    commonMethod(tool)
+}
 
-    selectedLayerName.value = []  // 清空之前的选择
-    availableLayers.value = layers
-    currentTool.value = tool
-    showLayerSelect.value = true
+// 添加随机森林分类处理方法
+const handleRandomForest = async (tool) => {
+    commonMethod(tool)
 }
 
 // 添加对话框标题计算属性

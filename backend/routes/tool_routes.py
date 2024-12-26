@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from services.map_service import save_dataset
+from services.sample_service import get_all_samples
 from tools.preprocessing import PreprocessingTool
 from tools.classification import ClassificationTool 
 from tools.calculateIndex import IndexTool
@@ -380,6 +381,69 @@ def add_image_asset():
         
     except Exception as e:
         print(f"Error in add_image_asset: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@tool_bp.route('/random-forest', methods=['POST'])
+def random_forest():
+    try:
+        data = request.json
+        layer_ids = data.get('layer_ids')
+        vis_params = data.get('vis_params', [])
+        
+        # 从 sample_service 获取样本数据
+        samples = get_all_samples()
+        if not samples:
+            raise ValueError('No training samples available')
+            
+        # 获取影像
+        selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
+        
+        # 执行分类并创建结果列表
+        results = []
+        num = len(layer_ids)
+        for i, layer_id in enumerate(layer_ids):
+            image = ee.Image(selected_images.toList(num).get(i))
+            classified = ClassificationTool.random_forest_classification(image, samples)
+            results.append(classified)
+        
+        # 处理结果
+        layer_results = []
+        bandInfo = ['classification']  # 分类结果波段名
+        
+        for i, layer_id in enumerate(layer_ids):
+            rf_id = f"{layer_id}_rf"  # 为分类结果创建新的ID
+            
+            # 保存分类结果到数据集
+            save_dataset(rf_id, results[i].select(bandInfo), 'random_forest')
+            
+            # 设置可视化参数
+            map_id = datasets[rf_id].getMapId({
+                'min': 0,
+                'max': len(samples) - 1,  # 类别数量减1
+            })
+            
+            layer_results.append({
+                'layer_id': rf_id,
+                'tileUrl': map_id['tile_fetcher'].url_format,
+                'bandInfo': bandInfo,
+                'visParams': {
+                    'bands': bandInfo,
+                    'min': 0,
+                    'max': len(samples) - 1
+                }
+            })
+
+        return jsonify({
+            'success': True,
+            'message': '随机森林分类完成',
+            'results': layer_results
+        })
+        
+    except Exception as e:
+        print(f"Error in random_forest: {str(e)}")
         return jsonify({
             'success': False,
             'message': str(e)

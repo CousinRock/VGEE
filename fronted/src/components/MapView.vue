@@ -420,6 +420,11 @@ const removeLayer = async (layerId) => {
                 ElMessage.error('该图层仍在被用作研究区，无法移除');
                 return;
             }
+
+            if(layer.isSample){
+                ElMessage.error('该图层仍在被用作样本点，无法移除');
+                return;
+            }
             
             // 从地图移除图层
             if (map.value.hasLayer(layer.leafletLayer)) {
