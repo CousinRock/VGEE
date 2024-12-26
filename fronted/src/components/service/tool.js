@@ -85,7 +85,7 @@ export const updateMapLayer = async (layerResult, mapView) => {
 
         const newLayer = {
             id: layerResult.layer_id,
-            name: `${originalLayer?.name || 'Unknown'} (Processed)`,
+            name: layerResult.name || `${originalLayer?.name || 'Unknown'} (Processed)`,
             icon: 'fas fa-layer-group',
             visible: true,
             opacity: 1,
@@ -120,7 +120,7 @@ export const updateMapLayer = async (layerResult, mapView) => {
 }
 
 // 处理图层选择
-export const processLayerSelect = async (selectedLayerName, currentTool, mapView, clusterCounts, isProcessing) => {
+export const processLayerSelect = async (selectedLayerName, currentTool, mapView, params, isProcessing) => {
     if (selectedLayerName.length === 0) {
         ElMessage.warning('请选择至少一个图层')
         return false
@@ -132,16 +132,34 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
         let requestData = {}
 
         switch (currentTool.id) {
-            case 'kmeans':
-                endpoint = API_ROUTES.TOOLS.KMEANS_CLUSTERING
-                requestData = {
-                    ...createRequestData(selectedLayerName, mapView.layers),
-                    cluster_counts: clusterCounts
-                }
-                break
             case 'cloud-removal':
                 endpoint = API_ROUTES.TOOLS.CLOUD_REMOVAL
                 requestData = createRequestData(selectedLayerName, mapView.layers)
+                break
+            case 'kmeans':
+                endpoint = API_ROUTES.TOOLS.KMEANS_CLUSTERING
+                requestData = {
+                    layer_ids: selectedLayerName,
+                    cluster_counts: params,
+                    vis_params: selectedLayerName.map(id => ({
+                        id: id,
+                        visParams: mapView.layers.find(l => l.id === id)?.visParams
+                    }))
+                }
+                break
+            case 'random-forest':
+                endpoint = API_ROUTES.TOOLS.RANDOM_FOREST
+                requestData = {
+                    layer_ids: selectedLayerName,
+                    rf_params: {
+                        numberOfTrees: params.numberOfTrees,
+                        trainRatio: params.trainRatio
+                    },
+                    vis_params: selectedLayerName.map(id => ({
+                        id: id,
+                        visParams: mapView.layers.find(l => l.id === id)?.visParams
+                    }))
+                }
                 break
             case 'image-filling':
                 endpoint = API_ROUTES.TOOLS.IMAGE_FILLING
@@ -164,15 +182,11 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
                 endpoint = API_ROUTES.TOOLS.HISTOGRAM_EQUALIZATION
                 requestData = createRequestData(selectedLayerName, mapView.layers)
                 break
-            case 'random-forest':
-                endpoint = API_ROUTES.TOOLS.RANDOM_FOREST;
-                requestData = createRequestData(selectedLayerName, mapView.layers);
-                break;
             default:
                 throw new Error('未知的工具类型')
         }
 
-        const result = await fetch(endpoint, {
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -180,32 +194,19 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
             body: JSON.stringify(requestData)
         })
 
-        const data = await result.json()
-        if (data.success) {
-            const results = Array.isArray(data.results) ? data.results : [{
-                layer_id: selectedLayerName[0],
-                tileUrl: data.tileUrl,
-                bandInfo: data.bandInfo
-            }]
-
-            for (const layerResult of results) {
-                const layer = mapView.layers.find(l => l.id === layerResult.layer_id)
-                if (layer) {
-                    const response = await fetch(`${API_ROUTES.LAYER.GET_LAYER_INFO}?id=${layer.id}&satellite=${layer.satellite}`)
-                    const layerInfo = await response.json()
-                    if (layerInfo.success) {
-                        layer.bandInfo = layerInfo.bands
-                    }
-                }
-                await updateMapLayer(layerResult, mapView)
-            }
-
-            ElMessage.success(data.message)
-            return true
-        } else {
-            ElMessage.error(data.message || '处理失败')
-            return false
+        const data = await response.json()
+        if (!data.success) {
+            throw new Error(data.message || '处理失败')
         }
+
+        // 更新地图图层
+        for (const result of data.results) {
+            await updateMapLayer(result, mapView)
+        }
+
+        ElMessage.success(data.message || '处理完成')
+        return true
+
     } catch (error) {
         console.error('Error processing layers:', error)
         ElMessage.error('处理失败')

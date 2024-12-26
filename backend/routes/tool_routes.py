@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from services.map_service import save_dataset
+from services.map_service import save_dataset, get_all_datasets
 from services.sample_service import get_all_samples
 from tools.preprocessing import PreprocessingTool
 from tools.classification import ClassificationTool 
@@ -9,6 +9,7 @@ import ee
 tool_bp = Blueprint('tool', __name__)
 
 datasets = None
+datasetsNames = None
 
 def common_process(layer_ids, results, vis_params, message):
     '''
@@ -141,8 +142,7 @@ def image_filling():
 @tool_bp.route('/get-layers', methods=['GET'])
 def get_layers():
     try:
-        global datasets
-        from services.map_service import get_all_datasets
+        global datasets, datasetsNames
         datasets, datasetsNames = get_all_datasets()
         landsat_layers = {}
         
@@ -196,11 +196,18 @@ def kmeans_clustering():
         # 处理结果
         layer_results = []
         bandInfo = ['cluster']
+        
         for i, layer_id in enumerate(layer_ids):
             num_clusters = cluster_counts.get(layer_id, 5)
-            kmeans_id = f"{layer_id}_kmeans"
+            # 获取原始图层名称
+            original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
+            kmeans_id = f"{layer_id}_kmeans"  # 为分类结果创建新的ID
             
-            save_dataset(kmeans_id, results[i].select(bandInfo), 'kmeans')
+            # 创建新的图层名称，包含原始名称和工具名称
+            kmeans_name = f"{original_name} (K-means聚类)"
+            
+            # 保存分类结果到数据集
+            save_dataset(kmeans_id, results[i].select(bandInfo), kmeans_name)
             
             map_id = datasets[kmeans_id].getMapId({
                 'min': 0,
@@ -209,6 +216,7 @@ def kmeans_clustering():
             
             layer_results.append({
                 'layer_id': kmeans_id,
+                'name': kmeans_name,  # 添加名称到返回结果
                 'tileUrl': map_id['tile_fetcher'].url_format,
                 'bandInfo': bandInfo,
                 'visParams': {
@@ -229,7 +237,7 @@ def kmeans_clustering():
         return jsonify({
             'success': False,
             'message': str(e)
-        }), 500 
+        }), 500
 
 @tool_bp.route('/histogram-equalization', methods=['POST'])
 def histogram_equalization():
@@ -391,7 +399,11 @@ def random_forest():
     try:
         data = request.json
         layer_ids = data.get('layer_ids')
-        vis_params = data.get('vis_params', [])
+        rf_params = data.get('rf_params', {})
+        
+        # 获取参数
+        num_trees = rf_params.get('numberOfTrees', 50)
+        train_ratio = rf_params.get('trainRatio', 0.7)
         
         # 从 sample_service 获取样本数据
         samples = get_all_samples()
@@ -406,7 +418,12 @@ def random_forest():
         num = len(layer_ids)
         for i, layer_id in enumerate(layer_ids):
             image = ee.Image(selected_images.toList(num).get(i))
-            classified = ClassificationTool.random_forest_classification(image, samples)
+            classified = ClassificationTool.random_forest_classification(
+                image, 
+                samples,
+                num_trees=num_trees,
+                train_ratio=train_ratio
+            )
             results.append(classified)
         
         # 处理结果
@@ -414,19 +431,25 @@ def random_forest():
         bandInfo = ['classification']  # 分类结果波段名
         
         for i, layer_id in enumerate(layer_ids):
+            # 获取原始图层名称
+            original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
             rf_id = f"{layer_id}_rf"  # 为分类结果创建新的ID
             
+            # 创建新的图层名称，包含原始名称和工具名称
+            rf_name = f"{original_name} (随机森林分类)"
+            
             # 保存分类结果到数据集
-            save_dataset(rf_id, results[i].select(bandInfo), 'random_forest')
+            save_dataset(rf_id, results[i].select(bandInfo), rf_name)
             
             # 设置可视化参数
             map_id = datasets[rf_id].getMapId({
                 'min': 0,
-                'max': len(samples) - 1,  # 类别数量减1
+                'max': len(samples) - 1
             })
             
             layer_results.append({
                 'layer_id': rf_id,
+                'name': rf_name,  # 添加名称到返回结果
                 'tileUrl': map_id['tile_fetcher'].url_format,
                 'bandInfo': bandInfo,
                 'visParams': {

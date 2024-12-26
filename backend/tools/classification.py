@@ -34,7 +34,7 @@ class ClassificationTool(BaseTool):
             raise Exception(f"Error in supervised classification: {str(e)}")
 
     @staticmethod
-    def random_forest_classification(image, samples):
+    def random_forest_classification(image, samples, num_trees=50, train_ratio=0.7):
         """随机森林分类"""
         try:
             # 创建训练特征集合
@@ -65,7 +65,8 @@ class ClassificationTool(BaseTool):
             
             # 添加随机列并分割训练数据
             withRandom = training_features.randomColumn('random')
-            training_partition = withRandom.filter(ee.Filter.lt('random', 0.7))  # 使用70%的数据作为训练集
+            training_partition = withRandom.filter(ee.Filter.lt('random', train_ratio))
+            test_partition = withRandom.filter(ee.Filter.gte('random', train_ratio))
             
             # 从训练样本中提取值
             training = image.sampleRegions(
@@ -73,17 +74,30 @@ class ClassificationTool(BaseTool):
                 properties=['class'],
                 scale=30
             )
+
+            test = image.sampleRegions(
+                collection=test_partition,
+                properties=['class'],
+                scale=30
+            )
             
             # 创建和训练分类器
-            classifier = ee.Classifier.smileRandomForest(numberOfTrees=20).train(
+            classifier = ee.Classifier.smileRandomForest(numberOfTrees=num_trees).train(
                 features=training,
+                classProperty='class',
+                inputProperties=bands
+            )
+
+            classifier_test = ee.Classifier.smileRandomForest(numberOfTrees=num_trees).train(
+                features=test,
                 classProperty='class',
                 inputProperties=bands
             )
             
             # 执行分类
             classified = image.classify(classifier).toByte()
-            
+            classified_test = image.classify(classifier_test).toByte()
+
             # 获取精度评估
             trainAccuracy = classifier.confusionMatrix()
             

@@ -44,8 +44,10 @@
             </div>
 
             <!-- 右侧分类设置区域 -->
-            <div v-if="currentTool?.id === 'kmeans' && selectedLayerName.length > 0" class="layer-select-right">
-                <div class="kmeans-options">
+            <div v-if="(currentTool?.id === 'kmeans' || currentTool?.id === 'random-forest') && selectedLayerName.length > 0" 
+                 class="layer-select-right">
+                <!-- K-means 设置 -->
+                <div v-if="currentTool?.id === 'kmeans'" class="kmeans-options">
                     <h4>分类设置</h4>
                     <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
                         <div class="layer-name">
@@ -60,6 +62,27 @@
                                 20: '20',
                             }" />
                         </div>
+                    </div>
+                </div>
+
+                <!-- 随机森林设置 -->
+                <div v-if="currentTool?.id === 'random-forest'" class="rf-options">
+                    <h4>随机森林设置</h4>
+                    <div class="option-item">
+                        <label>决策树数量：</label>
+                        <el-slider v-model="rfParams.numberOfTrees" :min="10" :max="100" :step="10" show-input :marks="{
+                            10: '10',
+                            50: '50',
+                            100: '100'
+                        }" />
+                    </div>
+                    <div class="option-item">
+                        <label>训练集比例：</label>
+                        <el-slider v-model="rfParams.trainRatio" :min="0.5" :max="0.9" :step="0.1" show-input :marks="{
+                            0.5: '50%',
+                            0.7: '70%',
+                            0.9: '90%'
+                        }" />
                     </div>
                 </div>
             </div>
@@ -139,6 +162,10 @@ const assetsList = ref([])
 const selectedAsset = ref(null)
 const isLoadingAssets = ref(false)
 const selectedAssetIds = ref([])  // 用于存储选中的资产ID
+const rfParams = ref({
+    numberOfTrees: 50,
+    trainRatio: 0.7
+});
 
 // 菜单操作方法
 const toggleMenu = (item) => {
@@ -257,17 +284,39 @@ const getDialogTitle = computed(() => {
 
 // 图层选择处理
 const handleLayerSelect = async () => {
-    const result = await processLayerSelect(
-        selectedLayerName.value,
-        currentTool.value,
-        props.mapView,
-        clusterCounts.value,
-        isProcessing
-    )
+    if (!selectedLayerName.value.length) {
+        ElMessage.warning('请选择至少一个图层')
+        return
+    }
 
-    if (result) {
-        showLayerSelect.value = false
-        selectedLayerName.value = []
+    try {
+        if (currentTool.value.id === 'kmeans') {
+            // 原有的 kmeans 处理逻辑
+            const result = await processLayerSelect(selectedLayerName.value, currentTool.value, props.mapView, clusterCounts.value, isProcessing)
+            if (result) {
+                showLayerSelect.value = false
+            }
+        } else if (currentTool.value.id === 'random-forest') {
+            // 随机森林处理逻辑
+            const result = await processLayerSelect(
+                selectedLayerName.value, 
+                currentTool.value, 
+                props.mapView, 
+                rfParams.value, 
+                isProcessing
+            )
+            if (result) {
+                showLayerSelect.value = false
+            }
+        } else {
+            const result = await processLayerSelect(selectedLayerName.value, currentTool.value, props.mapView)
+            if (result) {
+                showLayerSelect.value = false
+            }
+        }
+    } catch (error) {
+        console.error('Error processing layer selection:', error)
+        ElMessage.error('处理失败')
     }
 }
 
