@@ -108,7 +108,7 @@ class ClassificationTool(BaseTool):
             })
             
             # 添加可视化参数
-            return classified.randomVisualizer()
+            return classified
             
         except Exception as e:
             print(f"Error in random forest classification: {str(e)}")

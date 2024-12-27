@@ -176,7 +176,8 @@ def compute_band_stats():
         data = request.get_json()
         layer_id = data.get('layer_id')
         bands = data.get('bands')
-        
+        print(f"Map_routes.py - Received bands: {bands}")
+
         if not layer_id or not bands:
             return jsonify({
                 'success': False,
@@ -191,6 +192,8 @@ def compute_band_stats():
                 'message': '未找到指定图层'
             }), 404
             
+
+        
         # 计算统计值
         stats = compute_image_stats(dataset, bands, dataset.geometry())
         

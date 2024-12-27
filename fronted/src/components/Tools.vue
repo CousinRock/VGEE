@@ -290,29 +290,38 @@ const handleLayerSelect = async () => {
     }
 
     try {
+        let result;
         if (currentTool.value.id === 'kmeans') {
-            // 原有的 kmeans 处理逻辑
-            const result = await processLayerSelect(selectedLayerName.value, currentTool.value, props.mapView, clusterCounts.value, isProcessing)
-            if (result) {
-                showLayerSelect.value = false
-            }
+            // kmeans 处理逻辑
+            result = await processLayerSelect(
+                selectedLayerName.value, 
+                currentTool.value, 
+                props.mapView, 
+                clusterCounts.value, 
+                isProcessing
+            )
         } else if (currentTool.value.id === 'random-forest') {
             // 随机森林处理逻辑
-            const result = await processLayerSelect(
+            result = await processLayerSelect(
                 selectedLayerName.value, 
                 currentTool.value, 
                 props.mapView, 
                 rfParams.value, 
                 isProcessing
             )
-            if (result) {
-                showLayerSelect.value = false
-            }
         } else {
-            const result = await processLayerSelect(selectedLayerName.value, currentTool.value, props.mapView)
-            if (result) {
-                showLayerSelect.value = false
-            }
+            // 其他工具处理逻辑
+            result = await processLayerSelect(
+                selectedLayerName.value, 
+                currentTool.value, 
+                props.mapView,
+                null,       // 如果工具不需要额外参数，传入 null
+                isProcessing  // 为所有工具都传入 isProcessing
+            )
+        }
+
+        if (result) {
+            showLayerSelect.value = false
         }
     } catch (error) {
         console.error('Error processing layer selection:', error)

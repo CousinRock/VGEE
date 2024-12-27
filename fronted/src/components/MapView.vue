@@ -36,8 +36,16 @@
                         <div class="layer-actions">
                             <template v-if="layer.type === 'vector' || layer.type === 'manual'">
                                 <el-dropdown trigger="click" :teleported="false">
-                                    <button class="layer-settings" title="图层设置" tabindex="0">
-                                        <i class="fas fa-cog"></i>
+                                    <button 
+                                        class="layer-settings" 
+                                        title="图层设置" 
+                                        :disabled="layer.isSettingStudyArea"
+                                    >
+                                        <i :class="[
+                                            'fas',
+                                            layer.isSettingStudyArea ? 'fa-spinner fa-spin' : 'fa-cog'
+                                        ]"></i>
+                                        <!-- {{ layer.isSettingStudyArea ? '设置中...' : '' }} -->
                                     </button>
                                     <template #dropdown>
                                         <el-dropdown-menu>
@@ -66,9 +74,31 @@
                                 </el-dropdown>
                             </template>
                             <template v-else>
-                                <button class="layer-settings" @click="openLayerSettings(layer)" title="图层设置">
-                                    <i class="fas fa-cog"></i>
-                                </button>
+                                <el-dropdown trigger="click" :teleported="false">
+                                    <button 
+                                        class="layer-settings" 
+                                        title="图层设置"
+                                        :disabled="layer.isLoadingProperties"
+                                    >
+                                        <i :class="[
+                                            'fas',
+                                            layer.isLoadingProperties ? 'fa-spinner fa-spin' : 'fa-cog'
+                                        ]"></i>
+                                        <!-- {{ layer.isLoadingProperties ? '加载中...' : '' }} -->
+                                    </button>
+                                    <template #dropdown>
+                                        <el-dropdown-menu>
+                                            <el-dropdown-item @click="openLayerSettings(layer)" tabindex="0">
+                                                <i class="el-icon-setting"></i>
+                                                显示设置
+                                            </el-dropdown-item>
+                                            <el-dropdown-item @click="showLayerProperties(layer)" tabindex="0">
+                                                <i class="el-icon-info"></i>
+                                                属性信息
+                                            </el-dropdown-item>
+                                        </el-dropdown-menu>
+                                    </template>
+                                </el-dropdown>
                             </template>
                             <button class="remove-layer" @click="removeLayer(layer.id)" title="移除图层">
                                 <i class="fas fa-times"></i>
@@ -93,7 +123,7 @@
             </div>
         </el-dialog>
 
-        <!-- 修改图层设置对话框 -->
+        <!-- 修��图层设置对话框 -->
         <el-dialog v-model="showLayerSettings" title="图层设置" width="500px">
             <div class="layer-settings-content" v-if="currentLayer">
                 <!-- 波段显示模式选择 -->
@@ -109,7 +139,12 @@
                     <div class="band-select">
                         <label>Band</label>
                         <el-select v-model="visParams.bands[0]">
-                            <el-option v-for="band in availableBands" :key="band" :label="band" :value="band" />
+                            <el-option 
+                                v-for="band in currentLayer.bandInfo" 
+                                :key="band" 
+                                :label="band" 
+                                :value="band" 
+                            />
                         </el-select>
                     </div>
 
@@ -241,6 +276,16 @@
                 </span>
             </template>
         </el-dialog>
+
+        <!-- 添加属性查看对话框 -->
+        <el-dialog v-model="showPropertiesDialog" :title="`${currentLayer?.name || ''} 属性`" width="600px">
+            <div class="properties-container" v-if="layerProperties">
+                <el-table :data="layerProperties" style="width: 100%">
+                    <el-table-column prop="name" label="属性名" width="200" />
+                    <el-table-column prop="value" label="属性值" />
+                </el-table>
+            </div>
+        </el-dialog>
     </div>
 </template>
 
@@ -318,6 +363,10 @@ const currentSampleLayer = ref(null);
 
 // 在 script setup 顶部添加计数器
 const pointLayerCounter = ref(0);
+
+// 属性查看相关的响应式变量
+const showPropertiesDialog = ref(false)
+const layerProperties = ref([])
 
 // 切换图层控制面板显示
 const toggleLayerControl = () => {
@@ -720,6 +769,7 @@ const updateRangeBasedOnBands = async (vis) => {
             applyButton.disabled = true
             applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 计算中...'
         }
+        console.log('MapView.vue - updateRangeBasedOnBands - vis:', vis);
 
         // 调用后端口计算统计值
         const response = await fetch(API_ROUTES.MAP.COMPUTE_STATS, {
@@ -729,7 +779,7 @@ const updateRangeBasedOnBands = async (vis) => {
             },
             body: JSON.stringify({
                 layer_id: currentLayer.value.id,
-                bands: visParams.bands
+                bands: vis.bands
             })
         });
 
@@ -1115,8 +1165,24 @@ const confirmSetSample = async () => {
 };
 
 const toggleStudyArea = async (layer) => {
-    await handleStudyArea.toggleStudyArea(layer);
-};
+    try {
+        // 设置加载状态
+        layer.isSettingStudyArea = true
+        const button = document.querySelector(`[data-layer-id="${layer.id}"] .layer-settings`)
+        if (button) {
+            button.disabled = true
+        }
+
+        await handleStudyArea.toggleStudyArea(layer)
+    } finally {
+        // 清除加载状态
+        layer.isSettingStudyArea = false
+        const button = document.querySelector(`[data-layer-id="${layer.id}"] .layer-settings`)
+        if (button) {
+            button.disabled = false
+        }
+    }
+}
 
 const openVectorStyleSettings = (layer) => {
     handleStyle.openVectorStyleSettings(layer, currentVectorLayer, vectorStyle, showVectorStyleDialog);
@@ -1125,6 +1191,42 @@ const openVectorStyleSettings = (layer) => {
 const applyVectorStyle = () => {
     handleStyle.applyVectorStyle(currentVectorLayer, vectorStyle, showVectorStyleDialog, map.value);
 };
+
+// 显示图层属性方法
+const showLayerProperties = async (layer) => {
+    try {
+        // 设置加载状态
+        layer.isLoadingProperties = true
+        const button = document.querySelector(`[data-layer-id="${layer.id}"] .layer-settings`)
+        if (button) {
+            button.disabled = true
+        }
+
+        currentLayer.value = layer
+        const response = await fetch(`${API_ROUTES.LAYER.GET_PROPERTIES}?id=${layer.id}`)
+        const data = await response.json()
+        
+        if (data.success) {
+            layerProperties.value = Object.entries(data.properties).map(([name, value]) => ({
+                name,
+                value: typeof value === 'object' ? JSON.stringify(value) : value
+            }))
+            showPropertiesDialog.value = true
+        } else {
+            ElMessage.error(data.message || '获取图层属性失败')
+        }
+    } catch (error) {
+        console.error('Error getting layer properties:', error)
+        ElMessage.error('获取图层属性失败')
+    } finally {
+        // 清除加载状态
+        layer.isLoadingProperties = false
+        const button = document.querySelector(`[data-layer-id="${layer.id}"] .layer-settings`)
+        if (button) {
+            button.disabled = false
+        }
+    }
+}
 
 </script>
 

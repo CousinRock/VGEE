@@ -20,6 +20,10 @@ def common_process(layer_ids, results, vis_params, message):
         result = ee.Image(results.get(i))
         datasets[layer_id] = result
         
+        # 获取波段信息
+        bandNames = result.bandNames().getInfo()
+        print(f"Tool_routes.py - common_process - bandNames for {layer_id}:", bandNames)
+        
         layer_vis = next((v for v in vis_params if v['id'] == layer_ids[i]), None)
         params = layer_vis['visParams'] if layer_vis else {
             'bands': ['B4', 'B3', 'B2'],
@@ -29,10 +33,18 @@ def common_process(layer_ids, results, vis_params, message):
         }
         
         map_id = result.getMapId(params)
+        print('Tool_routes.py - common_process-map_id:',params)
         
         layer_results.append({
             'layer_id': layer_ids[i],
-            'tileUrl': map_id['tile_fetcher'].url_format
+            'tileUrl': map_id['tile_fetcher'].url_format,
+            'bandInfo': bandNames,  # 添加波段信息
+            'visParams': {
+                'bands': params['bands'],
+                'min': params['min'],
+                'max': params['max'],
+                'gamma': params.get('gamma', 1.4)
+            }
         })
 
     return jsonify({
@@ -80,6 +92,9 @@ def calculate_index():
             results.append(result)
             
         results = ee.List(results)
+        bandNames = ee.Image(results.get(0)).bandNames().getInfo()
+        # print('Tool_routes.py - calculate_index-bandNames:',bandNames)
+        
         return common_process(layer_ids, results, vis_params, f'已添加 {index_type.upper()} 波段')
         
     except Exception as e:

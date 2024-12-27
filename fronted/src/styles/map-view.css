@@ -400,3 +400,57 @@
 .layer-controls button:hover {
     opacity: 0.8;
 }
+
+.properties-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.properties-container .el-table {
+    margin-bottom: 0;
+}
+
+/* 添加或更新按钮样式 */
+.layer-settings.el-button {
+    padding: 6px;
+    height: 28px;
+    min-height: 28px;
+    background: transparent;
+    border: none;
+    color: #666;
+}
+
+.layer-settings.el-button:hover {
+    color: #409EFF;
+    background: transparent;
+}
+
+.layer-settings.el-button.is-loading {
+    background: transparent;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+/* 调整加载图标的样式 */
+.layer-settings.el-button.is-loading .el-loading-spinner {
+    transform: scale(0.8);
+}
+
+.layer-settings.el-button.is-loading::before {
+    background-color: transparent;
+}
+
+/* 移除按钮样式 */
+.remove-layer.el-button {
+    padding: 6px;
+    height: 28px;
+    min-height: 28px;
+    background: transparent;
+    border: none;
+    color: #666;
+}
+
+.remove-layer.el-button:hover {
+    color: #f56c6c;
+    background: transparent;
+}

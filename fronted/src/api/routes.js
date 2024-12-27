@@ -18,7 +18,8 @@ export const API_ROUTES = {
     // 图层相关
     LAYER: {
         GET_LAYER_INFO: `${BASE_URL}/layer-info`,
-        UPDATE_VIS_PARAMS: `${BASE_URL}/update-vis-params`
+        UPDATE_VIS_PARAMS: `${BASE_URL}/update-vis-params`,
+        GET_PROPERTIES: `${BASE_URL}/get-properties`
     },
 
     // 工具相关

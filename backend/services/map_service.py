@@ -52,6 +52,7 @@ def compute_image_stats(dataset, bands,region=None):
         if region is None:
             return None
         
+        print(f"Map_service.py - compute_image_stats-bands: {bands}")
         band_img = dataset.select(bands)
         
        # 使用 ee.Reducer.minMax 计算每个波段的最小值和最大值

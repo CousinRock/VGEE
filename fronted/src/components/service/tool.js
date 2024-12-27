@@ -70,8 +70,11 @@ export const updateMapLayer = async (layerResult, mapView) => {
             zIndex: layer.zIndex
         })
 
-        // 更新图层引用
+        // 更新图层引用和波段信息
         layer.leafletLayer = newLeafletLayer
+        layer.bandInfo = layerResult.bandInfo  // 更新波段信息
+
+        console.log('Tool.js - updateMapLayer - updated layer:', layer)
 
         if (layer.visible) {
             newLeafletLayer.addTo(mapView.map)
@@ -94,7 +97,8 @@ export const updateMapLayer = async (layerResult, mapView) => {
             visParams: {
                 bands: layerResult.bandInfo,
                 min: layerResult.visParams.min,
-                max: layerResult.visParams.max
+                max: layerResult.visParams.max,
+                gamma: layerResult.visParams.gamma || 1.4
             },
             zIndex: 1000 + mapView.layers.length,
             satellite: originalLayer?.satellite || 'LANDSAT',
@@ -195,6 +199,7 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
         })
 
         const data = await response.json()
+        
         if (!data.success) {
             throw new Error(data.message || '处理失败')
         }
