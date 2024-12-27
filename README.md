@@ -46,8 +46,8 @@
 ### 前端安装
 ```bash
 cd frontend
-npm install
-npm run serve
+npm install/cnpm install
+npm run dev
 ```
 
 ### 后端安装
@@ -76,7 +76,7 @@ flask run/python app.py
 2. 启动前端服务
 ```bash
 cd frontend
-npm run serve
+npm run dev
 ```
 
 ## 主要功能使用
