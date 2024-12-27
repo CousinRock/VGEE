@@ -329,7 +329,6 @@ const visParams = reactive({
     max: 0.3,
     gamma: 1.4
 })
-var index = 1
 
 const map = ref(null)
 let baseLayer = null
@@ -387,26 +386,10 @@ const addNewLayer = async (layerName, mapData) => {
         const layerInfo = await response.json()
         console.log('MapView.vue - addNewLayer - layerInfo:', layerInfo);
 
-        // 2. 根据卫星类型设置默认波段组合
-        let defaultBands
-        switch (mapData.satellite) {
-            case 'LANDSAT':
-                defaultBands = ['B4', 'B3', 'B2']  // Landsat 自然色
-                break
-            case 'SENTINEL':
-                defaultBands = ['B4', 'B3', 'B2']  // Sentinel-2 自然色
-                break
-            case 'MODIS':
-                defaultBands = ['NDVI']  // MODIS 默认示 NDVI
-                break
-            default:
-                defaultBands = layerInfo.bands.slice(0, 3)  // 默认使用前三个波段
-        }
-
         // 3. 为每个图层创建新的图层对
         mapData.overlayLayers.forEach(layerData => {
             const newLayer = {
-                id: `layer-${index}-${layerInfo.satellite}`,
+                id: layerData.id,
                 name: layerName,
                 icon: 'fas fa-satellite',
                 visible: true,
@@ -442,8 +425,6 @@ const addNewLayer = async (layerName, mapData) => {
             layers.value.push(newLayer)
             console.log('MapView.vue - newLayer.visParams:', newLayer.visParams);
         })
-
-        index += 1
 
         // 更新图层顺序
         updateLayerOrder()
@@ -779,7 +760,7 @@ const updateRangeBasedOnBands = async (vis) => {
             },
             body: JSON.stringify({
                 layer_id: currentLayer.value.id,
-                bands: vis.bands
+                bands: visParams.bands
             })
         });
 

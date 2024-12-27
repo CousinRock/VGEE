@@ -1,5 +1,6 @@
 import ee
 from config.satellite_config import SATELLITE_CONFIGS
+import time
 
 # 使用字典存储每个图层的 dataset
 datasets = {}
@@ -91,9 +92,8 @@ def compute_image_stats(dataset, bands,region=None):
 def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=None, layerName=None):
     """获取地图数据服务"""
     try:
-        global index
-        index += 1
-        layer_id = f"layer-{index}-{satellite}"
+        # 移除全局 index 变量，直接使用时间戳作为唯一标识
+        layer_id = f"layer-{int(time.time())}-{satellite}"      
         
         # 获取卫星配置
         satellite_config = SATELLITE_CONFIGS.get(satellite)
