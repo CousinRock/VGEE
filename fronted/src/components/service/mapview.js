@@ -27,7 +27,8 @@ export const MENU_ICONS = {
     CHART: 'fas fa-chart-bar',     // 图表
     LOCATION: 'fas fa-map-marker-alt', // 位置
     SATELLITE: 'fas fa-satellite',   // 卫星
-    SAMPLE_ACTIVE: 'fas fa-check'      // 已设为样本
+    SAMPLE_ACTIVE: 'fas fa-check',      // 已设为样本
+    EXPORT: 'fas fa-cloud-upload-alt'  // 导出到云端
 }
 
 // 样本相关方法
@@ -587,5 +588,41 @@ export const baseMapManager = {
             return newBaseLayer  // 返回新创建的图层
         }
         return null
+    }
+}
+
+// 导出图层管理
+export const exportManager = {
+    // 导出图层到云端
+    exportToCloud: async (layer, API_ROUTES) => {
+        try {
+            // 显示加载状态
+            layer.isExporting = true
+            
+            const response = await fetch(API_ROUTES.LAYER.EXPORT_TO_CLOUD, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    layer_id: layer.id,
+                    layer_name: layer.name,
+                    layer_type: layer.type,
+                    vis_params: layer.visParams
+                })
+            })
+
+            const data = await response.json()
+            if (data.success) {
+                ElMessage.success('图层已成功导出到云端')
+                return true
+            } else {
+                throw new Error(data.message || '导出失败')
+            }
+        } catch (error) {
+            console.error('Error exporting layer:', error)
+            ElMessage.error(error.message || '导出图层失败')
+            return false
+        } finally {
+            layer.isExporting = false
+        }
     }
 }

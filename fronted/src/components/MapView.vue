@@ -73,6 +73,13 @@
                                                 <i :class="MENU_ICONS.EDIT"></i>
                                                 重命名
                                             </el-dropdown-item>
+                                            <el-dropdown-item @click="exportLayer(layer)" tabindex="0">
+                                                <i :class="[
+                                                    MENU_ICONS.EXPORT,
+                                                    {'fa-spin': layer.isExporting}
+                                                ]"></i>
+                                                {{ layer.isExporting ? '导出中...' : '导出到云端' }}
+                                            </el-dropdown-item>
                                         </el-dropdown-menu>
                                     </template>
                                 </el-dropdown>
@@ -103,6 +110,13 @@
                                             <el-dropdown-item @click="showLayerProperties(layer)" tabindex="0">
                                                 <i :class="MENU_ICONS.INFO"></i>
                                                 属性信息
+                                            </el-dropdown-item>
+                                            <el-dropdown-item @click="exportLayer(layer)" tabindex="0">
+                                                <i :class="[
+                                                    MENU_ICONS.EXPORT,
+                                                    {'fa-spin': layer.isExporting}
+                                                ]"></i>
+                                                {{ layer.isExporting ? '导出中...' : '导出到云端' }}
                                             </el-dropdown-item>
                                         </el-dropdown-menu>
                                     </template>
@@ -324,6 +338,7 @@ import { handleSample, handleStudyArea, handleStyle
     ,getPalettePreviewStyle,getSliderStep,formatSliderValue,debounce } from './service/mapview'
 import { layerManager,baseMapManager } from './service/mapview'
 import { MENU_ICONS } from './service/mapview'
+import { exportManager } from './service/mapview'
 
 const props = defineProps({
     mapData: {
@@ -955,6 +970,12 @@ const openRenameDialog = (layer) => {
     currentRenameLayer.value = layer
     newLayerName.value = layer.name
     showRenameDialog.value = true
+}
+
+// 导出图层方法
+const exportLayer = async (layer) => {
+    if (layer.isExporting) return
+    await exportManager.exportToCloud(layer, API_ROUTES)
 }
 
 </script>

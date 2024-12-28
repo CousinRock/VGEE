@@ -1,10 +1,12 @@
 from flask import Blueprint, jsonify, request
-from services.map_service import get_map_data_service,remove_dataset,compute_image_stats,get_dataset,save_dataset
+from services.map_service import get_map_data_service,remove_dataset,compute_image_stats,get_dataset,save_dataset,get_all_datasets
 from config.satellite_config import SATELLITE_CONFIGS
 import ee
 from services.sample_service import add_sample_service, remove_sample_service,get_all_samples
+from flask_cors import CORS
 
 map_bp = Blueprint('map', __name__)
+CORS(map_bp)
 
 # 存储研究区域列表
 study_areas = []
@@ -352,6 +354,45 @@ def rename_layer():
             
     except Exception as e:
         print(f"Error renaming layer: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@map_bp.route('/export-to-cloud', methods=['POST'])
+def export_layer_to_cloud():
+    try:
+        data = request.get_json()
+        layer_id = data.get('layer_id')
+        layer_name = data.get('layer_name')
+        layer_type = data.get('layer_type')
+        vis_params = data.get('vis_params')
+
+        dataset,datasetsNames = get_all_datasets()
+        img = ee.Image(dataset[layer_id]).toFloat()
+        img_name = datasetsNames[layer_id]
+
+        # 调用 Earth Engine 导出功能
+        task = ee.batch.Export.image.toDrive(
+            image=img,
+            description=img_name,
+            folder='EarthEngine_Exports',
+            fileNamePrefix=img_name,
+            scale=30,
+            region=img.geometry(),  # 可以添加导出区域限制
+            fileFormat='GeoTIFF',
+            maxPixels=1e13
+        )
+        
+        # 启动导出任务
+        task.start()
+        
+        return jsonify({
+            'success': True,
+            'message': '导出任务已启动'
+        })
+    except Exception as e:
+        print(f"Error exporting layer: {str(e)}")
         return jsonify({
             'success': False,
             'message': str(e)

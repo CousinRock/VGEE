@@ -20,7 +20,8 @@ export const API_ROUTES = {
     LAYER: {
         GET_LAYER_INFO: `${BASE_URL}/layer-info`,
         UPDATE_VIS_PARAMS: `${BASE_URL}/update-vis-params`,
-        GET_PROPERTIES: `${BASE_URL}/get-properties`
+        GET_PROPERTIES: `${BASE_URL}/get-properties`,
+        EXPORT_TO_CLOUD: `${BASE_URL}/export-to-cloud`
     },
 
     // 工具相关
