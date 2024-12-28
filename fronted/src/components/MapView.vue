@@ -54,7 +54,7 @@
                                                 @click="toggleStudyArea(layer)" 
                                                 tabindex="0"
                                             >
-                                                <i :class="layer.isStudyArea ? 'el-icon-check' : 'el-icon-crop'"></i>
+                                                <i :class="layer.isStudyArea ? MENU_ICONS.STUDY_AREA_ACTIVE : MENU_ICONS.STUDY_AREA"></i>
                                                 {{ layer.isStudyArea ? '取消研究区域' : '设为研究区域' }}
                                             </el-dropdown-item>
                                             <el-dropdown-item 
@@ -62,15 +62,15 @@
                                                 @click="toggleSample(layer)" 
                                                 tabindex="0"
                                             >
-                                                <i :class="layer.isSample ? 'el-icon-check' : 'el-icon-collection-tag'"></i>
+                                                <i :class="layer.isSample ? MENU_ICONS.SAMPLE_ACTIVE : MENU_ICONS.SAMPLE"></i>
                                                 {{ layer.isSample ? '取消样本' : '设为样本' }}
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="openVectorStyleSettings(layer)" tabindex="0">
-                                                <i class="el-icon-setting"></i>
+                                                <i :class="MENU_ICONS.STYLE"></i>
                                                 样式设置
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="openRenameDialog(layer)" tabindex="0">
-                                                <i class="fas fa-edit"></i>
+                                                <i :class="MENU_ICONS.EDIT"></i>
                                                 重命名
                                             </el-dropdown-item>
                                         </el-dropdown-menu>
@@ -93,15 +93,15 @@
                                     <template #dropdown>
                                         <el-dropdown-menu>
                                             <el-dropdown-item @click="openRenameDialog(layer)" tabindex="0">
-                                                <i class="fas fa-edit"></i>
+                                                <i :class="MENU_ICONS.EDIT"></i>
                                                 重命名
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="openLayerSettings(layer)" tabindex="0">
-                                                <i class="el-icon-setting"></i>
+                                                <i :class="MENU_ICONS.SETTINGS"></i>
                                                 显示设置
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="showLayerProperties(layer)" tabindex="0">
-                                                <i class="el-icon-info"></i>
+                                                <i :class="MENU_ICONS.INFO"></i>
                                                 属性信息
                                             </el-dropdown-item>
                                         </el-dropdown-menu>
@@ -322,7 +322,8 @@ import 'leaflet-draw/dist/leaflet.draw.css'
 import { API_ROUTES } from '../api/routes'
 import { handleSample, handleStudyArea, handleStyle
     ,getPalettePreviewStyle,getSliderStep,formatSliderValue,debounce } from './service/mapview'
-import { layerManager } from './service/mapview'
+import { layerManager,baseMapManager } from './service/mapview'
+import { MENU_ICONS } from './service/mapview'
 
 const props = defineProps({
     mapData: {
@@ -463,28 +464,7 @@ watch(layers, debounce((newLayers) => {
 
 // 修改 changeBaseMap 函数
 const changeBaseMap = () => {
-    // 正确移除旧底图
-    if (baseLayer) {   
-        layerChangeRemove(map.value, baseLayer)
-        baseLayer = null
-    }
-
-    // 创建新底图
-    const selectedMap = baseMaps.find(m => m.id === selectedBaseMap.value)
-    if (selectedMap) {
-        // 处理普通瓦片服务
-        baseLayer = L.tileLayer(selectedMap.url, {
-            subdomains: selectedMap.subdomains || 'abc',
-            attribution: selectedMap.attribution,
-            maxZoom: 20,
-            maxNativeZoom: 20
-        })
-
-        if (baseLayerVisible.value) {
-            baseLayer.addTo(map.value)
-            baseLayer.setZIndex(0)
-        }
-    }
+    baseLayer = baseMapManager.changeBaseMap(map, baseLayer, baseMaps, selectedBaseMap, baseLayerVisible)
 }
 
 // 修改底图可见性监听
@@ -573,24 +553,7 @@ onMounted(async () => {
 
 // 更新图层顺序
 const updateLayerOrder = () => {
-    layers.value.forEach((layer, index) => {
-        if (layer.leafletLayer && layer.visible) {
-            const zIndex = 1000 + index;
-            layer.zIndex = zIndex;
-
-            // 只有栅格图层才有 setZIndex 方法
-            if (layer.type === 'manual' || layer.type === 'vector') {
-                // 对于矢量图层，需要重新添加到地图以更新顺序
-                if (map.value.hasLayer(layer.leafletLayer)) {
-                    layer.leafletLayer.remove();
-                    layer.leafletLayer.addTo(map.value);
-                }
-            } else {
-                // 栅格图层可以直接设置 zIndex
-                layer.leafletLayer.setZIndex(zIndex);
-            }
-        }
-    });
+    layerManager.updateLayerOrder(layers, map)
 };
 
 // 监听图层可见性变化
@@ -657,154 +620,16 @@ const openLayerSettings = async (layer) => {
 
 // 修改更新围函数
 const updateRangeBasedOnBands = async (vis) => {
-    try {
-        if (!currentLayer.value) return;
-
-        // 添加加载状态到 Apply 按钮
-        const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
-        if (applyButton) {
-            applyButton.disabled = true
-            applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 计算中...'
-        }
-        console.log('MapView.vue - updateRangeBasedOnBands - vis:', vis);
-
-        // 调用后端口计算统计值
-        const response = await fetch(API_ROUTES.MAP.COMPUTE_STATS, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                layer_id: currentLayer.value.id,
-                bands: visParams.bands
-            })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            // 使用范围标准化函数处理最大最小值
-            const normalizedRange = normalizeRange(result.min, result.max);
-
-            // 更新当前图层最大小值
-            currentLayer.value.min = normalizedRange.min;
-            currentLayer.value.max = normalizedRange.max;
-
-
-            console.log('MapView.vue - updateRangeBasedOnBands - new range:', normalizedRange);
-        } else {
-            // 如果计算失败，使用传入的值
-            // visParams.range = [vis.min, vis.max];
-            currentLayer.value.min = vis.min;
-            currentLayer.value.max = vis.max;
-            console.warn('MapView.vue - Failed to compute stats, using provided values');
-        }
-        visParams.range = [vis.min, vis.max];
-    } catch (error) {
-        console.error('MapView.vue - Error updating range:', error);
-        // 发生错误时使用传入的值
-        visParams.range = [vis.min, vis.max];
-        currentLayer.value.min = vis.min;
-        currentLayer.value.max = vis.max;
-    } finally {
-        // 恢复按钮状态
-        const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
-        if (applyButton) {
-            applyButton.disabled = false
-            applyButton.innerHTML = 'Apply'
-        }
-    }
+    layerManager.updateRangeBasedOnBands(currentLayer, vis, visParams, API_ROUTES)
 }
 
 // 应用可视化参数
 const applyVisParams = async () => {
-    try {
-        if (!currentLayer.value || !map) return;
-
-        // 添加加载状态
-        const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
-        if (applyButton) {
-            applyButton.disabled = true
-            applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 应用中...'
-        }
-
-        const updatedVisParams = {
-            bands: visParams.bands,
-            min: visParams.range[0],
-            max: visParams.range[1],
-            gamma: visParams.gamma
-        }
-
-        console.log('MapView.vue - applyVisParams - updatedVisParams:', updatedVisParams);
-
-        // 如果是单波段，添加调色板
-        if (bandMode.value === 1) {
-            updatedVisParams.bands = [visParams.bands[0]]
-            updatedVisParams.palette = palettes[selectedPalette.value]
-            updatedVisParams.gamma = null
-        }
-
-        const response = await fetch(API_ROUTES.LAYER.UPDATE_VIS_PARAMS, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                satellite: currentLayer.value.satellite,
-                visParams: updatedVisParams,
-                layerId: currentLayer.value.id
-            })
-        })
-
-        const data = await response.json()
-
-        if (data.tileUrl) {
-            const layer = layers.value.find(l => l.id === currentLayer.value.id)
-            if (layer) {
-                // 修改图层移除逻辑
-                if (layer.leafletLayer && map.value.hasLayer(layer.leafletLayer)) {
-                        layerChangeRemove(map.value, layer.leafletLayer);
-                }
-
-                // 创建新图层
-                const newLeafletLayer = L.tileLayer(data.tileUrl, {
-                    opacity: currentLayer.value.opacity,
-                    maxZoom: 20,
-                    maxNativeZoom: 20,
-                    tileSize: 256,
-                    updateWhenIdle: false,
-                    updateWhenZooming: false,
-                    keepBuffer: 2,
-                    zIndex: layer.zIndex
-                })
-
-                // 更新图层引用和参数
-                layer.leafletLayer = newLeafletLayer
-                layer.visParams = { ...updatedVisParams }
-
-                // 如果图层是可见的，则添加到地图
-                if (layer.visible) {
-                    newLeafletLayer.addTo(map.value)
-                    newLeafletLayer.setZIndex(1000 + layers.value.indexOf(layer))
-                }
-            }
-            showLayerSettings.value = false
-        }
-    } catch (error) {
-        console.error('MapView.vue - Error updating vis params:', error)
-        ElMessage.error('更新图层样式失败')
-    } finally {
-        // 恢复按钮状态
-        const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
-        if (applyButton) {
-            applyButton.disabled = false
-            applyButton.innerHTML = 'Apply'
-        }
-    }
+    layerManager.applyVisParams(map,currentLayer, visParams, showLayerSettings,bandMode, palettes,selectedPalette,layers, API_ROUTES)
 }
 
 // 修改波段变化的监听
-watch(() => visParams.bands, (newBands) => {
+watch(() => visParams.bands, () => {
     if (!currentLayer.value || !currentLayer.value.bandInfo) return
 
     console.log('MapView-watch', visParams);

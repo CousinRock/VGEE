@@ -1,6 +1,34 @@
 import { ElMessage } from 'element-plus'
 import L from 'leaflet'
 import { API_ROUTES } from '../../api/routes'
+import { layerChangeRemove, normalizeRange } from '../../util/methods'
+
+// 定义图标常量
+export const MENU_ICONS = {
+    EDIT: 'fas fa-edit',           // 编辑/重命名
+    SETTINGS: 'fas fa-cog',        // 设置
+    INFO: 'fas fa-info-circle',    // 信息
+    DELETE: 'fas fa-trash',        // 删除
+    STYLE: 'fas fa-palette',       // 样式
+    SAMPLE: 'fas fa-tag',          // 样本
+    STUDY_AREA: 'fas fa-draw-polygon', // 研究区
+    STUDY_AREA_ACTIVE: 'fas fa-check',  // 已设为研究区域
+    VISIBILITY: 'fas fa-eye',      // 可见性
+    DOWNLOAD: 'fas fa-download',   // 下载
+    UPLOAD: 'fas fa-upload',       // 上传
+    LAYERS: 'fas fa-layer-group',  // 图层
+    ZOOM: 'fas fa-search',         // 缩放
+    CHECK: 'fas fa-check',         // 选中
+    CLOSE: 'fas fa-times',         // 关闭
+    SPINNER: 'fas fa-spinner fa-spin', // 加载中
+    SAVE: 'fas fa-save',           // 保存
+    REFRESH: 'fas fa-sync',        // 刷新
+    FILTER: 'fas fa-filter',       // 过滤
+    CHART: 'fas fa-chart-bar',     // 图表
+    LOCATION: 'fas fa-map-marker-alt', // 位置
+    SATELLITE: 'fas fa-satellite',   // 卫星
+    SAMPLE_ACTIVE: 'fas fa-check'      // 已设为样本
+}
 
 // 样本相关方法
 export const handleSample = {
@@ -249,7 +277,7 @@ export const layerManager = {
                 const newLayer = {
                     id: layerData.id,
                     name: layerName,
-                    icon: 'fas fa-satellite',
+                    icon: MENU_ICONS.SATELLITE,
                     visible: true,
                     opacity: 1,
                     leafletLayer: null,
@@ -357,5 +385,207 @@ export const layerManager = {
             ElMessage.error(error.message || '重命名失败')
             return false
         }
+    },
+
+    //更新图层顺序
+    updateLayerOrder: (layers, map) => {
+        layers.value.forEach((layer, index) => {
+            if (layer.leafletLayer && layer.visible) {
+                const zIndex = 1000 + index;
+                layer.zIndex = zIndex;
+    
+                // 只有栅格图层才有 setZIndex 方法
+                if (layer.type === 'manual' || layer.type === 'vector') {
+                    // 对于矢量图层，需要重新添加到地图以更新顺序
+                    if (map.value.hasLayer(layer.leafletLayer)) {
+                        layer.leafletLayer.remove();
+                        layer.leafletLayer.addTo(map.value);
+                    }
+                } else {
+                    // 栅格图层可以直接设置 zIndex
+                    layer.leafletLayer.setZIndex(zIndex);
+                }
+            }
+        });
+    },
+
+    // 更新范围
+    updateRangeBasedOnBands: async (currentLayer, vis, visParams, API_ROUTES) => {
+        try {
+            if (!currentLayer.value) return;
+    
+            // 添加加载状态到 Apply 按钮
+            const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
+            if (applyButton) {
+                applyButton.disabled = true
+                applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 计算中...'
+            }
+            console.log('MapView.vue - updateRangeBasedOnBands - vis:', vis);
+    
+            // 调用后端口计算统计值
+            const response = await fetch(API_ROUTES.MAP.COMPUTE_STATS, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    layer_id: currentLayer.value.id,
+                    bands: visParams.bands
+                })
+            });
+    
+            const result = await response.json();
+    
+            if (result.success) {
+                // 使用范围标准化函数处理最大最小值
+                const normalizedRange = normalizeRange(result.min, result.max);
+    
+                // 更新当前图层最大小值
+                currentLayer.value.min = normalizedRange.min;
+                currentLayer.value.max = normalizedRange.max;
+    
+    
+                console.log('MapView.vue - updateRangeBasedOnBands - new range:', normalizedRange);
+            } else {
+                // 如果计算失败，使用传入的值
+                // visParams.range = [vis.min, vis.max];
+                currentLayer.value.min = vis.min;
+                currentLayer.value.max = vis.max;
+                console.warn('MapView.vue - Failed to compute stats, using provided values');
+            }
+            visParams.range = [vis.min, vis.max];
+        } catch (error) {
+            console.error('MapView.vue - Error updating range:', error);
+            // 发生错误时使用传入的值
+            visParams.range = [vis.min, vis.max];
+            currentLayer.value.min = vis.min;
+            currentLayer.value.max = vis.max;
+        } finally {
+            // 恢复按钮状态
+            const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
+            if (applyButton) {
+                applyButton.disabled = false
+                applyButton.innerHTML = 'Apply'
+            }
+        }
+    },
+
+    // 应用可视化参数
+    applyVisParams: async (map,currentLayer, visParams, showLayerSettings,bandMode, palettes,selectedPalette,layers, API_ROUTES) => {
+        try {
+            if (!currentLayer.value || !map) return;
+    
+            // 添加加载状态
+            const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
+            if (applyButton) {
+                applyButton.disabled = true
+                applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 应用中...'
+            }
+            
+            console.log('MapView.vue - applyVisParams - visParams:', visParams);
+            const updatedVisParams = {
+                bands: visParams.bands,
+                min: visParams.range[0],
+                max: visParams.range[1],
+                gamma: visParams.gamma,
+            }
+    
+            console.log('MapView.vue - applyVisParams - updatedVisParams:', updatedVisParams);
+    
+            // 如果是单波段，添加调色板
+            if (bandMode.value === 1) {
+                updatedVisParams.bands = [visParams.bands[0]]
+                updatedVisParams.palette = palettes[selectedPalette.value]
+                updatedVisParams.gamma = null
+            }
+    
+            const response = await fetch(API_ROUTES.LAYER.UPDATE_VIS_PARAMS, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    satellite: currentLayer.value.satellite,
+                    visParams: updatedVisParams,
+                    layerId: currentLayer.value.id
+                })
+            })
+    
+            const data = await response.json()
+    
+            if (data.tileUrl) {
+                const layer = layers.value.find(l => l.id === currentLayer.value.id)
+                if (layer) {
+                    // 修改图层移除逻辑
+                    if (layer.leafletLayer && map.value.hasLayer(layer.leafletLayer)) {
+                            layerChangeRemove(map.value, layer.leafletLayer);
+                    }
+    
+                    // 创建新图层
+                    const newLeafletLayer = L.tileLayer(data.tileUrl, {
+                        opacity: currentLayer.value.opacity,
+                        maxZoom: 20,
+                        maxNativeZoom: 20,
+                        tileSize: 256,
+                        updateWhenIdle: false,
+                        updateWhenZooming: false,
+                        keepBuffer: 2,
+                        zIndex: layer.zIndex
+                    })
+    
+                    // 更新图层引用和参数
+                    layer.leafletLayer = newLeafletLayer
+                    layer.visParams = { ...updatedVisParams }
+    
+                    // 如果图层是可见的，则添加到地图
+                    if (layer.visible) {
+                        newLeafletLayer.addTo(map.value)
+                        newLeafletLayer.setZIndex(1000 + layers.value.indexOf(layer))
+                    }
+                }
+                showLayerSettings.value = false
+            }
+        } catch (error) {
+            console.error('MapView.vue - Error updating vis params:', error)
+            ElMessage.error('更新图层样式失败')
+        } finally {
+            // 恢复按钮状态
+            const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
+            if (applyButton) {
+                applyButton.disabled = false
+                applyButton.innerHTML = 'Apply'
+            }
+        }
+    }
+}
+
+// 底图管理相关方法
+export const baseMapManager = {
+    // 切换底图
+    changeBaseMap: (map, baseLayer, baseMaps, selectedBaseMap, baseLayerVisible) => {
+        // 正确移除旧底图
+        if (baseLayer) {   
+            layerChangeRemove(map.value, baseLayer)
+        }
+
+        // 创建新底图
+        const selectedMap = baseMaps.find(m => m.id === selectedBaseMap.value)
+        if (selectedMap) {
+            // 处理普通瓦片服务
+            const newBaseLayer = L.tileLayer(selectedMap.url, {
+                subdomains: selectedMap.subdomains || 'abc',
+                attribution: selectedMap.attribution,
+                maxZoom: 20,
+                maxNativeZoom: 20
+            })
+
+            if (baseLayerVisible.value) {
+                newBaseLayer.addTo(map.value)
+                newBaseLayer.setZIndex(0)
+            }
+            
+            return newBaseLayer  // 返回新创建的图层
+        }
+        return null
     }
 }
