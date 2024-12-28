@@ -229,3 +229,133 @@ export const debounce = (fn, delay) => {
         }, delay);
     };
 };
+
+// 图层管理相关方法
+export const layerManager = {
+    // 添加新图层
+    addNewLayer: async (layerName, mapData, layers, map, API_ROUTES) => {
+        try {
+            if (!mapData?.overlayLayers?.length) {
+                ElMessage.warning('未找符合条件的影像数据')
+                return
+            }
+
+            // 1. 预取波段信息并缓存
+            const response = await fetch(`${API_ROUTES.LAYER.GET_LAYER_INFO}?id=${mapData.overlayLayers[0].id}&satellite=${mapData.satellite}`)
+            const layerInfo = await response.json()
+
+            // 2. 为每个图层创建新的图层对象
+            mapData.overlayLayers.forEach(layerData => {
+                const newLayer = {
+                    id: layerData.id,
+                    name: layerName,
+                    icon: 'fas fa-satellite',
+                    visible: true,
+                    opacity: 1,
+                    leafletLayer: null,
+                    zIndex: 1000 + layers.value.length,
+                    satellite: mapData.satellite || 'LANDSAT',
+                    bandInfo: layerInfo.bands,
+                    visParams: {
+                        bands: mapData.visParams.bands,
+                        min: mapData.visParams.min,
+                        max: mapData.visParams.max,
+                        gamma: mapData.visParams.gamma
+                    },
+                    min: mapData.overlayLayers[0].min,
+                    max: mapData.overlayLayers[0].max
+                }
+
+                // 3. 创建 Leaflet 图层
+                newLayer.leafletLayer = L.tileLayer(layerData.url, {
+                    opacity: newLayer.opacity,
+                    maxZoom: 20,
+                    maxNativeZoom: 20,
+                    tileSize: 256,
+                    updateWhenIdle: false,
+                    updateWhenZooming: false,
+                    keepBuffer: 2,
+                    zIndex: newLayer.zIndex
+                })
+
+                // 4. 添加到地图和图层数组
+                newLayer.leafletLayer.addTo(map.value)
+                layers.value.push(newLayer)
+            })
+        } catch (error) {
+            console.error('Error adding layer:', error)
+            ElMessage.error('添加图层失败')
+        }
+    },
+
+    // 移除图层
+    removeLayer: async (layerId, layers, map, API_ROUTES) => {
+        try {
+            const layer = layers.value.find(l => l.id === layerId)
+            if (!layer) return
+
+            if (layer.type === 'vector' || layer.type === 'manual') {
+                if (layer.isStudyArea) {
+                    ElMessage.error('该图层仍在被用作研究区，无法移除')
+                    return
+                }
+                if(layer.isSample) {
+                    ElMessage.error('该图层仍在被用作样本点，无法移除')
+                    return
+                }
+                map.value.removeLayer(layer.leafletLayer)
+            } else {
+                const response = await fetch(API_ROUTES.MAP.REMOVE_LAYER, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ layer_id: layerId })
+                })
+                const result = await response.json()
+                if (!result.success) {
+                    throw new Error(result.message)
+                }
+                map.value.removeLayer(layer.leafletLayer)
+            }
+
+            const index = layers.value.findIndex(l => l.id === layerId)
+            if (index > -1) {
+                layers.value.splice(index, 1)
+            }
+        } catch (error) {
+            console.error('Error removing layer:', error)
+            ElMessage.error('移除图层失败')
+        }
+    },
+
+    // 重命名图层
+    renameLayer: async (layer, newName, API_ROUTES) => {
+        try {
+            if (!newName.trim()) {
+                ElMessage.warning('图层名称不能为空')
+                return false
+            }
+
+            const response = await fetch(API_ROUTES.MAP.RENAME_LAYER, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    layer_id: layer.id,
+                    new_name: newName.trim()
+                })
+            })
+
+            const data = await response.json()
+            if (data.success) {
+                layer.name = newName.trim()
+                ElMessage.success('图层重命名成功')
+                return true
+            } else {
+                throw new Error(data.message)
+            }
+        } catch (error) {
+            console.error('Error renaming layer:', error)
+            ElMessage.error(error.message || '重命名失败')
+            return false
+        }
+    }
+}

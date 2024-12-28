@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from services.map_service import get_map_data_service,remove_dataset,compute_image_stats,get_dataset
+from services.map_service import get_map_data_service,remove_dataset,compute_image_stats,get_dataset,save_dataset
 from config.satellite_config import SATELLITE_CONFIGS
 import ee
 from services.sample_service import add_sample_service, remove_sample_service,get_all_samples
@@ -324,6 +324,34 @@ def get_samples():
         })
     except Exception as e:
         print(f"Error getting samples: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@map_bp.route('/rename-layer', methods=['POST'])
+def rename_layer():
+    try:
+        data = request.json
+        layer_id = data.get('layer_id')
+        new_name = data.get('new_name')
+        
+        if not layer_id or not new_name:
+            return jsonify({
+                'success': False,
+                'message': '缺少必要参数'
+            }), 400
+            
+        # 更新图层名称
+        save_dataset(layer_id, get_dataset(layer_id), new_name)
+            
+        return jsonify({
+            'success': True,
+            'message': '图层重命名成功'
+        })
+            
+    except Exception as e:
+        print(f"Error renaming layer: {str(e)}")
         return jsonify({
             'success': False,
             'message': str(e)

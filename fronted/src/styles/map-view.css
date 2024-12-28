@@ -65,6 +65,30 @@
     padding: 12px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     width: 200px;
+    max-height: calc(100vh - 450px);
+    overflow-y: auto;
+    z-index: 1000;
+    
+    scrollbar-width: thin;
+    scrollbar-color: #909399 #f5f7fa;
+}
+
+.layer-control::-webkit-scrollbar {
+    width: 6px;
+}
+
+.layer-control::-webkit-scrollbar-track {
+    background: #f5f7fa;
+    border-radius: 3px;
+}
+
+.layer-control::-webkit-scrollbar-thumb {
+    background-color: #909399;
+    border-radius: 3px;
+}
+
+.layer-control::-webkit-scrollbar-thumb:hover {
+    background-color: #606266;
 }
 
 .layer-item {
@@ -239,6 +263,7 @@
 /* 添加下拉菜单样式 */
 .el-dropdown-menu {
     padding: 5px 0;
+    z-index: 3000 !important;
 }
 
 .el-dropdown-menu__item {
@@ -261,6 +286,7 @@
 /* 修改设置按钮样式，确保下拉菜单位置正确 */
 .layer-settings {
     position: relative;
+    z-index: 1001;
 }
 
 /* 添加颜色预览样式 */
@@ -453,4 +479,24 @@
 .remove-layer.el-button:hover {
     color: #f56c6c;
     background: transparent;
+}
+
+/* 确保下拉菜单容器不受父元素overflow限制 */
+.el-popper {
+    position: fixed !important;
+}
+
+/* 重命名对话框样式 */
+.rename-dialog .el-input {
+  margin: 10px 0;
+}
+
+/* 调整下拉菜单项的图标样式 */
+.el-dropdown-menu__item i.fa-edit {
+  color: #409EFF;
+}
+
+/* 确保对话框正确显示 */
+.el-dialog.rename-dialog {
+  margin-top: 15vh !important;
 }

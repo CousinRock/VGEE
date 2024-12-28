@@ -12,7 +12,8 @@ export const API_ROUTES = {
         GET_SATELLITE_CONFIG: `${BASE_URL}/satellite-config`,
         ADD_SAMPLE: `${BASE_URL}/add-sample`,
         REMOVE_SAMPLE: `${BASE_URL}/remove-sample`,
-        GET_SAMPLES: `${BASE_URL}/get-samples`
+        GET_SAMPLES: `${BASE_URL}/get-samples`,
+        RENAME_LAYER: `${BASE_URL}/rename-layer`,
     },
 
     // 图层相关

@@ -69,6 +69,10 @@
                                                 <i class="el-icon-setting"></i>
                                                 样式设置
                                             </el-dropdown-item>
+                                            <el-dropdown-item @click="openRenameDialog(layer)" tabindex="0">
+                                                <i class="fas fa-edit"></i>
+                                                重命名
+                                            </el-dropdown-item>
                                         </el-dropdown-menu>
                                     </template>
                                 </el-dropdown>
@@ -88,6 +92,10 @@
                                     </button>
                                     <template #dropdown>
                                         <el-dropdown-menu>
+                                            <el-dropdown-item @click="openRenameDialog(layer)" tabindex="0">
+                                                <i class="fas fa-edit"></i>
+                                                重命名
+                                            </el-dropdown-item>
                                             <el-dropdown-item @click="openLayerSettings(layer)" tabindex="0">
                                                 <i class="el-icon-setting"></i>
                                                 显示设置
@@ -123,7 +131,7 @@
             </div>
         </el-dialog>
 
-        <!-- 修��图层设置对话框 -->
+        <!-- 修改图层设置对话框 -->
         <el-dialog v-model="showLayerSettings" title="图层设置" width="500px">
             <div class="layer-settings-content" v-if="currentLayer">
                 <!-- 波段显示模式选择 -->
@@ -286,6 +294,17 @@
                 </el-table>
             </div>
         </el-dialog>
+
+        <!-- 添加重命名对话框 -->
+        <el-dialog v-model="showRenameDialog" title="重命名图层" width="300px">
+            <el-input v-model="newLayerName" placeholder="请输入新的图层名称" />
+            <template #footer>
+                <span class="dialog-footer">
+                    <el-button @click="showRenameDialog = false">取消</el-button>
+                    <el-button type="primary" @click="renameLayer">确定</el-button>
+                </span>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -303,6 +322,7 @@ import 'leaflet-draw/dist/leaflet.draw.css'
 import { API_ROUTES } from '../api/routes'
 import { handleSample, handleStudyArea, handleStyle
     ,getPalettePreviewStyle,getSliderStep,formatSliderValue,debounce } from './service/mapview'
+import { layerManager } from './service/mapview'
 
 const props = defineProps({
     mapData: {
@@ -322,12 +342,13 @@ const currentLayer = ref(null)
 const availableBands = ref([])
 const bandMode = ref(3)
 const stretchType = ref('custom')
+// reactive() 用于创建一个响应式对象，当对象的属性发生变化时会自动触发视图更新
 const visParams = reactive({
-    bands: ['B4', 'B3', 'B2'],
-    range: [0, 100],
-    min: 0,
-    max: 0.3,
-    gamma: 1.4
+    bands: ['B4', 'B3', 'B2'],  // 显示的波段组合
+    range: [0, 100],            // 数值范围
+    min: 0,                     // 最小值
+    max: 0.3,                   // 最大值
+    gamma: 1.4                  // 伽马值(用于调整亮度)
 })
 
 const map = ref(null)
@@ -367,6 +388,11 @@ const pointLayerCounter = ref(0);
 const showPropertiesDialog = ref(false)
 const layerProperties = ref([])
 
+// 添加重命名相关的响应式变量
+const showRenameDialog = ref(false)
+const newLayerName = ref('')
+const currentRenameLayer = ref(null)
+
 // 切换图层控制面板显示
 const toggleLayerControl = () => {
     showLayerControl.value = !showLayerControl.value
@@ -374,130 +400,20 @@ const toggleLayerControl = () => {
 
 // 添加新图层
 const addNewLayer = async (layerName, mapData) => {
-    try {
-        if (!mapData?.overlayLayers?.length) {
-            alert('未找符合条件的影像数据')
-            return
-        }
-
-        console.log('MapView.vue - addNewLayer - mapData:', mapData.overlayLayers[0].id);
-        // 1. 预取波段信息并缓存
-        const response = await fetch(`${API_ROUTES.LAYER.GET_LAYER_INFO}?id=${mapData.overlayLayers[0].id}&satellite=${mapData.satellite}`)
-        const layerInfo = await response.json()
-        console.log('MapView.vue - addNewLayer - layerInfo:', layerInfo);
-
-        // 3. 为每个图层创建新的图层对
-        mapData.overlayLayers.forEach(layerData => {
-            const newLayer = {
-                id: layerData.id,
-                name: layerName,
-                icon: 'fas fa-satellite',
-                visible: true,
-                opacity: 1,
-                leafletLayer: null,
-                zIndex: 1000 + layers.value.length,
-                satellite: mapData.satellite || 'LANDSAT',
-                bandInfo: layerInfo.bands,
-                visParams: {
-                    bands: mapData.visParams.bands,
-                    min: mapData.visParams.min,
-                    max: mapData.visParams.max,
-                    gamma: mapData.visParams.gamma
-                },
-                min: mapData.overlayLayers[0].min,
-                max: mapData.overlayLayers[0].max
-            }
-
-            // 4. 创建 Leaflet 图层
-            newLayer.leafletLayer = L.tileLayer(layerData.url, {
-                opacity: newLayer.opacity,
-                maxZoom: 20,
-                maxNativeZoom: 20,
-                tileSize: 256,
-                updateWhenIdle: false,
-                updateWhenZooming: false,
-                keepBuffer: 2,
-                zIndex: newLayer.zIndex
-            })
-
-            // 5. 添加到地图层数组
-            newLayer.leafletLayer.addTo(map.value)
-            layers.value.push(newLayer)
-            console.log('MapView.vue - newLayer.visParams:', newLayer.visParams);
-        })
-
-        // 更新图层顺序
-        updateLayerOrder()
-    } catch (error) {
-        console.error('MapView.vue - Error adding layer:', error)
-        alert('添加图层失败，请重试')
-    }
+    await layerManager.addNewLayer(layerName, mapData, layers, map, API_ROUTES)
 }
 
-// 移除选定的图层
+// 移除图层
 const removeLayer = async (layerId) => {
-    if (!map.value) return;
+    await layerManager.removeLayer(layerId, layers, map, API_ROUTES)
+}
 
-    try {
-        const layer = layers.value.find(l => l.id === layerId);
-        if (!layer) return;
-
-        if (layer.type === 'vector' || layer.type === 'manual') {
-            // 如果是研究区域，需要通知后端移除
-            console.log(layer);
-            
-            if (layer.isStudyArea) {
-                ElMessage.error('该图层仍在被用作研究区，无法移除');
-                return;
-            }
-
-            if(layer.isSample){
-                ElMessage.error('该图层仍在被用作样本点，无法移除');
-                return;
-            }
-            
-            // 从地图移除图层
-            if (map.value.hasLayer(layer.leafletLayer)) {
-                map.value.removeLayer(layer.leafletLayer);
-            }
-            
-            // 从 drawnItems 中也移除
-            if (drawnItems.value && drawnItems.value.hasLayer(layer.leafletLayer)) {
-                drawnItems.value.removeLayer(layer.leafletLayer);
-            }
-        } else {
-            // 原有的栅格图层移除逻辑
-            const response = await fetch(API_ROUTES.MAP.REMOVE_LAYER, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    layer_id: layerId
-                })
-            });
-
-            const result = await response.json();
-            if (!result.success) {
-                console.error('Failed to remove layer from dataset:', result.message);
-            }
-
-            if (layer.leafletLayer) {
-                map.value.removeLayer(layer.leafletLayer);
-            }
-        }
-
-        // 从数组中移除图层
-        const layerIndex = layers.value.findIndex(l => l.id === layerId);
-        if (layerIndex > -1) {
-            layers.value.splice(layerIndex, 1);
-        }
-    } catch (error) {
-        console.error('Error removing layer:', error);
-        ElMessage.error('移除图层失败');
+// 重命名图层
+const renameLayer = async () => {
+    if (await layerManager.renameLayer(currentRenameLayer.value, newLayerName.value, API_ROUTES)) {
+        showRenameDialog.value = false
     }
-};
-
+}
 
 // 监听图层变化时使用防抖
 watch(layers, debounce((newLayers) => {
@@ -1207,6 +1123,13 @@ const showLayerProperties = async (layer) => {
             button.disabled = false
         }
     }
+}
+
+// 打开重命名对话框
+const openRenameDialog = (layer) => {
+    currentRenameLayer.value = layer
+    newLayerName.value = layer.name
+    showRenameDialog.value = true
 }
 
 </script>
