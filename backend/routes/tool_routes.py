@@ -356,18 +356,35 @@ def add_vector_asset():
     try:
         data = request.json
         asset_id = data.get('asset_id')
+        style_params = data.get('style_params', {
+            'color': '#4a80f5',
+            'width': 2,
+            'opacity': 1,
+            'fillOpacity': 0.5
+        })
+        print('Tool_routes.py - add_vector_asset-style_params:', style_params)
         
         # 获取矢量数据
+        vector_asset = ee.FeatureCollection(asset_id)
         
-        vector_asset = ee.FeatureCollection(asset_id)    # print(ve
+        # 准备 Earth Engine 样式参数
+        # Earth Engine 只支持 color 和 opacity 的设置
+        ee_style_params = {
+            'color': style_params['color'].replace('#', ''),
+            'opacity': float(style_params['opacity'])
+        }
         
-        # 将 FeatureCollection 转换为 GeoJSON
-        features = vector_asset.getInfo()
-        print('Tool_routes.py - add_vector_asset-features:',vector_asset.size().getInfo())
+        # 使用传入的样式参数获取瓦片 URL
+        map_id = vector_asset.getMapId(ee_style_params)
+        
+        # 获取边界信息
+        bounds = vector_asset.geometry().bounds().getInfo()
         
         return jsonify({
             'success': True,
-            'features': features
+            'tileUrl': map_id['tile_fetcher'].url_format,
+            'bounds': bounds['coordinates'][0],
+            'visParams': style_params  # 返回原始样式参数
         })
         
     except Exception as e:

@@ -224,7 +224,6 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
 // 添加矢量数据相关方法
 export const handleVectorAsset = async (selectedAsset, mapView) => {
     try {
-        // 获取矢量数据
         const response = await fetch(`${API_ROUTES.TOOLS.ADD_VECTOR_ASSET}`, {
             method: 'POST',
             headers: {
@@ -245,19 +244,20 @@ export const handleVectorAsset = async (selectedAsset, mapView) => {
             type: 'vector',
             visible: true,
             opacity: 1,
-            visParams: {
-                color: '#3388ff',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.2
-            },
-            zIndex: 1000 + mapView.layers.length,
-            geometry: null
+            visParams: data.visParams,
+            zIndex: 1000 + mapView.layers.length
         }
 
-        // 创建 Leaflet 图层
-        const vectorLayer = L.geoJSON(data.features, {
-            style: newLayer.visParams
+        // 创建 Leaflet 瓦片图层
+        const vectorLayer = L.tileLayer(data.tileUrl, {
+            opacity: newLayer.opacity,
+            maxZoom: 20,
+            maxNativeZoom: 20,
+            tileSize: 256,
+            updateWhenIdle: false,
+            updateWhenZooming: false,
+            keepBuffer: 2,
+            zIndex: newLayer.zIndex
         })
 
         // 添加到地图
@@ -265,13 +265,18 @@ export const handleVectorAsset = async (selectedAsset, mapView) => {
         mapView.layers.push(newLayer)
         vectorLayer.addTo(mapView.map)
 
-        // 定位到矢量图层的范围
-        const bounds = vectorLayer.getBounds()
-        if (bounds.isValid()) {
-            // 添加一些padding，使图层不会紧贴边缘
+        // 使用返回的边界信息进行定位
+        if (data.bounds) {
+            // 转换坐标格式为 Leaflet 所需的格式
+            const bounds = L.latLngBounds([
+                [data.bounds[0][1], data.bounds[0][0]], // 西南角
+                [data.bounds[2][1], data.bounds[2][0]]  // 东北角
+            ])
+            
+            // 定位到边界范围
             mapView.map.fitBounds(bounds, {
                 padding: [50, 50],
-                maxZoom: 13  // 限制最大缩放级别，避免缩放过近
+                maxZoom: 13
             })
         }
 

@@ -277,7 +277,9 @@
             <template #footer>
                 <span class="dialog-footer">
                     <el-button @click="showVectorStyleDialog = false">取消</el-button>
-                    <el-button type="primary" @click="applyVectorStyle">确定</el-button>
+                    <el-button type="primary" @click="applyVectorStyle" :loading="isApplyingStyle">
+                        {{ isApplyingStyle ? '应用中...' : '应用' }}
+                    </el-button>
                 </span>
             </template>
         </el-dialog>
@@ -408,6 +410,9 @@ const layerProperties = ref([])
 const showRenameDialog = ref(false)
 const newLayerName = ref('')
 const currentRenameLayer = ref(null)
+
+// 添加加载状态变量
+const isApplyingStyle = ref(false);
 
 // 切换图层控制面板显示
 const toggleLayerControl = () => {
@@ -925,8 +930,13 @@ const openVectorStyleSettings = (layer) => {
     handleStyle.openVectorStyleSettings(layer, currentVectorLayer, vectorStyle, showVectorStyleDialog);
 };
 
-const applyVectorStyle = () => {
-    handleStyle.applyVectorStyle(currentVectorLayer, vectorStyle, showVectorStyleDialog, map.value);
+const applyVectorStyle = async () => {
+    isApplyingStyle.value = true;
+    try {
+        await handleStyle.applyVectorStyle(currentVectorLayer, vectorStyle, showVectorStyleDialog, map.value);
+    } finally {
+        isApplyingStyle.value = false;
+    }
 };
 
 // 显示图层属性方法

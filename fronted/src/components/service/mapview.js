@@ -55,7 +55,7 @@ export const handleSample = {
             const requestBody = {
                 layer_id: layer.id,
                 class_name: sampleForm.value.className,
-                geometry_type: layer.geometryType,
+                geometry_type: layer.geometryType || 'Vector',
                 features: layer.geometryType === 'Point' ? layer.features : [layer.geometry],
                 type: layer.type
             };
@@ -143,12 +143,13 @@ export const handleStudyArea = {
     }
 };
 
-// 图层样式相关方法
+// 矢量图层样式相关方法
 export const handleStyle = {
     // 打开矢量图层样式设置
     openVectorStyleSettings: (layer, currentVectorLayer, vectorStyle, showVectorStyleDialog) => {
         currentVectorLayer.value = layer;
-
+        console.log('MapView.vue - openVectorStyleSettings - layer:', layer);
+        
         if (layer.geometryType === 'Point') {
             vectorStyle.value = {
                 color: layer.visParams.fillColor,
@@ -156,48 +157,117 @@ export const handleStyle = {
                 opacity: layer.visParams.opacity,
                 fillOpacity: layer.visParams.fillOpacity
             };
-        } else {
-            const style = layer.leafletLayer.options.style || {};
+        } else if(layer.geometryType === 'Polygon') {
             vectorStyle.value = {
-                color: style.color || '#3388ff',
-                weight: style.weight || 2,
-                opacity: style.opacity || 1,
-                fillOpacity: style.fillOpacity || 0.2
+                color: layer.visParams.color,
+                opacity: layer.visParams.opacity,
+                fillOpacity: layer.visParams.fillOpacity,
+                weight: layer.visParams.weight
+            };
+        } else {
+            const style = layer.visParams || {};
+            vectorStyle.value = {
+                color: style.color,
+                opacity: style.opacity
             };
         }
-
+        console.log('MapView.vue - openVectorStyleSettings - vectorStyle:', vectorStyle.value);
         showVectorStyleDialog.value = true;
     },
 
     // 应用矢量图层样式
-    applyVectorStyle: (currentVectorLayer, vectorStyle, showVectorStyleDialog, map) => {
-        if (!currentVectorLayer.value) return;
+    applyVectorStyle: async (currentVectorLayer, vectorStyle, showVectorStyleDialog, map) => {
+        try {
+            if (!currentVectorLayer.value) return;
+            if (currentVectorLayer.value.geometryType === 'Point') {
+                currentVectorLayer.value.visParams = {
+                    radius: vectorStyle.value.weight * 3,
+                    fillColor: vectorStyle.value.color,
+                    color: "#ffffff",
+                    weight: 2,
+                    opacity: vectorStyle.value.opacity,
+                    fillOpacity: vectorStyle.value.fillOpacity
+                };
+    
+                // 更新点图层
+                handleStyle.updatePointLayer(currentVectorLayer.value, map);
+            }
+            else if(currentVectorLayer.value.geometryType === 'Polygon') {
+                const style = {
+                    color: vectorStyle.value.color,
+                    weight: vectorStyle.value.weight,
+                    opacity: vectorStyle.value.opacity,
+                    fillOpacity: vectorStyle.value.fillOpacity
+                };
+                currentVectorLayer.value.leafletLayer.setStyle(style);
+                currentVectorLayer.value.visParams = style;
+            }
+            else {
+                // 转换颜色格式
+                const colorInfo = convertColor(vectorStyle.value.color);
+                
+                // 准备样式参数，只使用 Earth Engine 支持的参数
+                const style_params = {
+                    color: '#' + colorInfo.color,
+                    opacity: parseFloat(vectorStyle.value.opacity)
+                };
 
-        if (currentVectorLayer.value.geometryType === 'Point') {
-            currentVectorLayer.value.visParams = {
-                radius: vectorStyle.value.weight * 3,
-                fillColor: vectorStyle.value.color,
-                color: "#ffffff",
-                weight: 2,
-                opacity: vectorStyle.value.opacity,
-                fillOpacity: vectorStyle.value.fillOpacity
-            };
+                console.log('Sending style params:', style_params);
 
-            // 更新点图层
-            handleStyle.updatePointLayer(currentVectorLayer.value, map);
-        } else {
-            const style = {
-                color: vectorStyle.value.color,
-                weight: vectorStyle.value.weight,
-                opacity: vectorStyle.value.opacity,
-                fillOpacity: vectorStyle.value.fillOpacity
-            };
-            currentVectorLayer.value.leafletLayer.setStyle(style);
-            currentVectorLayer.value.visParams = style;
+                // 获取新的瓦片URL
+                const response = await fetch(API_ROUTES.TOOLS.ADD_VECTOR_ASSET, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        asset_id: currentVectorLayer.value.id,
+                        style_params: style_params
+                    })
+                });
+
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.message);
+                }
+
+                // 移除旧图层
+                if (currentVectorLayer.value.leafletLayer) {
+                    map.removeLayer(currentVectorLayer.value.leafletLayer);
+                }
+
+                // 创建新图层并设置所有样式参数
+                const newLayer = L.tileLayer(data.tileUrl, {
+                    opacity: style_params.opacity,
+                    maxZoom: 20,
+                    maxNativeZoom: 20,
+                    tileSize: 256,
+                    updateWhenIdle: false,
+                    updateWhenZooming: false,
+                    keepBuffer: 2,
+                    zIndex: currentVectorLayer.value.zIndex
+                });
+
+                // 更新图层引用和样式参数，保持完整的样式信息
+                currentVectorLayer.value.leafletLayer = newLayer;
+                currentVectorLayer.value.visParams = {
+                    color: style_params.color,
+                    opacity: style_params.opacity
+                };
+
+                // 添加新图层到地图
+                if (currentVectorLayer.value.visible) {
+                    newLayer.addTo(map);
+                    newLayer.setZIndex(currentVectorLayer.value.zIndex);
+                }
+            }
+
+            showVectorStyleDialog.value = false;
+            ElMessage.success('样式更新成功');
+        } catch (error) {
+            console.error('Error updating vector style:', error);
+            ElMessage.error('更新样式失败');
         }
-
-        showVectorStyleDialog.value = false;
-        ElMessage.success('样式已更新');
     },
 
     // 更新点图层
@@ -259,7 +329,7 @@ export const debounce = (fn, delay) => {
     };
 };
 
-// 图层管理相关方法
+// 栅格图层管理相关方法
 export const layerManager = {
     // 添加新图层
     addNewLayer: async (layerName, mapData, layers, map, API_ROUTES) => {
@@ -626,3 +696,29 @@ export const exportManager = {
         }
     }
 }
+
+// 添加颜色转换函数
+const convertColor = (color) => {
+    // 如果是 rgba 格式，转换为十六进制
+    if (color.startsWith('rgba')) {
+        const values = color.match(/[\d.]+/g);
+        if (values.length >= 3) {
+            const r = parseInt(values[0]);
+            const g = parseInt(values[1]);
+            const b = parseInt(values[2]);
+            const a = parseFloat(values[3]);
+            
+            // 转换为十六进制，不包含 # 符号
+            const hex = ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+            return {
+                color: hex,
+                opacity: a
+            };
+        }
+    }
+    // 如果是十六进制格式，移除 # 符号
+    return {
+        color: color.replace('#', ''),
+        opacity: 1
+    };
+};
