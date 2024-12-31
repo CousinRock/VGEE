@@ -160,7 +160,8 @@
 
 .operator-buttons {
     display: flex;
-    gap: 5px;
+    flex-direction: column;
+    gap: 10px;
     margin-top: 5px;
 }
 
@@ -181,4 +182,20 @@
 h5 {
     margin: 10px 0;
     color: #606266;
+}
+
+.operator-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.operator-group h6 {
+    margin: 5px 0;
+    color: #909399;
+    font-size: 12px;
+}
+
+.operator-group .el-button {
+    margin: 2px;
 }

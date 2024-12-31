@@ -114,13 +114,32 @@
                     <div class="operators">
                         <h5>运算符:</h5>
                         <div class="operator-buttons">
-                            <!-- 运算符按钮 -->
-                            <el-button size="small" @click="insertOperator('+')">+</el-button>
-                            <el-button size="small" @click="insertOperator('-')">-</el-button>
-                            <el-button size="small" @click="insertOperator('*')">×</el-button>
-                            <el-button size="small" @click="insertOperator('/')">/</el-button>
-                            <el-button size="small" @click="insertOperator('(')">(</el-button>
-                            <el-button size="small" @click="insertOperator(')')">)</el-button>
+                            <!-- 算术运算符 -->
+                            <div class="operator-group">
+                                <h6>算术运算符:</h6>
+                                <el-button size="small" @click="insertOperator('+')">+</el-button>
+                                <el-button size="small" @click="insertOperator('-')">-</el-button>
+                                <el-button size="small" @click="insertOperator('*')">×</el-button>
+                                <el-button size="small" @click="insertOperator('/')">/</el-button>
+                                <el-button size="small" @click="insertOperator('(')">(</el-button>
+                                <el-button size="small" @click="insertOperator(')')">)</el-button>
+                            </div>
+                            <!-- 比较运算符 -->
+                            <div class="operator-group">
+                                <h6>比较运算符:</h6>
+                                <el-button size="small" @click="insertOperator('==')">=</el-button>
+                                <el-button size="small" @click="insertOperator('!=')">&ne;</el-button>
+                                <el-button size="small" @click="insertOperator('>')">&gt;</el-button>
+                                <el-button size="small" @click="insertOperator('<')">&lt;</el-button>
+                                <el-button size="small" @click="insertOperator('>=')">&ge;</el-button>
+                                <el-button size="small" @click="insertOperator('<=')">&le;</el-button>
+                            </div>
+                            <!-- 逻辑运算符 -->
+                            <div class="operator-group">
+                                <h6>逻辑运算符:</h6>
+                                <el-button size="small" @click="insertOperator('&&')">AND</el-button>
+                                <el-button size="small" @click="insertOperator('||')">OR</el-button>
+                            </div>
                         </div>
                     </div>
 

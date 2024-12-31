@@ -510,6 +510,7 @@ def raster_calculator():
         data = request.json
         layer_ids = data.get('layer_ids')
         expression = data.get('expression')
+        vis_params = data.get('vis_params', [])
         
         # 验证输入
         if not layer_ids or not expression:
@@ -535,8 +536,8 @@ def raster_calculator():
             for band in band_names:
                 band_refs[band] = image.select([band])
             
-            # 直接使用原始表达式
-            modified_expr = expression
+            # 替换逻辑运算符
+            modified_expr = expression.replace('&&', 'and').replace('||', 'or')
             print('Tool_routes.py - raster_calculator-modified_expr:', modified_expr)
             
             # 使用 ee.Image.expression 进行计算
@@ -544,6 +545,15 @@ def raster_calculator():
                 modified_expr,
                 band_refs
             )
+            
+            # 如果是比较运算，结果将是二值图像（0或1）
+            if any(op in modified_expr for op in ['==', '!=', '>', '<', '>=', '<=']):
+                # 设置比较结果的可视化参数
+                vis_min, vis_max = 0, 1
+            else:
+                # 对于普通计算，使用动态范围
+                vis_min, vis_max = -1, 1
+            
             # 获取实际的波段名
             result_band_names = result.bandNames().getInfo()
             print('Tool_routes.py - raster_calculator-result:', result_band_names)
@@ -558,18 +568,18 @@ def raster_calculator():
             
             # 设置可视化参数
             map_id = result.getMapId({
-                'min': -1,
-                'max': 1
+                'min': vis_min,
+                'max': vis_max
             })
             
             layer_results.append({
                 'layer_id': calc_id,
                 'name': calc_name,
                 'tileUrl': map_id['tile_fetcher'].url_format,
-                'bandInfo': result_band_names,  # 使用实际的波段名
+                'bandInfo': result_band_names,
                 'visParams': {
-                    'min': -1,
-                    'max': 1
+                    'min': vis_min,
+                    'max': vis_max
                 }
             })
             
