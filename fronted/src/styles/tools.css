@@ -131,3 +131,54 @@
 .el-tree-node.is-current>.el-tree-node__content {
     background-color: #ecf5ff;
 }
+
+.calculator-options {
+    padding: 15px;
+}
+
+.bands-list, .operators, .expression-input {
+    margin-bottom: 20px;
+}
+
+.bands-container {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.layer-bands {
+    margin-bottom: 10px;
+}
+
+.band-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.operator-buttons {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.function-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.expression-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    justify-content: flex-end;
+}
+
+h5 {
+    margin: 10px 0;
+    color: #606266;
+}

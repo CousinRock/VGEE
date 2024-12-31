@@ -26,8 +26,8 @@
 
     <!-- 修改图层选择对话框 -->
     <el-dialog v-model="showLayerSelect" :title="getDialogTitle"
-        :width="currentTool?.id === 'kmeans' ? '800px' : '400px'" width="800px">
-        <div class="layer-select-content" :class="{ 'with-settings': currentTool?.id === 'kmeans' }">
+        :width="['kmeans', 'raster-calculator'].includes(currentTool?.id) ? '800px' : '400px'" width="800px">
+        <div class="layer-select-content" :class="{ 'with-settings': ['kmeans', 'raster-calculator'].includes(currentTool?.id) }">
             <div class="layer-select-left">
                 <!-- 添加全选复选框 -->
                 <div class="select-all-option">
@@ -44,7 +44,7 @@
             </div>
 
             <!-- 右侧分类设置区域 -->
-            <div v-if="(currentTool?.id === 'kmeans' || currentTool?.id === 'random-forest') && selectedLayerName.length > 0" 
+            <div v-if="(currentTool?.id === 'kmeans' || currentTool?.id === 'random-forest' || currentTool?.id === 'raster-calculator') && selectedLayerName.length > 0" 
                  class="layer-select-right">
                 <!-- K-means 设置 -->
                 <div v-if="currentTool?.id === 'kmeans'" class="kmeans-options">
@@ -83,6 +83,72 @@
                             0.7: '70%',
                             0.9: '90%'
                         }" />
+                    </div>
+                </div>
+
+                <!-- 栅格计算器设置 -->
+                <div v-if="currentTool?.id === 'raster-calculator'" class="calculator-options">
+                    <h4>栅格计算器</h4>
+                    
+                    <!-- 波段列表 -->
+                    <div class="bands-list">
+                        <h5>可用波段:</h5>
+                        <div class="bands-container">
+                            <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-bands">
+                                <div class="layer-name">{{ availableLayers.find(l => l.id === layerId)?.name }}</div>
+                                <div class="band-buttons">
+                                    <el-button 
+                                        v-for="band in layerBands[layerId]" 
+                                        :key="band"
+                                        size="small"
+                                        @click="insertBand(layerId, band)"
+                                    >
+                                        {{ band }}
+                                    </el-button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 运算符 -->
+                    <div class="operators">
+                        <h5>运算符:</h5>
+                        <div class="operator-buttons">
+                            <!-- 运算符按钮 -->
+                            <el-button size="small" @click="insertOperator('+')">+</el-button>
+                            <el-button size="small" @click="insertOperator('-')">-</el-button>
+                            <el-button size="small" @click="insertOperator('*')">×</el-button>
+                            <el-button size="small" @click="insertOperator('/')">/</el-button>
+                            <el-button size="small" @click="insertOperator('(')">(</el-button>
+                            <el-button size="small" @click="insertOperator(')')">)</el-button>
+                        </div>
+                    </div>
+
+                    <!-- 常用函数 -->
+                    <div class="functions">
+                        <h5>常用函数:</h5>
+                        <div class="function-buttons">
+                            <el-button size="small" @click="insertFunction('sqrt')">sqrt</el-button>
+                            <el-button size="small" @click="insertFunction('pow')">pow</el-button>
+                            <el-button size="small" @click="insertFunction('exp')">exp</el-button>
+                            <el-button size="small" @click="insertFunction('log')">log</el-button>
+                            <el-button size="small" @click="insertFunction('abs')">abs</el-button>
+                        </div>
+                    </div>
+
+                    <!-- 计算表达式输入框 -->
+                    <div class="expression-input">
+                        <h5>计算表达式:</h5>
+                        <el-input
+                            v-model="calculatorExpression"
+                            type="textarea"
+                            :rows="4"
+                            placeholder="点击波段和运算符按钮生成表达式，可手动输入数字"
+                        />
+                        <div class="expression-actions">
+                            <el-button size="small" @click="clearExpression">清除</el-button>
+                            <el-button size="small" @click="backspace">回退</el-button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -137,6 +203,7 @@ import { ElMessage } from 'element-plus'
 import { menuItems } from '../config/tools-config'
 import { getAvailableLayers, processLayerSelect, handleVectorAsset, handleImageAsset } from './service/tool'
 import { API_ROUTES } from '../api/routes'
+import { calculatorTools } from './service/tool'
 
 const props = defineProps({
     mapView: {
@@ -166,6 +233,8 @@ const rfParams = ref({
     numberOfTrees: 50,
     trainRatio: 0.7
 });
+const calculatorExpression = ref('')
+const layerBands = ref({})  // 存储每个图层的波段信息
 
 // 菜单操作方法
 const toggleMenu = (item) => {
@@ -225,6 +294,9 @@ const handleToolClick = async (tool) => {
             case 'random-forest':
                 await handleRandomForest(tool)
                 break
+            case 'raster-calculator':
+                await handleRasterCalculator(tool)
+                break
             default:
                 ElMessage.warning('该功能尚未实现')
         }
@@ -274,6 +346,20 @@ const handleRandomForest = async (tool) => {
     commonMethod(tool)
 }
 
+// 添加栅格计算器处理方法
+const handleRasterCalculator = async (tool) => {
+    const layers = await getAvailableLayers()
+    if (!layers) return
+
+    selectedLayerName.value = []
+    availableLayers.value = layers
+    currentTool.value = tool
+    
+    // 初始化计算表达式
+    calculatorExpression.value = ''
+    showLayerSelect.value = true
+}
+
 // 添加对话框标题计算属性
 const getDialogTitle = computed(() => {
     if (currentTool.value?.id === 'kmeans') {
@@ -290,8 +376,21 @@ const handleLayerSelect = async () => {
     }
 
     try {
-        let result;
-        if (currentTool.value.id === 'kmeans') {
+        let result
+        if (currentTool.value.id === 'raster-calculator') {
+            // 栅格计算器处理逻辑
+            if (!calculatorExpression.value) {
+                ElMessage.warning('请输入计算表达式')
+                return
+            }
+            result = await processLayerSelect(
+                selectedLayerName.value,
+                currentTool.value,
+                props.mapView,
+                calculatorExpression.value,
+                isProcessing
+            )
+        } else if (currentTool.value.id === 'kmeans') {
             // kmeans 处理逻辑
             result = await processLayerSelect(
                 selectedLayerName.value, 
@@ -320,11 +419,12 @@ const handleLayerSelect = async () => {
             )
         }
 
+        
         if (result) {
             showLayerSelect.value = false
         }
     } catch (error) {
-        console.error('Error processing layer selection:', error)
+        console.error('Error handling layer select:', error)
         ElMessage.error('处理失败')
     }
 }
@@ -462,6 +562,50 @@ const confirmAssetSelect = async () => {
         // 清除加载状态
         isLoadingAssets.value = false
     }
+}
+
+// 修改波段信息获取监听器
+watch(selectedLayerName, async (newVal) => {
+    if (currentTool.value?.id === 'raster-calculator') {
+        for (const layerId of newVal) {
+            if (!layerBands.value[layerId]) {
+                layerBands.value[layerId] = calculatorTools.getLayerBands(props.mapView, layerId)
+            }
+        }
+        // 清理未选中图层的波段信息
+        Object.keys(layerBands.value).forEach(layerId => {
+            if (!newVal.includes(layerId)) {
+                delete layerBands.value[layerId]
+            }
+        })
+    }
+})
+
+// 栅格计算器操作方法
+
+//  在表达式中插入波段引用
+const insertBand = (layerId, band) => {
+    calculatorExpression.value = calculatorTools.insertBand(calculatorExpression.value, band)
+}
+
+// 调用calculatorTools.insertOperator方法将运算符插入到当前表达式中
+const insertOperator = (operator) => {
+    calculatorExpression.value = calculatorTools.insertOperator(calculatorExpression.value, operator)
+}
+
+// 调用calculatorTools.clearExpression方法清空当前表达式
+const clearExpression = () => {
+    calculatorExpression.value = calculatorTools.clearExpression()
+}
+
+// 调用calculatorTools.backspace方法智能删除表达式的最后一部分
+const backspace = () => {
+    calculatorExpression.value = calculatorTools.backspace(calculatorExpression.value)
+}
+
+// 调用calculatorTools.insertFunction方法将数学函数插入到当前表达式中
+const insertFunction = (func) => {
+    calculatorExpression.value = calculatorTools.insertFunction(calculatorExpression.value, func)
 }
 
 // 暴露方法父组件

@@ -503,3 +503,87 @@ def random_forest():
             'success': False,
             'message': str(e)
         }), 500
+
+@tool_bp.route('/raster-calculator', methods=['POST'])
+def raster_calculator():
+    try:
+        data = request.json
+        layer_ids = data.get('layer_ids')
+        expression = data.get('expression')
+        
+        # 验证输入
+        if not layer_ids or not expression:
+            raise ValueError('Missing required parameters')
+            
+        # 获取选中的图像
+        selected_images = []
+        for layer_id in layer_ids:
+            if layer_id not in datasets:
+                raise ValueError(f'Invalid layer ID: {layer_id}')
+            selected_images.append(datasets[layer_id])
+            
+        # 执行计算
+        results = []
+        layer_results = []
+        
+        for i, image in enumerate(selected_images):
+            # 创建波段引用字典
+            band_refs = {}
+            band_names = image.bandNames().getInfo()
+            
+            # 直接使用波段名作为变量名
+            for band in band_names:
+                band_refs[band] = image.select([band])
+            
+            # 直接使用原始表达式
+            modified_expr = expression
+            print('Tool_routes.py - raster_calculator-modified_expr:', modified_expr)
+            
+            # 使用 ee.Image.expression 进行计算
+            result = image.expression(
+                modified_expr,
+                band_refs
+            )
+            # 获取实际的波段名
+            result_band_names = result.bandNames().getInfo()
+            print('Tool_routes.py - raster_calculator-result:', result_band_names)
+            
+            # 为计算结果创建新的图层ID和名称
+            original_name = datasetsNames.get(layer_ids[i], f'Layer_{layer_ids[i]}')
+            calc_id = f"{layer_ids[i]}_calc"
+            calc_name = f"{original_name} (计算结果)"
+            
+            # 保存计算结果到数据集
+            save_dataset(calc_id, result, calc_name)
+            
+            # 设置可视化参数
+            map_id = result.getMapId({
+                'min': -1,
+                'max': 1
+            })
+            
+            layer_results.append({
+                'layer_id': calc_id,
+                'name': calc_name,
+                'tileUrl': map_id['tile_fetcher'].url_format,
+                'bandInfo': result_band_names,  # 使用实际的波段名
+                'visParams': {
+                    'min': -1,
+                    'max': 1
+                }
+            })
+            
+            results.append(result)
+            
+        return jsonify({
+            'success': True,
+            'message': '栅格计算完成',
+            'results': layer_results
+        })
+        
+    except Exception as e:
+        print(f"Error in raster calculator: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500

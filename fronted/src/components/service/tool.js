@@ -186,6 +186,17 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
                 endpoint = API_ROUTES.TOOLS.HISTOGRAM_EQUALIZATION
                 requestData = createRequestData(selectedLayerName, mapView.layers)
                 break
+            case 'raster-calculator':
+                endpoint = API_ROUTES.TOOLS.RASTER_CALCULATOR
+                requestData = {
+                    layer_ids: selectedLayerName,
+                    expression: params,
+                    vis_params: selectedLayerName.map(id => ({
+                        id: id,
+                        visParams: mapView.layers.find(l => l.id === id)?.visParams
+                    }))
+                }
+                break
             default:
                 throw new Error('未知的工具类型')
         }
@@ -344,5 +355,98 @@ export const handleImageAsset = async (selectedAsset, mapView) => {
         console.error('Error adding image asset:', error)
         ElMessage.error('添加栅格图层失败')
         return false
+    }
+}
+
+// 添加栅格计算器相关函数
+export const calculatorTools = {
+    /**
+     * 插入波段引用到表达式中
+     * @param {string} expression - 当前表达式
+     * @param {string} band - 要插入的波段名称（如 'B4', 'B5' 等）
+     * @returns {string} 更新后的表达式
+     */
+    insertBand: (expression, band) => {
+        return expression + band
+    },
+
+    /**
+     * 插入运算符到表达式中，确保运算符前后有空格
+     * @param {string} expression - 当前表达式
+     * @param {string} operator - 要插入的运算符（如 '+', '-', '*', '/' 等）
+     * @returns {string} 更新后的表达式
+     */
+    insertOperator: (expression, operator) => {
+        return expression + ` ${operator} `
+    },
+
+    /**
+     * 插入数学函数到表达式中
+     * @param {string} expression - 当前表达式
+     * @param {string} func - 要插入的函数名称
+     * @returns {string} 更新后的表达式
+     * @description 支持的函数：
+     * - sqrt: 平方根
+     * - pow: 幂运算
+     * - exp: 指数函数
+     * - log: 对数函数
+     * - abs: 绝对值
+     */
+    insertFunction: (expression, func) => {
+        switch(func) {
+            case 'sqrt':
+                return expression + 'sqrt('
+            case 'pow':
+                return expression + 'pow('
+            case 'exp':
+                return expression + 'exp('
+            case 'log':
+                return expression + 'log('
+            case 'abs':
+                return expression + 'abs('
+            default:
+                return expression
+        }
+    },
+
+    /**
+     * 清除整个表达式
+     * @returns {string} 空字符串
+     */
+    clearExpression: () => {
+        return ''
+    },
+
+    /**
+     * 智能回退操作
+     * @param {string} expression - 当前表达式
+     * @returns {string} 更新后的表达式
+     * @description 
+     * - 如果最后输入的是波段引用（如 'B4'），则删除整个波段引用
+     * - 否则删除最后一个字符
+     */
+    backspace: (expression) => {
+        expression = expression.trim()
+        if (expression.match(/B[0-9]+$/)) {
+            // 如果是波段引用，删除整个波段引用
+            const lastIndex = expression.lastIndexOf("B")
+            if (lastIndex !== -1) {
+                return expression.substring(0, lastIndex).trim()
+            }
+        }
+        // 删除最后一个字符
+        return expression.slice(0, -1).trim()
+    },
+
+    /**
+     * 获取指定图层的波段信息
+     * @param {Object} mapView - 地图视图对象
+     * @param {string} layerId - 图层ID
+     * @returns {Array} 波段名称数组
+     * @description 从地图视图中获取指定图层的波段信息，如果找不到则返回空数组
+     */
+    getLayerBands: (mapView, layerId) => {
+        const layer = mapView.layers.find(l => l.id === layerId)
+        return layer?.bandInfo || []
     }
 }

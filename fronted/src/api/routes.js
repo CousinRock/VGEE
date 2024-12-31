@@ -36,5 +36,6 @@ export const API_ROUTES = {
         ADD_VECTOR_ASSET: `${BASE_URL}/tools/add-vector-asset`,
         ADD_IMAGE_ASSET: `${BASE_URL}/tools/add-image-asset`,
         RANDOM_FOREST: `${BASE_URL}/tools/random-forest`,
+        RASTER_CALCULATOR: `${BASE_URL}/tools/raster-calculator`,
     }
 } 
