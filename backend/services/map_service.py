@@ -171,7 +171,8 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
                 'max': img_max if stats else vis_params.get('max')
             }],
             'satellite': satellite,
-            'visParams': vis_params
+            'visParams': vis_params,
+            'type':'Raster'
         }
         
     except Exception as e:

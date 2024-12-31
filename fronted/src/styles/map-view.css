@@ -500,3 +500,27 @@
 .el-dialog.rename-dialog {
   margin-top: 15vh !important;
 }
+
+/* 导出按钮样式 */
+.el-dropdown-menu__item i.fa-spinner {
+    color: #409EFF;
+}
+
+.el-dropdown-menu__item[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* 确保加载图标旋转动画平滑 */
+.fa-spin {
+    animation: fa-spin 1s infinite linear;
+}
+
+@keyframes fa-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}

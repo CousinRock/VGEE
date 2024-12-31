@@ -364,26 +364,84 @@ def export_layer_to_cloud():
     try:
         data = request.get_json()
         layer_id = data.get('layer_id')
-        layer_name = data.get('layer_name')
+        layer_name = data.get('layer_name', 'export').replace(' ', '_')
         layer_type = data.get('layer_type')
         vis_params = data.get('vis_params')
-
-        dataset,datasetsNames = get_all_datasets()
-        img = ee.Image(dataset[layer_id]).toFloat()
-        img_name = datasetsNames[layer_id]
-
-        # 调用 Earth Engine 导出功能
-        task = ee.batch.Export.image.toDrive(
-            image=img,
-            description=img_name,
-            folder='EarthEngine_Exports',
-            fileNamePrefix=img_name,
-            scale=30,
-            region=img.geometry(),  # 可以添加导出区域限制
-            fileFormat='GeoTIFF',
-            maxPixels=1e13
-        )
+        features = data.get('features', [])
+        geometry_type = data.get('geometryType')
+        folder = data.get('folder', 'EarthEngine_Exports')  # 获取文件夹参数
         
+        # 确保导出名称符合 GEE 要求
+        safe_name = ''.join(c for c in layer_name if c.isalnum() or c in '._-')[:100]
+        safe_folder = ''.join(c for c in folder if c.isalnum() or c in '._-')  # 处理文件夹名称
+        
+        if layer_type == 'Raster':
+            dataset, datasetsNames = get_all_datasets()
+            img = ee.Image(dataset[layer_id]).toFloat()
+            
+            task = ee.batch.Export.image.toDrive(
+                image=img,
+                description=safe_name,
+                folder=safe_folder,  # 使用用户指定的文件夹
+                fileNamePrefix=safe_name,
+                scale=30,
+                region=img.geometry(),
+                fileFormat='GeoTIFF',
+                maxPixels=1e13
+            )
+            
+        else:
+            if layer_type == 'vector':
+                vector_fc = ee.FeatureCollection(layer_id)
+                task = ee.batch.Export.table.toDrive(
+                    collection=vector_fc,
+                    description=safe_name,
+                    folder=safe_folder,  # 使用用户指定的文件夹
+                    fileNamePrefix=safe_name,
+                    fileFormat='SHP'
+                )
+            else:
+                # 处理手动绘制的矢量数据
+                features_list = []
+                
+                try:
+                    if geometry_type == 'Point':
+                        # 处理点数据
+                        for feature in features:
+                            if isinstance(feature['coordinates'], list) and len(feature['coordinates']) == 2:
+                                ee_feature = ee.Feature(
+                                    ee.Geometry.Point(feature['coordinates'])
+                                )
+                                features_list.append(ee_feature)
+                    else:
+                        # 处理多边形数据
+                        for feature in features:
+                            if isinstance(feature['coordinates'], list):
+                                print(f"Processing polygon coordinates: {feature['coordinates']}")
+                                ee_feature = ee.Feature(
+                                    ee.Geometry.Polygon([feature['coordinates']])
+                                )
+                                features_list.append(ee_feature)
+                except Exception as e:
+                    print(f"Error processing features: {str(e)}")
+                    raise
+                
+                if not features_list:
+                    raise ValueError("No valid features to export")
+                
+                print(f"Created {len(features_list)} features")
+                
+                # 创建 FeatureCollection
+                manual_fc = ee.FeatureCollection(features_list)
+                
+                task = ee.batch.Export.table.toDrive(
+                    collection=manual_fc,
+                    description=safe_name,
+                    folder=safe_folder,  # 使用用户指定的文件夹
+                    fileNamePrefix=safe_name,
+                    fileFormat='SHP'
+                )
+
         # 启动导出任务
         task.start()
         

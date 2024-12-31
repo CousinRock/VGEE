@@ -43,7 +43,7 @@
                                     >
                                         <i :class="[
                                             'fas',
-                                            layer.isSettingStudyArea ? 'fa-spinner fa-spin' : 'fa-cog'
+                                            layer.isSettingStudyArea||layer.isExporting ? 'fa-spinner fa-spin' : 'fa-cog'
                                         ]"></i>
                                         <!-- {{ layer.isSettingStudyArea ? '设置中...' : '' }} -->
                                     </button>
@@ -75,10 +75,9 @@
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="exportLayer(layer)" tabindex="0">
                                                 <i :class="[
-                                                    MENU_ICONS.EXPORT,
-                                                    {'fa-spin': layer.isExporting}
+                                                    layer.isExporting ? 'fas fa-spinner fa-spin' : MENU_ICONS.EXPORT
                                                 ]"></i>
-                                                {{ layer.isExporting ? '导出中...' : '导出到云端' }}
+                                                导出到云盘
                                             </el-dropdown-item>
                                         </el-dropdown-menu>
                                     </template>
@@ -89,13 +88,12 @@
                                     <button 
                                         class="layer-settings" 
                                         title="图层设置"
-                                        :disabled="layer.isLoadingProperties"
+                                        :disabled="layer.isLoadingProperties || layer.isExporting"
                                     >
                                         <i :class="[
                                             'fas',
-                                            layer.isLoadingProperties ? 'fa-spinner fa-spin' : 'fa-cog'
+                                            layer.isLoadingProperties || layer.isExporting ? 'fa-spinner fa-spin' : 'fa-cog'
                                         ]"></i>
-                                        <!-- {{ layer.isLoadingProperties ? '加载中...' : '' }} -->
                                     </button>
                                     <template #dropdown>
                                         <el-dropdown-menu>
@@ -113,10 +111,9 @@
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="exportLayer(layer)" tabindex="0">
                                                 <i :class="[
-                                                    MENU_ICONS.EXPORT,
-                                                    {'fa-spin': layer.isExporting}
+                                                    layer.isExporting ? 'fas fa-spinner fa-spin' : MENU_ICONS.EXPORT
                                                 ]"></i>
-                                                {{ layer.isExporting ? '导出中...' : '导出到云端' }}
+                                               导出到云盘
                                             </el-dropdown-item>
                                         </el-dropdown-menu>
                                     </template>
@@ -321,6 +318,32 @@
                 </span>
             </template>
         </el-dialog>
+
+        <!-- 添加导出设置对话框 -->
+        <el-dialog v-model="showExportDialog" title="导出设置" width="400px">
+            <div class="export-settings">
+                <div class="setting-item">
+                    <label>导出文件夹</label>
+                    <el-input 
+                        v-model="exportFolder" 
+                        placeholder="请输入导出文件夹名称"
+                        :disabled="currentExportLayer?.isExporting"
+                    />
+                </div>
+            </div>
+            <template #footer>
+                <span class="dialog-footer">
+                    <el-button @click="showExportDialog = false">取消</el-button>
+                    <el-button 
+                        type="primary" 
+                        @click="confirmExport" 
+                        :loading="currentExportLayer?.isExporting"
+                    >
+                        {{ currentExportLayer?.isExporting ? '导出中...' : '确认导出' }}
+                    </el-button>
+                </span>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -413,6 +436,11 @@ const currentRenameLayer = ref(null)
 
 // 添加加载状态变量
 const isApplyingStyle = ref(false);
+
+// 添加导出相关的响应式变量
+const showExportDialog = ref(false)
+const exportFolder = ref('EarthEngine_Exports')  // 默认文件夹名
+const currentExportLayer = ref(null)
 
 // 切换图层控制面板显示
 const toggleLayerControl = () => {
@@ -983,9 +1011,37 @@ const openRenameDialog = (layer) => {
 }
 
 // 导出图层方法
-const exportLayer = async (layer) => {
-    if (layer.isExporting) return
-    await exportManager.exportToCloud(layer, API_ROUTES)
+const exportLayer = (layer) => {
+    currentExportLayer.value = layer
+    showExportDialog.value = true
+}
+
+// 添加确认导出方法
+const confirmExport = async () => {
+    const layer = currentExportLayer.value
+    if (!layer || layer.isExporting) return
+    
+    // 设置加载状态
+    layer.isExporting = true
+    const button = document.querySelector(`[data-layer-id="${layer.id}"] .layer-settings`)
+    if (button) {
+        button.disabled = true
+    }
+
+    try {
+        await exportManager.exportToCloud(layer, API_ROUTES, exportFolder.value)
+        showExportDialog.value = false  // 导出成功后关闭对话框
+    } catch (error) {
+        console.error('Error exporting layer:', error)
+        ElMessage.error('导出图层失败')
+    } finally {
+        // 清除加载状态
+        layer.isExporting = false
+        const button = document.querySelector(`[data-layer-id="${layer.id}"] .layer-settings`)
+        if (button) {
+            button.disabled = false
+        }
+    }
 }
 
 </script>

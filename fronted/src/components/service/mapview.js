@@ -362,7 +362,8 @@ export const layerManager = {
                         gamma: mapData.visParams.gamma
                     },
                     min: mapData.overlayLayers[0].min,
-                    max: mapData.overlayLayers[0].max
+                    max: mapData.overlayLayers[0].max,
+                    type:mapData.type
                 }
 
                 // 3. 创建 Leaflet 图层
@@ -663,39 +664,49 @@ export const baseMapManager = {
 
 // 导出图层管理
 export const exportManager = {
-    // 导出图层到云端
-    exportToCloud: async (layer, API_ROUTES) => {
+    exportToCloud: async (layer, API_ROUTES, folder = 'EarthEngine_Exports') => {
         try {
-            // 显示加载状态
-            layer.isExporting = true
+            console.log('MapView.vue - exportToCloud - layer:', layer);
+            
+            const requestBody = {
+                layer_id: layer.id,
+                layer_name: layer.name,
+                layer_type: layer.type,
+                vis_params: layer.visParams,
+                geometryType: layer.geometryType,
+                folder: folder  // 添加文件夹参数
+            };
+
+            if (layer.type === 'manual') {
+                if (layer.geometryType === 'Polygon') {
+                    requestBody.features = [{
+                        coordinates: layer.geometry.coordinates[0]
+                    }];
+                } else {
+                    requestBody.features = layer.features;
+                }
+            }
             
             const response = await fetch(API_ROUTES.LAYER.EXPORT_TO_CLOUD, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    layer_id: layer.id,
-                    layer_name: layer.name,
-                    layer_type: layer.type,
-                    vis_params: layer.visParams
-                })
-            })
+                body: JSON.stringify(requestBody)
+            });
 
-            const data = await response.json()
+            const data = await response.json();
             if (data.success) {
-                ElMessage.success('图层已成功导出到云端')
-                return true
+                ElMessage.success('图层已成功导出到云端');
+                return true;
             } else {
-                throw new Error(data.message || '导出失败')
+                throw new Error(data.message || '导出失败');
             }
         } catch (error) {
-            console.error('Error exporting layer:', error)
-            ElMessage.error(error.message || '导出图层失败')
-            return false
-        } finally {
-            layer.isExporting = false
+            console.error('Error exporting layer:', error);
+            ElMessage.error(error.message || '导出图层失败');
+            return false;
         }
     }
-}
+};
 
 // 添加颜色转换函数
 const convertColor = (color) => {
