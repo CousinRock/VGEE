@@ -53,6 +53,39 @@ def common_process(layer_ids, results, vis_params, message):
         'results': layer_results
     })
 
+def get_vis_params(result):
+    """动态计算可视化参数"""
+    try:
+        # 计算结果的统计信息
+        stats = result.reduceRegion(
+            reducer=ee.Reducer.minMax(),
+            geometry=result.geometry(),
+            scale=30,
+            maxPixels=1e13
+        ).getInfo()
+        
+        # 获取第一个波段的名称
+        first_band = result.bandNames().getInfo()[0]
+        print('Tool_routes.py - get_vis_params-first_band:', first_band)
+        
+        # 获取最小最大值
+        min_val = stats.get(f'{first_band}_min', 0)
+        max_val = stats.get(f'{first_band}_max', 1)
+        
+        return {
+            'min': min_val,
+            'max': max_val,
+            'bands': [first_band]  # 使用第一个波段作为显示波段
+        }
+    except Exception as e:
+        print(f"Error computing vis params: {str(e)}")
+        # 如果计算失败，返回默认值
+        return {
+            'min': 0,
+            'max': 1,
+            'bands': ['constant']  # 默认波段名
+        }
+
 @tool_bp.route('/cloud-removal', methods=['POST'])
 def cloud_removal():
     try:
@@ -509,82 +542,101 @@ def raster_calculator():
     try:
         data = request.json
         layer_ids = data.get('layer_ids')
-        expression = data.get('expression')
-        vis_params = data.get('vis_params', [])
+        params = data.get('expression', {})
+        expression = params.get('expression')
+        calc_mode = params.get('mode', 'single')
         
-        # 验证输入
         if not layer_ids or not expression:
             raise ValueError('Missing required parameters')
             
-        # 获取选中的图像
-        selected_images = []
-        for layer_id in layer_ids:
-            if layer_id not in datasets:
-                raise ValueError(f'Invalid layer ID: {layer_id}')
-            selected_images.append(datasets[layer_id])
+        if calc_mode == 'multi':
+            # 多图层计算模式
+            variables = {}
+            # 创建图层名称到变量名的映射
+            layer_mapping = {}
             
-        # 执行计算
-        results = []
-        layer_results = []
-        
-        for i, image in enumerate(selected_images):
-            # 创建波段引用字典
-            band_refs = {}
-            band_names = image.bandNames().getInfo()
+            for i, layer_id in enumerate(layer_ids, 1):
+                if layer_id not in datasets:
+                    raise ValueError(f'Invalid layer ID: {layer_id}')
+                layer_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
+                var_name = f'img{i}'  # 使用 img1, img2 等作为变量名
+                variables[var_name] = datasets[layer_id]
+                layer_mapping[layer_name] = var_name
             
-            # 直接使用波段名作为变量名
-            for band in band_names:
-                band_refs[band] = image.select([band])
+            # 替换表达式中的图层名称
+            modified_expr = expression
+            for layer_name, var_name in layer_mapping.items():
+                modified_expr = modified_expr.replace(f'{layer_name}.', f'{var_name}.')
             
             # 替换逻辑运算符
-            modified_expr = expression.replace('&&', 'and').replace('||', 'or')
-            print('Tool_routes.py - raster_calculator-modified_expr:', modified_expr)
+            modified_expr = modified_expr.replace('&&', 'and').replace('||', 'or')
+            print('Modified expression:', modified_expr)  # 用于调试
             
-            # 使用 ee.Image.expression 进行计算
-            result = image.expression(
+            # 计算结果
+            result = ee.Image(0).expression(
                 modified_expr,
-                band_refs
+                variables
             )
             
-            # 如果是比较运算，结果将是二值图像（0或1）
-            if any(op in modified_expr for op in ['==', '!=', '>', '<', '>=', '<=']):
-                # 设置比较结果的可视化参数
-                vis_min, vis_max = 0, 1
-            else:
-                # 对于普通计算，使用动态范围
-                vis_min, vis_max = -1, 1
+            # 设置可视化参数
+            vis_params = get_vis_params(result)
+            map_id = result.getMapId(vis_params)
             
-            # 获取实际的波段名
-            result_band_names = result.bandNames().getInfo()
-            print('Tool_routes.py - raster_calculator-result:', result_band_names)
+            # 创建结果图层
+            calc_id = f"calc_multi_{layer_ids[0]}"
+            calc_name = "多图层计算结果"
             
-            # 为计算结果创建新的图层ID和名称
-            original_name = datasetsNames.get(layer_ids[i], f'Layer_{layer_ids[i]}')
-            calc_id = f"{layer_ids[i]}_calc"
-            calc_name = f"{original_name} (计算结果)"
-            
-            # 保存计算结果到数据集
+            # 保存并返回结果
             save_dataset(calc_id, result, calc_name)
             
-            # 设置可视化参数
-            map_id = result.getMapId({
-                'min': vis_min,
-                'max': vis_max
-            })
-            
-            layer_results.append({
+            layer_results = [{
                 'layer_id': calc_id,
                 'name': calc_name,
                 'tileUrl': map_id['tile_fetcher'].url_format,
-                'bandInfo': result_band_names,
-                'visParams': {
-                    'min': vis_min,
-                    'max': vis_max
-                }
-            })
+                'bandInfo': result.bandNames().getInfo(),
+                'visParams': vis_params  # 添加 visParams
+            }]
             
-            results.append(result)
-            
+        else:
+            # 单图层计算模式
+            layer_results = []
+            for layer_id in layer_ids:
+                if layer_id not in datasets:
+                    raise ValueError(f'Invalid layer ID: {layer_id}')
+                    
+                image = datasets[layer_id]
+                band_refs = {}
+                
+                for band in image.bandNames().getInfo():
+                    band_refs[band] = image.select([band])
+                
+                # 计算结果
+                modified_expr = expression.replace('&&', 'and').replace('||', 'or')
+                result = ee.Image(0).expression(
+                    modified_expr,
+                    band_refs
+                )
+                
+                # 设置可视化参数
+                vis_params = get_vis_params(result)
+                map_id = result.getMapId(vis_params)
+                
+                # 创建结果图层
+                original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
+                calc_id = f"{layer_id}_calc"
+                calc_name = f"{original_name} (计算结果)"
+                
+                # 保存结果
+                save_dataset(calc_id, result, calc_name)
+                
+                layer_results.append({
+                    'layer_id': calc_id,
+                    'name': calc_name,
+                    'tileUrl': map_id['tile_fetcher'].url_format,
+                    'bandInfo': result.bandNames().getInfo(),
+                    'visParams': vis_params  # 添加 visParams
+                })
+        
         return jsonify({
             'success': True,
             'message': '栅格计算完成',

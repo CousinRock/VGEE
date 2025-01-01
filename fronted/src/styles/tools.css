@@ -133,69 +133,151 @@
 }
 
 .calculator-options {
-    padding: 15px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.bands-list, .operators, .expression-input {
-    margin-bottom: 20px;
+.bands-list {
+    margin-bottom: 10px;
 }
 
 .bands-container {
-    max-height: 200px;
+    max-height: 150px;
     overflow-y: auto;
     border: 1px solid #dcdfe6;
     border-radius: 4px;
-    padding: 10px;
+    padding: 8px;
 }
 
 .layer-bands {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .band-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: 4px;
+}
+
+.operators {
+    margin-bottom: 10px;
 }
 
 .operator-buttons {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
+    gap: 15px;
     margin-top: 5px;
+}
+
+.operator-group {
+    flex: 1;
+}
+
+.operator-group h6 {
+    margin: 0 0 4px 0;
+    color: #606266;
+    font-size: 12px;
+    font-weight: normal;
+}
+
+.operator-group .el-button {
+    margin: 2px;
+    padding: 6px 8px;
+    min-width: 36px;
+    height: 28px;
+}
+
+.functions {
+    margin-bottom: 10px;
 }
 
 .function-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 5px;
+    gap: 4px;
+}
+
+.function-buttons .el-button {
+    padding: 6px 8px;
+    height: 28px;
+}
+
+.expression-input {
+    margin-top: 10px;
+}
+
+.expression-input .el-textarea {
+    margin-bottom: 8px;
 }
 
 .expression-actions {
     display: flex;
-    gap: 10px;
-    margin-top: 10px;
     justify-content: flex-end;
+    gap: 8px;
 }
 
-h5 {
-    margin: 10px 0;
-    color: #606266;
-}
-
-.operator-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.operator-group h6 {
+.calculator-options h5 {
     margin: 5px 0;
-    color: #909399;
-    font-size: 12px;
+    color: #606266;
+    font-size: 14px;
 }
 
-.operator-group .el-button {
-    margin: 2px;
+.layer-select-content.with-settings {
+    max-height: 600px;
+    overflow: hidden;
+}
+
+.layer-select-right {
+    flex: 1;
+    padding-left: 15px;
+    overflow-y: auto;
+}
+
+/* 添加新的样式 */
+.layer-id {
+    font-size: 12px;
+    color: #909399;
+    margin-left: 4px;
+}
+
+.usage-hint {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 8px;
+    padding: 8px;
+    background-color: #f5f7fa;
+    border-radius: 4px;
+    line-height: 1.5;
+}
+
+.usage-hint i {
+    margin-right: 4px;
+}
+
+.usage-hint span {
+    display: block;
+    margin-bottom: 4px;
+}
+
+/* 添加计算模式相关样式 */
+.calc-mode {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #f5f7fa;
+    border-radius: 4px;
+}
+
+.mode-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #909399;
+    line-height: 1.4;
+}
+
+.layer-name {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #409EFF;
 }

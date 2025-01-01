@@ -53,6 +53,17 @@
                 </button>
             </div>
         </div>
+
+        <div v-for="layer in layers" :key="layer.id" class="layer-item">
+            <div class="layer-controls">
+                <div class="vis-params-control">
+                    <el-form-item label="显示范围">
+                        <el-input-number v-model="layer.visParams.min" :step="0.1" @change="updateLayer(layer)" />
+                        <el-input-number v-model="layer.visParams.max" :step="0.1" @change="updateLayer(layer)" />
+                    </el-form-item>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -69,8 +80,8 @@ const emit = defineEmits(['add-layer', 'update-map'])
 const currentYear = new Date().getFullYear()
 const minDate = ref(`2000-01-01`)
 const maxDate = ref(`${currentYear}-12-31`)
-const startDate = ref(`${currentYear}-01-01`)
-const endDate = ref(`${currentYear}-12-31`)
+const startDate = ref(`${currentYear - 1}-01-01`)
+const endDate = ref(`${currentYear - 1}-12-31`)
 
 // 其他变量
 const satellite = ref([])  // 默认选择
@@ -105,12 +116,12 @@ const getDateRangeText = computed(() => {
     const satelliteConfig = satelliteOptions.value
         .flatMap(group => group.options)
         .find(option => option.value === satellite.value)
-        
+
     if (!satelliteConfig) return ''
-    
+
     const startDate = satelliteConfig.startDate || '未知'
     const endDate = satelliteConfig.endDate || '至今'
-    
+
     return `${startDate} 至 ${endDate}`
 })
 

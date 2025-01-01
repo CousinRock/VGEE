@@ -210,7 +210,7 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
         })
 
         const data = await response.json()
-        
+
         if (!data.success) {
             throw new Error(data.message || '处理失败')
         }
@@ -283,7 +283,7 @@ export const handleVectorAsset = async (selectedAsset, mapView) => {
                 [data.bounds[0][1], data.bounds[0][0]], // 西南角
                 [data.bounds[2][1], data.bounds[2][0]]  // 东北角
             ])
-            
+
             // 定位到边界范围
             mapView.map.fitBounds(bounds, {
                 padding: [50, 50],
@@ -363,11 +363,19 @@ export const calculatorTools = {
     /**
      * 插入波段引用到表达式中
      * @param {string} expression - 当前表达式
-     * @param {string} band - 要插入的波段名称（如 'B4', 'B5' 等）
+     * @param {string} layerId - 图层ID
+     * @param {string} band - 波段名称
      * @returns {string} 更新后的表达式
      */
-    insertBand: (expression, band) => {
-        return expression + band
+    insertBand: (expression, layerId, band) => {
+        // 使用简短的图层ID（去掉后缀）
+        const shortId = layerId.split('_')[0];
+        // 如果选择了多个图层，使用 imgX.band 格式
+        if (selectedLayerName.value.length > 1) {
+            return expression + `img${shortId}.${band}`;
+        }
+        // 如果只选择了一个图层，直接使用波段名
+        return expression + band;
     },
 
     /**
@@ -393,7 +401,7 @@ export const calculatorTools = {
      * - abs: 绝对值
      */
     insertFunction: (expression, func) => {
-        switch(func) {
+        switch (func) {
             case 'sqrt':
                 return expression + 'sqrt('
             case 'pow':
@@ -421,21 +429,28 @@ export const calculatorTools = {
      * 智能回退操作
      * @param {string} expression - 当前表达式
      * @returns {string} 更新后的表达式
-     * @description 
-     * - 如果最后输入的是波段引用（如 'B4'），则删除整个波段引用
-     * - 否则删除最后一个字符
      */
     backspace: (expression) => {
-        expression = expression.trim()
+        expression = expression.trim();
+        // 处理 imgX.BX 格式
+        if (expression.match(/img[0-9]+\.B[0-9]+$/)) {
+            const lastDotIndex = expression.lastIndexOf('.');
+            if (lastDotIndex !== -1) {
+                const lastImgIndex = expression.lastIndexOf('img', lastDotIndex);
+                if (lastImgIndex !== -1) {
+                    return expression.substring(0, lastImgIndex).trim();
+                }
+            }
+        }
+        // 处理普通波段引用
         if (expression.match(/B[0-9]+$/)) {
-            // 如果是波段引用，删除整个波段引用
-            const lastIndex = expression.lastIndexOf("B")
+            const lastIndex = expression.lastIndexOf('B');
             if (lastIndex !== -1) {
-                return expression.substring(0, lastIndex).trim()
+                return expression.substring(0, lastIndex).trim();
             }
         }
         // 删除最后一个字符
-        return expression.slice(0, -1).trim()
+        return expression.slice(0, -1).trim();
     },
 
     /**

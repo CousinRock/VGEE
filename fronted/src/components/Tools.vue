@@ -27,7 +27,8 @@
     <!-- 修改图层选择对话框 -->
     <el-dialog v-model="showLayerSelect" :title="getDialogTitle"
         :width="['kmeans', 'raster-calculator'].includes(currentTool?.id) ? '800px' : '400px'" width="800px">
-        <div class="layer-select-content" :class="{ 'with-settings': ['kmeans', 'raster-calculator'].includes(currentTool?.id) }">
+        <div class="layer-select-content"
+            :class="{ 'with-settings': ['kmeans', 'raster-calculator'].includes(currentTool?.id) }">
             <div class="layer-select-left">
                 <!-- 添加全选复选框 -->
                 <div class="select-all-option">
@@ -44,8 +45,8 @@
             </div>
 
             <!-- 右侧分类设置区域 -->
-            <div v-if="(currentTool?.id === 'kmeans' || currentTool?.id === 'random-forest' || currentTool?.id === 'raster-calculator') && selectedLayerName.length > 0" 
-                 class="layer-select-right">
+            <div v-if="(currentTool?.id === 'kmeans' || currentTool?.id === 'random-forest' || currentTool?.id === 'raster-calculator') && selectedLayerName.length > 0"
+                class="layer-select-right">
                 <!-- K-means 设置 -->
                 <div v-if="currentTool?.id === 'kmeans'" class="kmeans-options">
                     <h4>分类设置</h4>
@@ -89,27 +90,42 @@
                 <!-- 栅格计算器设置 -->
                 <div v-if="currentTool?.id === 'raster-calculator'" class="calculator-options">
                     <h4>栅格计算器</h4>
-                    
+
+                    <!-- 添加计算模式选择 -->
+                    <div class="calc-mode">
+                        <h5>计算模式:</h5>
+                        <el-radio-group v-model="calculatorMode">
+                            <el-radio label="single">单图层计算</el-radio>
+                            <el-radio label="multi">多图层计算</el-radio>
+                        </el-radio-group>
+                        <div class="mode-hint">
+                            <template v-if="calculatorMode === 'single'">
+                                将同一公式应用到每个选中的图层 (如: B4-B3)
+                            </template>
+                            <template v-else>
+                                多个图层之间的计算，生成一个结果 (如: layer1.B4-layer2.B3)
+                            </template>
+                        </div>
+                    </div>
+
                     <!-- 波段列表 -->
                     <div class="bands-list">
                         <h5>可用波段:</h5>
                         <div class="bands-container">
                             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-bands">
-                                <div class="layer-name">{{ availableLayers.find(l => l.id === layerId)?.name }}</div>
+                                <div class="layer-name">
+                                    {{ availableLayers.find(l => l.id === layerId)?.name }}
+                                </div>
                                 <div class="band-buttons">
-                                    <el-button 
-                                        v-for="band in layerBands[layerId]" 
-                                        :key="band"
-                                        size="small"
-                                        @click="insertBand(layerId, band)"
-                                    >
+                                    <el-button v-for="band in layerBands[layerId]" :key="band" size="small"
+                                        @click="handleBandClick(layerId, band)">
                                         {{ band }}
                                     </el-button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- 运算符 -->
                     <div class="operators">
                         <h5>运算符:</h5>
@@ -158,12 +174,8 @@
                     <!-- 计算表达式输入框 -->
                     <div class="expression-input">
                         <h5>计算表达式:</h5>
-                        <el-input
-                            v-model="calculatorExpression"
-                            type="textarea"
-                            :rows="4"
-                            placeholder="点击波段和运算符按钮生成表达式，可手动输入数字"
-                        />
+                        <el-input v-model="calculatorExpression" type="textarea" :rows="4"
+                            placeholder="点击波段和运算符按钮生成表达式，可手动输入数字" />
                         <div class="expression-actions">
                             <el-button size="small" @click="clearExpression">清除</el-button>
                             <el-button size="small" @click="backspace">回退</el-button>
@@ -254,6 +266,7 @@ const rfParams = ref({
 });
 const calculatorExpression = ref('')
 const layerBands = ref({})  // 存储每个图层的波段信息
+const calculatorMode = ref('single')
 
 // 菜单操作方法
 const toggleMenu = (item) => {
@@ -373,7 +386,7 @@ const handleRasterCalculator = async (tool) => {
     selectedLayerName.value = []
     availableLayers.value = layers
     currentTool.value = tool
-    
+
     // 初始化计算表达式
     calculatorExpression.value = ''
     showLayerSelect.value = true
@@ -397,48 +410,52 @@ const handleLayerSelect = async () => {
     try {
         let result
         if (currentTool.value.id === 'raster-calculator') {
-            // 栅格计算器处理逻辑
             if (!calculatorExpression.value) {
                 ElMessage.warning('请输入计算表达式')
                 return
             }
+
+            // 添加计算模式参数
             result = await processLayerSelect(
                 selectedLayerName.value,
                 currentTool.value,
                 props.mapView,
-                calculatorExpression.value,
+                {
+                    expression: calculatorExpression.value,
+                    mode: calculatorMode.value
+                },
                 isProcessing
             )
         } else if (currentTool.value.id === 'kmeans') {
             // kmeans 处理逻辑
             result = await processLayerSelect(
-                selectedLayerName.value, 
-                currentTool.value, 
-                props.mapView, 
-                clusterCounts.value, 
+                selectedLayerName.value,
+                currentTool.value,
+                props.mapView,
+                clusterCounts.value,
                 isProcessing
             )
         } else if (currentTool.value.id === 'random-forest') {
             // 随机森林处理逻辑
             result = await processLayerSelect(
-                selectedLayerName.value, 
-                currentTool.value, 
-                props.mapView, 
-                rfParams.value, 
+                selectedLayerName.value,
+                currentTool.value,
+                props.mapView,
+                rfParams.value,
                 isProcessing
             )
         } else {
             // 其他工具处理逻辑
             result = await processLayerSelect(
-                selectedLayerName.value, 
-                currentTool.value, 
+                selectedLayerName.value,
+                currentTool.value,
                 props.mapView,
                 null,       // 如果工具不需要额外参数，传入 null
                 isProcessing  // 为所有工具都传入 isProcessing
             )
         }
 
-        
+
         if (result) {
             showLayerSelect.value = false
         }
@@ -625,6 +642,18 @@ const backspace = () => {
 // 调用calculatorTools.insertFunction方法将数学函数插入到当前表达式中
 const insertFunction = (func) => {
     calculatorExpression.value = calculatorTools.insertFunction(calculatorExpression.value, func)
+}
+
+// 修改波段点击处理方法
+const handleBandClick = (layerId, band) => {
+    const layerName = availableLayers.value.find(l => l.id === layerId)?.name || layerId
+    if (calculatorMode.value === 'multi') {
+        // 多图层模式：使用图层名.波段的格式
+        calculatorExpression.value += `${layerName}.${band}`
+    } else {
+        // 单图层模式：直接使用波段名
+        calculatorExpression.value += band
+    }
 }
 
 // 暴露方法父组件
