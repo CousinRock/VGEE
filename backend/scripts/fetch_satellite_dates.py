@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 import requests
 from bs4 import BeautifulSoup
-from backend.config.satellite_config import SATELLITE_CONFIGS
+from config.satellite_config import SATELLITE_CONFIGS
 import re
 from datetime import datetime
 

@@ -1,9 +1,8 @@
 from flask import Flask
 from flask_cors import CORS
-import ee
 from routes.map_routes import map_bp
-from routes.layer_routes import layer_bp
 from routes.tool_routes import tool_bp
+from routes.layer_routes import layer_bp
 from setting import init_earth_engine
 from scripts.fetch_satellite_dates import update_satellite_configs
 from config.satellite_config import SATELLITE_CONFIGS
@@ -33,4 +32,4 @@ def init_app():
 
 if __name__ == '__main__':
     init_app()
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
