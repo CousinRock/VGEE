@@ -112,3 +112,14 @@ npm run dev
 ## 联系方式
 
 - 作者：Renjie Wu
+
+## 配置说明
+
+1. 复制配置文件模板：
+   ```bash
+   cp backend/config/service-account-file.example.json backend/config/service-account-file.json
+   ```
+
+2. 使用你的 Google Earth Engine 服务账号凭证替换配置文件中的内容
+
+3. 确保 `backend/config/service-account-file.json` 已被 .gitignore 忽略
