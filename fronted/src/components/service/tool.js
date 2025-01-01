@@ -134,7 +134,7 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
         isProcessing.value = true
         let endpoint = ''
         let requestData = {}
-
+        // console.log('Tool.js - processLayerSelect - selectedLayerName', selectedLayerName)
         switch (currentTool.id) {
             case 'cloud-removal':
                 endpoint = API_ROUTES.TOOLS.CLOUD_REMOVAL
@@ -187,6 +187,7 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
                 requestData = createRequestData(selectedLayerName, mapView.layers)
                 break
             case 'raster-calculator':
+                console.log('Tool.js - processLayerSelect - layer', mapView.layers.find(l => l.id === selectedLayerName[0].id))
                 endpoint = API_ROUTES.TOOLS.RASTER_CALCULATOR
                 requestData = {
                     layer_ids: selectedLayerName,
@@ -360,23 +361,6 @@ export const handleImageAsset = async (selectedAsset, mapView) => {
 
 // 添加栅格计算器相关函数
 export const calculatorTools = {
-    /**
-     * 插入波段引用到表达式中
-     * @param {string} expression - 当前表达式
-     * @param {string} layerId - 图层ID
-     * @param {string} band - 波段名称
-     * @returns {string} 更新后的表达式
-     */
-    insertBand: (expression, layerId, band) => {
-        // 使用简短的图层ID（去掉后缀）
-        const shortId = layerId.split('_')[0];
-        // 如果选择了多个图层，使用 imgX.band 格式
-        if (selectedLayerName.value.length > 1) {
-            return expression + `img${shortId}.${band}`;
-        }
-        // 如果只选择了一个图层，直接使用波段名
-        return expression + band;
-    },
 
     /**
      * 插入运算符到表达式中，确保运算符前后有空格

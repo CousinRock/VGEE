@@ -606,6 +606,7 @@ watch(selectedLayerName, async (newVal) => {
         for (const layerId of newVal) {
             if (!layerBands.value[layerId]) {
                 layerBands.value[layerId] = calculatorTools.getLayerBands(props.mapView, layerId)
+                console.log('Tools.vue - watch - layerBands', layerBands.value)
             }
         }
         // 清理未选中图层的波段信息
@@ -618,11 +619,6 @@ watch(selectedLayerName, async (newVal) => {
 })
 
 // 栅格计算器操作方法
-
-//  在表达式中插入波段引用
-const insertBand = (layerId, band) => {
-    calculatorExpression.value = calculatorTools.insertBand(calculatorExpression.value, band)
-}
 
 // 调用calculatorTools.insertOperator方法将运算符插入到当前表达式中
 const insertOperator = (operator) => {

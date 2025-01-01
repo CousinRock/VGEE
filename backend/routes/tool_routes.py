@@ -52,7 +52,7 @@ def common_process(layer_ids, results, vis_params, message):
         'message': message,
         'results': layer_results
     })
-
+    
 def get_vis_params(result):
     """动态计算可视化参数"""
     try:
@@ -60,7 +60,7 @@ def get_vis_params(result):
         stats = result.reduceRegion(
             reducer=ee.Reducer.minMax(),
             geometry=result.geometry(),
-            scale=30,
+            scale=150,
             maxPixels=1e13
         ).getInfo()
         
@@ -607,7 +607,10 @@ def raster_calculator():
                 image = datasets[layer_id]
                 band_refs = {}
                 
-                for band in image.bandNames().getInfo():
+                
+                # 获取波段名称并构建 band_refs
+                band_names = image.bandNames().getInfo()
+                for band in band_names:
                     band_refs[band] = image.select([band])
                 
                 # 计算结果
@@ -633,7 +636,7 @@ def raster_calculator():
                     'layer_id': calc_id,
                     'name': calc_name,
                     'tileUrl': map_id['tile_fetcher'].url_format,
-                    'bandInfo': result.bandNames().getInfo(),
+                    'bandInfo': band_names,
                     'visParams': vis_params  # 添加 visParams
                 })
         
