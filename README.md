@@ -1,44 +1,56 @@
-![image](images/demo2.jpg)
 # 遥感影像处理系统
 
-一个基于 Google Earth Engine 平台，使用 Vue 3 和 Flask 的遥感影像处理系统，集成了 Earth Engine API，提供了影像浏览、处理和分析功能。
+一个基于 Google Earth Engine 平台，使用 Vue 3 和 Flask 的遥感影像处理系统。系统提供了丰富的遥感影像处理和分析功能，支持多源遥感数据的处理和分析。
+![image](images/demo1.jpg)
 
-## 功能特点
+## 主要功能
 
-- 多源遥感数据支持
-  - Landsat 系列 (5/7/8/9)
-  - Sentinel-2
-  - MODIS
-  - ASTER
-  - GOES-16
+### 数据源支持
+- Landsat 系列 (5/7/8/9)
 
-- 影像处理工具
-  - 遥感指数计算 (NDVI, NDWI, EVI等)
-  - K-means聚类分析
-  - 云检测与去除
-  - 影像填补
-  - 波段组合调整
-  - 直方图拉伸
+### 预处理工具
+- 影像除云
+- 影像填补
+- 直方图均值化
+- 栅格计算器
 
-- 交互式地图操作
-  - 图层管理
-  - 绘制工具
-  - 透明度调节
-  - 多种底图切换
+### 指数计算
+- 植被指数 (NDVI)
+- 增强植被指数 (EVI)
+- 土壤植被指数 (SAVI)
+- 水体指数 (NDWI)
+- 改进水体指数 (MNDWI)
+- 建筑指数 (NDBI)
+- 裸土指数 (BSI)
+
+### 分类工具
+- K-means 聚类
+- 随机森林分类
+
+### 矢量工具
+- 矢量数据导入
+- 样本采集
+- 研究区绘制
+- 矢量样式设置
+
+### 数据管理
+- 图层管理
+- 波段组合
+- 显示参数调整
+- 图层导出
+
+###DEMO
+![image](images/addLayer.gif)
 
 ## 技术栈
 
 ### 前端
 - Vue 3
-- Element Plus
 - Leaflet
-- Axios
-- Font Awesome
 
 ### 后端
 - Flask
 - Google Earth Engine Python API
-- NumPy
 - Flask-CORS
 
 ## 安装说明
@@ -46,80 +58,44 @@
 ### 前端安装
 ```bash
 cd frontend
-npm install/cnpm install
+npm install
 npm run dev
 ```
 
 ### 后端安装
 ```bash
 cd backend
-conda activate vgee/vgee
+conda activate vgee/vgee(Windows下将bin文件夹添加到环境变量中)
 pip install -r requirements.txt
+python app.py
 ```
-
-### Earth Engine 认证
-1. 申请 Google Earth Engine 账号
-2. 安装 earthengine-api
-3. 运行认证
-```bash
-earthengine authenticate
-```
-
-## 使用说明
-
-1. 启动后端服务
-```bash
-cd backend
-flask run/python app.py
-```
-
-2. 启动前端服务
-```bash
-cd frontend
-npm run dev
-```
-
-## 主要功能使用
-
-### 数据加载
-1. 选择卫星数据源
-2. 设置时间范围
-3. 调整云量阈值
-4. 输入图层名称
-5. 点击添加图层
-
-### 影像处理
-1. 选择目标图层
-2. 选择处理工具
-3. 设置处理参数
-
-### 可视化调整
-1. 点击图层设置
-2. 调整波段组合
-3. 设置显示范围
-4. 调整对比度和亮度
-
-## 注意事项
-
-- 确保已安装所有依赖
-- 需要有效的 Google Earth Engine 账号
-- 处理大范围数据时可能需要较长时间
-
-## 贡献指南
-
-欢迎提交 Issue 和 Pull Request
-
-## 联系方式
-
-- 作者：Renjie Wu
 
 ## 配置说明
 
 1. 复制配置文件模板：
-   ```bash
-   cp backend/config/service-account-file.example.json backend/config/service-account-file.json
-   ```
+从Google Cloud 获取服务账号凭证，下载json文件到backend/config目录下
 
-2. 使用你的 Google Earth Engine 服务账号凭证替换配置文件中的内容
 
-3. 确保 `backend/config/service-account-file.json` 已被 .gitignore 忽略
+## Docker 部署
+
+3. 构建并启动服务：
+```bash
+# 构建镜像
+docker-compose build -no-cache
+
+# 启动服务
+docker-compose up
+```
+
+服务启动后：
+- 前端访问地址：http://localhost:8080
+- 后端访问地址：http://localhost:5000
+
+## 注意事项
+
+- 需要有效的 Google Earth Engine 服务账号
+- 确保服务账号具有足够的权限
+- 大范围数据处理可能需要较长时间
+
+## 作者
+Renjie Wu
