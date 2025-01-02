@@ -39,8 +39,11 @@
 - 显示参数调整
 - 图层导出
 
-###DEMO
+### DEMO
+### 添加图层
 ![image](images/addLayer.gif)
+### 影像处理
+![image](images/process.gif)
 
 ## 技术栈
 
