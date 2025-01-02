@@ -85,6 +85,7 @@ python app.py
 ```bash
 # 构建镜像
 docker-compose build --no-cache
+如果构建失败，尝试手动拉取镜像：docker pull python:3.11-slim
 
 # 启动服务
 docker-compose up
