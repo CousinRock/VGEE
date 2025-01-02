@@ -593,7 +593,7 @@ def raster_calculator():
                 'layer_id': calc_id,
                 'name': calc_name,
                 'tileUrl': map_id['tile_fetcher'].url_format,
-                'bandInfo': result.bandNames().getInfo(),
+                'bandInfo': vis_params['bands'],
                 'visParams': vis_params  # 添加 visParams
             }]
             
@@ -636,7 +636,7 @@ def raster_calculator():
                     'layer_id': calc_id,
                     'name': calc_name,
                     'tileUrl': map_id['tile_fetcher'].url_format,
-                    'bandInfo': band_names,
+                    'bandInfo': vis_params['bands'],
                     'visParams': vis_params  # 添加 visParams
                 })
         
