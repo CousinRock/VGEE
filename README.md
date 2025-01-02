@@ -84,7 +84,7 @@ python app.py
 3. 构建并启动服务：
 ```bash
 # 构建镜像
-docker-compose build -no-cache
+docker-compose build --no-cache
 
 # 启动服务
 docker-compose up
