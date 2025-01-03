@@ -56,7 +56,7 @@ SATELLITE_CONFIGS = {
     
     # Sentinel 系列
     'SENTINEL-2': {
-        'collection': 'COPERNICUS/S2_SR',
+        'collection': 'COPERNICUS/S2_HARMONIZED',
         'start_date': None,
         'end_date': None,
         'vis_params': {
@@ -85,25 +85,4 @@ SATELLITE_CONFIGS = {
         },
         'name_template': 'MODIS NDVI ({start_date} to {end_date})'
     },
-    
-    # 其他卫星数据源
-    'ASTER': {
-        'collection': 'NASA/ASTER_GED/AG100_003',
-        'vis_params': {
-            'bands': ['emissivity_band13', 'emissivity_band12', 'emissivity_band10'],
-            'min': 0.2,
-            'max': 0.9
-        },
-        'name_template': 'ASTER ({start_date} to {end_date})'
-    },
-    
-    'GOES': {
-        'collection': 'NOAA/GOES/16/FDCC',
-        'vis_params': {
-            'bands': ['CMI_C02'],
-            'min': 0,
-            'max': 1
-        },
-        'name_template': 'GOES-16 ({start_date} to {end_date})'
-    }
 } 

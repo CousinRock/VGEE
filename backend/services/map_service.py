@@ -103,13 +103,17 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
         # 获取图像集合
         collection = ee.ImageCollection(satellite_config['collection'])
         
+        
         # 时间过滤
         if start_date and end_date:
             collection = collection.filterDate(start_date, end_date)
             
         # 云量过滤
         if cloud_cover is not None and 'cloud_band' in satellite_config:
-            collection = collection.filter(ee.Filter.lt('CLOUD_COVER', cloud_cover))
+            if 'SENTINEL-2' in satellite:
+                collection = collection.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_cover))
+            elif 'Landsat' in satellite:
+                collection = collection.filter(ee.Filter.lt('CLOUD_COVER', cloud_cover))
             
         # 获取中值图像
         dataset = collection.median()
