@@ -150,30 +150,44 @@ class PreprocessingTool(BaseTool):
             raise Exception(f"Error in multi-layer calculation: {str(e)}")
 
     @staticmethod
-    def raster_calculator_all_bands(image, expression):
-        """全波段计算"""
+    def raster_calculator_all_bands(image, expression, selected_bands=None):
+        """全波段计算
+        Args:
+            image: 输入影像
+            expression: 计算表达式
+            selected_bands: 字典，键为表达式，值为要应用该表达式的波段列表
+                          例如: {'x*2': ['B1','B2','B3'], 'x/2': ['B5','B6','B7']}
+        """
         try:
-            # 获取所有波段
-            band_names = image.bandNames()
+            if not selected_bands:
+                # 如果没有指定波段组，使用原来的全波段计算逻辑
+                band_names = image.bandNames()
+                def process_band(band):
+                    band = ee.String(band)
+                    return ee.Image(0).expression(
+                        expression,
+                        {'x': image.select([band])}
+                    ).rename([band])
+                processed_bands = band_names.map(process_band)
+                result = ee.ImageCollection.fromImages(processed_bands).mosaic()
+                
+            else:
+                # 对每组波段应用不同的表达式
+                result = image.select([])  # 创建一个空的影像作为基础
+                
+                for expr, bands in selected_bands.items():
+                    # 处理当前表达式的所有波段
+                    print('Tool_routes.py - raster_calculator_all_bands-expr:', expr)
+                    for band in bands:
+                        # 对每个波段应用表达式并添加到结果影像中
+                        calculated = ee.Image(0).expression(
+                            expr,
+                            {'x': image.select([band])}
+                        ).rename([band])
+                        result = result.addBands(calculated)
             
-            # 对每个波段应用表达式
-            def process_band(band):
-                # 确保 band 是 ee.String 类型
-                band = ee.String(band)
-                return ee.Image(0).expression(
-                    expression,
-                    {
-                        'x': image.select([band])
-                    }
-                ).rename([band])  # 使用列表形式重命名
-            
-            # 处理所有波段
-            processed_bands = band_names.map(process_band)
-            
-            # 合并所有处理后的波段
-            result = ee.ImageCollection.fromImages(processed_bands).toBands()
-            # 重命名回原始波段名称，确保使用列表形式
-            return result.rename(band_names)
+            print('Tool_routes.py - raster_calculator_all_bands-result:', result.bandNames().getInfo())
+            return result
             
         except Exception as e:
             raise Exception(f"Error in all-bands calculation: {str(e)}")

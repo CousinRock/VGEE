@@ -97,7 +97,7 @@
                         <el-radio-group v-model="calculatorMode">
                             <el-radio label="single">单波段计算</el-radio>
                             <el-radio label="multi">多图层计算</el-radio>
-                            <el-radio label="all_bands">全波段计算</el-radio>
+                            <el-radio label="all_bands">多波段计算</el-radio>
                         </el-radio-group>
                         <div class="mode-hint">
                             <template v-if="calculatorMode === 'single'">
@@ -107,7 +107,8 @@
                                 多个图层之间的计算，生成一个结果 (如: layer1.B4-layer2.B3)
                             </template>
                             <template v-if="calculatorMode === 'all_bands'">
-                                将同一公式应用到所选图层的所有波段 (使用 x 表示波段值，如: x*2)
+                                将同一公式应用到所选图层的所有波段 (使用 x 表示波段值，如:
+                                {'x*2': ['B1','B2','B3'], 'x/2': ['B5','B6','B7']})
                             </template>
                         </div>
                     </div>
@@ -384,16 +385,11 @@ const handleRandomForest = async (tool) => {
 
 // 添加栅格计算器处理方法
 const handleRasterCalculator = async (tool) => {
-    const layers = await getAvailableLayers()
-    if (!layers) return
-
-    selectedLayerName.value = []
-    availableLayers.value = layers
-    currentTool.value = tool
+    commonMethod(tool)
 
     // 初始化计算表达式
     calculatorExpression.value = ''
-    showLayerSelect.value = true
+
 }
 
 // 添加对话框标题计算属性
@@ -650,6 +646,8 @@ const handleBandClick = (layerId, band) => {
     if (calculatorMode.value === 'multi') {
         // 多图层模式：使用图层名.波段的格式
         calculatorExpression.value += `${layerName}.${band}`
+    } else if (calculatorMode.value === 'all_bands') {
+
     } else {
         // 单图层模式：直接使用波段名
         calculatorExpression.value += band

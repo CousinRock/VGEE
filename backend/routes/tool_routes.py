@@ -592,12 +592,21 @@ def raster_calculator():
             for layer_id in layer_ids:
                 if layer_id not in datasets:
                     raise ValueError(f'Invalid layer ID: {layer_id}')
-                    
-                result = PreprocessingTool.raster_calculator_all_bands(datasets[layer_id], expression)
+                
+                # 从请求中获取波段组设置
+                # 例如: {'x*2': ['B1','B2','B3'], 'x/2': ['B5','B6','B7']}
+                selected_bands = eval(expression)
+                print('Tool_routes.py - raster_calculator-selected_bands:', selected_bands)
+                
+                result = PreprocessingTool.raster_calculator_all_bands(
+                    datasets[layer_id], 
+                    expression,
+                    selected_bands
+                )
                 
                 # 创建结果图层
                 calc_id = f"{layer_id}_calc_all"
-                calc_name = f"{datasetsNames.get(layer_id, f'Layer_{layer_id}')} (全波段计算结果)"
+                calc_name = f"{datasetsNames.get(layer_id, f'Layer_{layer_id}')} (多波段计算结果)"
                 save_dataset(calc_id, result, calc_name)
                 
                 # 设置可视化参数
