@@ -95,6 +95,8 @@ def cloud_removal():
         
         PreprocessingTool.validate_inputs(layer_ids, datasets)
         selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
+        
+        
         results = selected_images.map(PreprocessingTool.cloud_removal).toList(selected_images.size())
         
         return common_process(layer_ids, results, vis_params, '除云处理完成')
@@ -195,7 +197,7 @@ def get_layers():
         landsat_layers = {}
         
         for layer_id, dataset in datasets.items():
-            if 'LANDSAT' in layer_id.upper():
+            if 'LANDSAT' in layer_id.upper() or 'SENTINEL-2' in layer_id.upper():
                 layer_name = datasetsNames[layer_id]
                 landsat_layers[layer_id] = {
                     'id': layer_id,
@@ -544,7 +546,7 @@ def raster_calculator():
         layer_ids = data.get('layer_ids')
         params = data.get('expression', {})
         expression = params.get('expression')
-        calc_mode = params.get('mode', 'single')
+        calc_mode = params.get('mode', 'single')  # 'single', 'multi', 或 'all_bands'
         
         if not layer_ids or not expression:
             raise ValueError('Missing required parameters')
@@ -597,8 +599,67 @@ def raster_calculator():
                 'visParams': vis_params  # 添加 visParams
             }]
             
+        elif calc_mode == 'all_bands':
+            # 对单个图层的所有波段进行操作
+            layer_results = []
+            for layer_id in layer_ids:
+                if layer_id not in datasets:
+                    raise ValueError(f'Invalid layer ID: {layer_id}')
+                    
+                image = datasets[layer_id]
+                # 获取所有波段
+                band_names = image.bandNames()
+                
+                # 对每个波段应用表达式
+                def process_band(band):
+                    # 确保 band 是 ee.String 类型
+                    band = ee.String(band)
+                    return ee.Image(0).expression(
+                        expression,
+                        {
+                            'x': image.select([band])
+                        }
+                    ).rename([band])  # 使用列表形式重命名
+                
+                # 处理所有波段
+                processed_bands = band_names.map(process_band)
+                
+                # 合并所有处理后的波段
+                result = ee.ImageCollection.fromImages(processed_bands).toBands()
+                # 重命名回原始波段名称，确保使用列表形式
+                result = result.rename(band_names)
+                
+                # 获取前三个波段名称作为默认显示
+                default_bands = ee.List(band_names.slice(0, 3))
+                
+                # 设置可视化参数
+                vis_params = {
+                    'bands': default_bands.getInfo(),
+                    'min': 0,
+                    'max': 1,
+                    'gamma': 1.4
+                }
+                
+                map_id = result.getMapId(vis_params)
+                
+                # 创建结果图层
+                original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
+                calc_id = f"{layer_id}_calc_all"
+                calc_name = f"{original_name} (全波段计算结果)"
+                
+                # 保存结果
+                save_dataset(calc_id, result, calc_name)
+                
+                layer_results.append({
+                    'layer_id': calc_id,
+                    'name': calc_name,
+                    'tileUrl': map_id['tile_fetcher'].url_format,
+                    'bandInfo': band_names.getInfo(),
+                    'visParams': vis_params
+                })
+                
         else:
-            # 单图层计算模式
+            # 单图层单波段计算模式
             layer_results = []
             for layer_id in layer_ids:
                 if layer_id not in datasets:

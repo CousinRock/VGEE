@@ -3,9 +3,8 @@ import ee
 
 class PreprocessingTool(BaseTool):
     @staticmethod
-    def RemoveBit(image):
-        """除云除雪函数"""
-        snow_bit = 1 << 5
+    def RemoveBitLandsat(image):
+        """Landsat 除云除雪函数"""
         dilated_cloud = 1 << 1
         cloud_shadow_bit_mask = 1 << 4
         clouds_bit_mask = 1 << 3
@@ -14,16 +13,36 @@ class PreprocessingTool(BaseTool):
         mask = (
             qa.bitwiseAnd(cloud_shadow_bit_mask).eq(0)
             .And(qa.bitwiseAnd(clouds_bit_mask).eq(0))
-            .And(qa.bitwiseAnd(snow_bit).eq(0))
             .And(qa.bitwiseAnd(dilated_cloud).eq(0))
         )
+        return image.updateMask(mask)
+
+    @staticmethod
+    def RemoveBitSentinel(image):
+        """Sentinel-2 除云函数"""
+        qa = image.select('QA60').toInt()
+        
+        # Bits 10 and 11 are clouds and cirrus
+        cloud_bit_mask = 1 << 10
+        cirrus_bit_mask = 1 << 11
+        
+        mask = (
+            qa.bitwiseAnd(cloud_bit_mask).eq(0)
+            .And(qa.bitwiseAnd(cirrus_bit_mask).eq(0))
+        )
+        
         return image.updateMask(mask)
 
     @staticmethod
     def cloud_removal(image):
         """影像除云处理"""
         try:
-            return PreprocessingTool.RemoveBit(image)
+            # 使用 ee.Algorithms.If 在服务端判断影像类型
+            return ee.Algorithms.If(
+                image.bandNames().contains('QA60'),
+                PreprocessingTool.RemoveBitSentinel(image),
+                PreprocessingTool.RemoveBitLandsat(image)
+            )
         except Exception as e:
             raise Exception(f"Error in cloud removal: {str(e)}")
 
@@ -87,7 +106,6 @@ class PreprocessingTool(BaseTool):
             # 如果没有提供图像集合，直接返回原图像
             if collection is None:
                 return image
-
             # 从集合中排除当前图像
             source_collection = collection.filter(
                 ee.Filter.neq('system:index', image.get('system:index'))
@@ -101,3 +119,4 @@ class PreprocessingTool(BaseTool):
         except Exception as e:
             print(f"Error in image_filling: {str(e)}")
             raise e
+

@@ -95,15 +95,19 @@
                     <div class="calc-mode">
                         <h5>计算模式:</h5>
                         <el-radio-group v-model="calculatorMode">
-                            <el-radio label="single">单图层计算</el-radio>
+                            <el-radio label="single">单波段计算</el-radio>
                             <el-radio label="multi">多图层计算</el-radio>
+                            <el-radio label="all_bands">全波段计算</el-radio>
                         </el-radio-group>
                         <div class="mode-hint">
                             <template v-if="calculatorMode === 'single'">
-                                将同一公式应用到每个选中的图层 (如: B4-B3)
+                                将同一公式应用到每个选中的波段 (如: B4-B3)
                             </template>
-                            <template v-else>
+                            <template v-if="calculatorMode === 'multi'">
                                 多个图层之间的计算，生成一个结果 (如: layer1.B4-layer2.B3)
+                            </template>
+                            <template v-if="calculatorMode === 'all_bands'">
+                                将同一公式应用到所选图层的所有波段 (使用 x 表示波段值，如: x*2)
                             </template>
                         </div>
                     </div>
