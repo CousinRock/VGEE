@@ -298,19 +298,19 @@ export const getPalettePreviewStyle = (colors) => {
 // 取滑块步长和范围
 export const getSliderStep = (satelliteType) => {
     if (!satelliteType) return 0.1;
-
-    switch (satelliteType) {
-        case 'SENTINEL-2':
-            return 100;  // Sentinel-2 反射率数据范围较大，用100作为步长
-        case 'MODIS-NDVI':
-            return 100;  // MODIS NDVI 数据范围在 -2000 到 10000
-        case 'LANDSAT-8':
-        case 'LANDSAT-7':
-        case 'LANDSAT-5':
-            return 0.001;  // Landsat TOA 反射率数据范围在 0-1
-        default:
-            return 0.001;
-    }
+    return 0.001;
+    // switch (satelliteType) {
+    //     case 'SENTINEL-2':
+    //         return 100;  // Sentinel-2 反射率数据范围较大，用100作为步长
+    //     case 'MODIS-NDVI':
+    //         return 100;  // MODIS NDVI 数据范围在 -2000 到 10000
+    //     case 'LANDSAT-8':
+    //     case 'LANDSAT-7':
+    //     case 'LANDSAT-5':
+    //         return 0.001;  // Landsat TOA 反射率数据范围在 0-1
+    //     default:
+    //         return 0.001;
+    // }
 }
 
 // 格式化显示

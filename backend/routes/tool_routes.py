@@ -128,7 +128,7 @@ def calculate_index():
             results.append(result)
             
         results = ee.List(results)
-        bandNames = ee.Image(results.get(0)).bandNames().getInfo()
+        # bandNames = ee.Image(results.get(0)).bandNames().getInfo()
         # print('Tool_routes.py - calculate_index-bandNames:',bandNames)
         
         return common_process(layer_ids, results, vis_params, f'已添加 {index_type.upper()} 波段')
@@ -252,7 +252,7 @@ def kmeans_clustering():
             num_clusters = cluster_counts.get(layer_id, 5)
             # 获取原始图层名称
             original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
-            kmeans_id = f"{layer_id}_kmeans"  # 为分类结果创建新的ID
+            kmeans_id = f"kmeans_{layer_id}"  # 为分类结果创建新的ID
             
             # 创建新的图层名称，包含原始名称和工具名称
             kmeans_name = f"{original_name} (K-means聚类)"
@@ -501,7 +501,7 @@ def random_forest():
         for i, layer_id in enumerate(layer_ids):
             # 获取原始图层名称
             original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
-            rf_id = f"{layer_id}_rf"  # 为分类结果创建新的ID
+            rf_id = f"rf_{layer_id}"  # 为分类结果创建新的ID
             
             # 创建新的图层名称，包含原始名称和工具名称
             rf_name = f"{original_name} (随机森林分类)"
@@ -605,7 +605,7 @@ def raster_calculator():
                 )
                 
                 # 创建结果图层
-                calc_id = f"{layer_id}_calc_all"
+                calc_id = f"calc_all_{layer_id}"
                 calc_name = f"{datasetsNames.get(layer_id, f'Layer_{layer_id}')} (多波段计算结果)"
                 save_dataset(calc_id, result, calc_name)
                 
@@ -613,6 +613,7 @@ def raster_calculator():
                 band_names = result.bandNames()
                 default_bands = ee.List(band_names.slice(0, 3))
                 vis_params = {'bands': default_bands.getInfo(), 'min': 0, 'max': 1, 'gamma': 1.4}
+                print('Tool_routes.py - raster_calculator-vis_params:', vis_params)
                 
                 layer_results.append(create_layer_result(calc_id, calc_name, result, vis_params))
                 
@@ -625,7 +626,7 @@ def raster_calculator():
                 result = PreprocessingTool.raster_calculator_single(datasets[layer_id], expression)
                 
                 # 创建结果图层
-                calc_id = f"{layer_id}_calc"
+                calc_id = f"calc_{layer_id}"
                 calc_name = f"{datasetsNames.get(layer_id, f'Layer_{layer_id}')} (计算结果)"
                 save_dataset(calc_id, result, calc_name)
                 

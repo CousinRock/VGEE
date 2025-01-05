@@ -93,9 +93,12 @@ export const updateMapLayer = async (layerResult, mapView) => {
             visible: true,
             opacity: 1,
             leafletLayer: null,
-            bandInfo: layerResult.bandInfo,
+            bandInfo: layerResult.bandInfo,  // 保存完整的波段信息
             visParams: {
-                bands: layerResult.bandInfo,
+                // 如果有超过3个波段，默认显示前3个波段
+                bands: layerResult.bandInfo.length > 3 
+                    ? layerResult.bandInfo.slice(0, 3) 
+                    : layerResult.bandInfo,
                 min: layerResult.visParams.min,
                 max: layerResult.visParams.max,
                 gamma: layerResult.visParams.gamma || 1.4

@@ -647,10 +647,10 @@ const handleBandClick = (layerId, band) => {
         // 多图层模式：使用图层名.波段的格式
         calculatorExpression.value += `${layerName}.${band}`
     } else if (calculatorMode.value === 'all_bands') {
-
+        calculatorExpression.value += "'"+band+"'"
     } else {
         // 单图层模式：直接使用波段名
-        calculatorExpression.value += band
+        calculatorExpression.value += `${band}`
     }
 }
 
