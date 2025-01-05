@@ -255,10 +255,7 @@ def kmeans_clustering():
             kmeans_id = f"kmeans_{layer_id}"  # 为分类结果创建新的ID
             
             # 创建新的图层名称，包含原始名称和工具名称
-            kmeans_name = f"{original_name} (K-means聚类)"
-            
-            # 保存分类结果到数据集
-            save_dataset(kmeans_id, results[i].select(bandInfo), kmeans_name)
+            kmeans_name = f"{original_name} (K-means聚类)"                  
             
             map_id = datasets[kmeans_id].getMapId({
                 'min': 0,
@@ -276,6 +273,9 @@ def kmeans_clustering():
                     'max': num_clusters - 1
                 }
             })
+
+            # 保存分类结果到数据集
+            save_dataset(kmeans_id, results[i].select(bandInfo), kmeans_name)
 
         return jsonify({
             'success': True,
@@ -506,9 +506,6 @@ def random_forest():
             # 创建新的图层名称，包含原始名称和工具名称
             rf_name = f"{original_name} (随机森林分类)"
             
-            # 保存分类结果到数据集
-            save_dataset(rf_id, results[i].select(bandInfo), rf_name)
-            
             # 设置可视化参数
             map_id = datasets[rf_id].getMapId({
                 'min': 0,
@@ -526,6 +523,9 @@ def random_forest():
                     'max': len(samples) - 1
                 }
             })
+
+            # 保存分类结果到数据集
+            save_dataset(rf_id, results[i].select(bandInfo), rf_name)
 
         return jsonify({
             'success': True,
@@ -595,6 +595,7 @@ def raster_calculator():
                 
                 # 从请求中获取波段组设置
                 # 例如: {'x*2': ['B1','B2','B3'], 'x/2': ['B5','B6','B7']}
+                # {'x/10000':['B1','B2','B3','B4','B5','B6','B7','B8','B8A','B9','B10','B11','B12']}
                 selected_bands = eval(expression)
                 print('Tool_routes.py - raster_calculator-selected_bands:', selected_bands)
                 

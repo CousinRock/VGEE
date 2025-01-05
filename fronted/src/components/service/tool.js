@@ -218,7 +218,6 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
         if (!data.success) {
             throw new Error(data.message || '处理失败')
         }
-
         // 更新地图图层
         for (const result of data.results) {
             await updateMapLayer(result, mapView)
@@ -229,7 +228,7 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
 
     } catch (error) {
         console.error('Error processing layers:', error)
-        ElMessage.error('处理失败')
+        ElMessage.error(error.message || '处理失败')
         return false
     } finally {
         isProcessing.value = false

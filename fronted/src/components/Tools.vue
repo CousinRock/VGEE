@@ -444,6 +444,7 @@ const handleLayerSelect = async () => {
                 rfParams.value,
                 isProcessing
             )
+            console.log('Tools.vue - handleLayerSelect - result', result)
         } else {
             // 其他工具处理逻辑
             result = await processLayerSelect(
