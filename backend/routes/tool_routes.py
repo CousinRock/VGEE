@@ -257,6 +257,9 @@ def kmeans_clustering():
             # 创建新的图层名称，包含原始名称和工具名称
             kmeans_name = f"{original_name} (K-means聚类)"                  
             
+             # 保存分类结果到数据集
+            save_dataset(kmeans_id, results[i].select(bandInfo), kmeans_name)
+
             map_id = datasets[kmeans_id].getMapId({
                 'min': 0,
                 'max': num_clusters - 1
@@ -274,8 +277,7 @@ def kmeans_clustering():
                 }
             })
 
-            # 保存分类结果到数据集
-            save_dataset(kmeans_id, results[i].select(bandInfo), kmeans_name)
+           
 
         return jsonify({
             'success': True,
@@ -506,6 +508,9 @@ def random_forest():
             # 创建新的图层名称，包含原始名称和工具名称
             rf_name = f"{original_name} (随机森林分类)"
             
+            # 保存分类结果到数据集
+            save_dataset(rf_id, results[i].select(bandInfo), rf_name)
+            
             # 设置可视化参数
             map_id = datasets[rf_id].getMapId({
                 'min': 0,
@@ -524,8 +529,7 @@ def random_forest():
                 }
             })
 
-            # 保存分类结果到数据集
-            save_dataset(rf_id, results[i].select(bandInfo), rf_name)
+            
 
         return jsonify({
             'success': True,
