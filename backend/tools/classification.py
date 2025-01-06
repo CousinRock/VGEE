@@ -16,7 +16,7 @@ class ClassificationTool(BaseTool):
             clusterer = ee.Clusterer.wekaKMeans(num_clusters).train(training)
             result = image.cluster(clusterer)
             
-            return result.randomVisualizer()
+            return result
             
         except Exception as e:
             raise Exception(f"Error in kmeans clustering: {str(e)}")

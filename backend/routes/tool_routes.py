@@ -233,7 +233,9 @@ def kmeans_clustering():
         selected_images = ClassificationTool.get_image_collection(layer_ids, datasets)
         
         # 为每个图像执行聚类
-        results = []
+        # 处理结果
+        layer_results = []
+        bandInfo = ['cluster']
         num = len(layer_ids)
         for i, layer_id in enumerate(layer_ids):
             num_clusters = cluster_counts.get(layer_id, 5)
@@ -242,25 +244,17 @@ def kmeans_clustering():
                 ee.Image(selected_images.toList(num).get(i)), 
                 num_clusters
             )
-            results.append(result)
-        
-        # 处理结果
-        layer_results = []
-        bandInfo = ['cluster']
-        
-        for i, layer_id in enumerate(layer_ids):
+
             num_clusters = cluster_counts.get(layer_id, 5)
-            # 获取原始图层名称
+
+             # 获取原始图层名称
             original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
             kmeans_id = f"kmeans_{layer_id}"  # 为分类结果创建新的ID
             
             # 创建新的图层名称，包含原始名称和工具名称
-            kmeans_name = f"{original_name} (K-means聚类)"                  
-            
-             # 保存分类结果到数据集
-            save_dataset(kmeans_id, results[i].select(bandInfo), kmeans_name)
+            kmeans_name = f"{original_name} (K-means聚类)"  
 
-            map_id = datasets[kmeans_id].getMapId({
+            map_id = result.getMapId({
                 'min': 0,
                 'max': num_clusters - 1
             })
@@ -277,6 +271,8 @@ def kmeans_clustering():
                 }
             })
 
+             # 保存分类结果到数据集
+            save_dataset(kmeans_id, result.select(bandInfo), kmeans_name)
            
 
         return jsonify({
@@ -484,8 +480,10 @@ def random_forest():
         selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
         
         # 执行分类并创建结果列表
-        results = []
         num = len(layer_ids)
+         # 处理结果
+        layer_results = []
+        bandInfo = ['classification']  # 分类结果波段名
         for i, layer_id in enumerate(layer_ids):
             image = ee.Image(selected_images.toList(num).get(i))
             classified = ClassificationTool.random_forest_classification(
@@ -494,25 +492,16 @@ def random_forest():
                 num_trees=num_trees,
                 train_ratio=train_ratio
             )
-            results.append(classified)
-        
-        # 处理结果
-        layer_results = []
-        bandInfo = ['classification']  # 分类结果波段名
-        
-        for i, layer_id in enumerate(layer_ids):
-            # 获取原始图层名称
+
+             # 获取原始图层名称
             original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
             rf_id = f"rf_{layer_id}"  # 为分类结果创建新的ID
             
             # 创建新的图层名称，包含原始名称和工具名称
             rf_name = f"{original_name} (随机森林分类)"
             
-            # 保存分类结果到数据集
-            save_dataset(rf_id, results[i].select(bandInfo), rf_name)
-            
             # 设置可视化参数
-            map_id = datasets[rf_id].getMapId({
+            map_id = classified.getMapId({
                 'min': 0,
                 'max': len(samples) - 1
             })
@@ -529,7 +518,8 @@ def random_forest():
                 }
             })
 
-            
+            # 保存分类结果到数据集
+            save_dataset(rf_id, classified.select(bandInfo), rf_name)     
 
         return jsonify({
             'success': True,
