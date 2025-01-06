@@ -91,11 +91,8 @@ docker-compose build --no-cache
 docker-compose up
 ```
 ## Docker 安装
-
 Windows下安装Docker Desktop
-
 参考：[here](https://blog.csdn.net/qq_60750453/article/details/128636298)
-
 镜像使用参考：[here](https://blog.csdn.net/weixin_50160384/article/details/139861337)
 
 
