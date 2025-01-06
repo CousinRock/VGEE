@@ -90,6 +90,13 @@ docker-compose build --no-cache
 # 启动服务
 docker-compose up
 ```
+## Docker 安装
+```bash
+Windows下安装Docker Desktop
+参考：[here](https://blog.csdn.net/qq_60750453/article/details/128636298)
+镜像使用参考：[here](https://blog.csdn.net/weixin_50160384/article/details/139861337)
+```
+
 
 服务启动后：
 - 前端访问地址：http://localhost:8080
