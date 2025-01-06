@@ -95,6 +95,18 @@ Windows下安装Docker Desktop
 - 参考：[here](https://blog.csdn.net/qq_60750453/article/details/128636298)
 - 镜像使用参考：[here](https://blog.csdn.net/weixin_50160384/article/details/139861337)
 
+## Google服务账号申请[here](https://console.cloud.google.com)
+```bash
+1、选择IAM和管理,给主账号添加权限：
+- Earth Engine Apps Publisher
+- Earth Engine Resource Admin
+- Earth Engine Resource Viewer
+- Earth Engine Resource Writer
+- Service Usage Consumer
+
+2、选择服务账号，如果没有就创建服务账号，创建好之后点击右边三个点选择管理密钥，创建密钥，下载json文件到backend/config目录下
+```
+
 
 服务启动后：
 - 前端访问地址：http://localhost:8080
