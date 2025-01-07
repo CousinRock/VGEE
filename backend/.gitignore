@@ -2,5 +2,6 @@
 config/*.json
 config/*.txt
 !config/satellite_config.py
+config/project
 __pycache__/
 *.pyc 
