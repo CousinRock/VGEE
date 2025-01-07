@@ -48,5 +48,13 @@ def init_earth_engine():
     # except Exception as e:
     #     print(f"Error initializing Earth Engine: {str(e)}")
     #     raise
+     # 读取项目配置文件
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_file = os.path.join(current_dir, 'config', 'project')
+    
+    # 读取项目名称
+    with open(project_file, 'r') as f:
+        project_id = f.read().strip()
+        print(project_id)
     ee.Authenticate()
-    ee.Initialize(project="ee-renjiewu660")
+    ee.Initialize(project=project_id)
