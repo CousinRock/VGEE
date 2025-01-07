@@ -666,6 +666,8 @@ export const baseMapManager = {
 export const exportManager = {
     exportToCloud: async (layer, API_ROUTES, folder = 'EarthEngine_Exports', scale = 30) => {
         try {
+            console.log('MapView.vue - exportToCloud - layer:', layer);
+            
             const requestBody = {
                 layer_id: layer.id,
                 layer_name: layer.name,
