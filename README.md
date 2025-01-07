@@ -48,8 +48,16 @@ python app.py
 1. 复制配置文件模板：
 从Google Cloud 获取服务账号凭证，下载json文件到backend/config目录下
 
+## Vercel部署（推荐）
+- 前端地址：https://vgee-wrjwrjwrjwrjwrjs-projects.vercel.app/
+- 下载后端代码，在backend文件夹中进行
+- 创建conda环境：conda create --name VGEE python=3.13 -y
+- 激活conda环境：conda activate VGEE/VGEE(Windows下将bin文件夹添加到环境变量中)
+- 安装依赖：pip install -r requirements.txt
+- 启动服务：python app.py
 
-## Docker 部署
+
+## Docker 部署（不推荐，目前无法解决服务账号导出影像问题）
 
 3. 构建并启动服务：
 ```bash
@@ -76,8 +84,6 @@ Windows下安装Docker Desktop
 
 2、选择服务账号，如果没有就创建服务账号，创建好之后点击右边三个点选择管理密钥，创建密钥，下载json文件到backend/config目录下
 ```
-
-
 服务启动后：
 - 前端访问地址：http://localhost:8080
 - 后端访问地址：http://localhost:5000
