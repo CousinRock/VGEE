@@ -370,10 +370,13 @@ def export_layer_to_cloud():
         features = data.get('features', [])
         geometry_type = data.get('geometryType')
         folder = data.get('folder', 'EarthEngine_Exports')  # 获取文件夹参数
+        scale = data.get('scale', 30)  # 获取分辨率参数，默认30米
         
         # 确保导出名称符合 GEE 要求
         safe_name = ''.join(c for c in layer_name if c.isalnum() or c in '._-')[:100]
         safe_folder = ''.join(c for c in folder if c.isalnum() or c in '._-')  # 处理文件夹名称
+        print(f"Map_routes.py - Received scale: {safe_name}, {safe_folder}, {scale}")
+        print(f"Map_routes.py - Received layer_type: {layer_type}")
         
         if layer_type == 'Raster':
             dataset, datasetsNames = get_all_datasets()
@@ -382,9 +385,9 @@ def export_layer_to_cloud():
             task = ee.batch.Export.image.toDrive(
                 image=img,
                 description=safe_name,
-                folder=safe_folder,  # 使用用户指定的文件夹
+                folder=safe_folder,
                 fileNamePrefix=safe_name,
-                scale=30,
+                scale=scale,  # 使用传入的分辨率
                 region=img.geometry(),
                 fileFormat='GeoTIFF',
                 maxPixels=1e13
@@ -442,7 +445,7 @@ def export_layer_to_cloud():
                     fileFormat='SHP'
                 )
 
-        # 启动导出任务
+        # # 启动导出任务
         task.start()
         
         return jsonify({

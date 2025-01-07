@@ -320,25 +320,29 @@
         </el-dialog>
 
         <!-- 添加导出设置对话框 -->
-        <el-dialog v-model="showExportDialog" title="导出设置" width="400px">
-            <div class="export-settings">
-                <div class="setting-item">
-                    <label>导出文件夹</label>
-                    <el-input 
-                        v-model="exportFolder" 
-                        placeholder="请输入导出文件夹名称"
-                        :disabled="currentExportLayer?.isExporting"
-                    />
-                </div>
+        <el-dialog v-model="showExportDialog" title="导出图层" width="400px">
+            <div class="export-form">
+                <el-form label-width="100px">
+                    <el-form-item label="导出文件夹">
+                        <el-input v-model="exportFolder" placeholder="请输入导出文件夹名称" />
+                    </el-form-item>
+                    <!-- 添加分辨率选择 -->
+                    <el-form-item label="导出分辨率">
+                        <el-select v-model="exportScale" placeholder="选择分辨率">
+                            <el-option label="10米" :value="10" />
+                            <el-option label="20米" :value="20" />
+                            <el-option label="30米" :value="30" />
+                            <el-option label="60米" :value="60" />
+                            <el-option label="100米" :value="100" />
+                        </el-select>
+                        <div class="scale-hint">注: 不同卫星数据源支持的最小分辨率可能不同</div>
+                    </el-form-item>
+                </el-form>
             </div>
             <template #footer>
                 <span class="dialog-footer">
                     <el-button @click="showExportDialog = false">取消</el-button>
-                    <el-button 
-                        type="primary" 
-                        @click="confirmExport" 
-                        :loading="currentExportLayer?.isExporting"
-                    >
+                    <el-button type="primary" @click="confirmExport" :loading="currentExportLayer?.isExporting">
                         {{ currentExportLayer?.isExporting ? '导出中...' : '确认导出' }}
                     </el-button>
                 </span>
@@ -440,6 +444,7 @@ const isApplyingStyle = ref(false);
 // 添加导出相关的响应式变量
 const showExportDialog = ref(false)
 const exportFolder = ref('EarthEngine_Exports')  // 默认文件夹名
+const exportScale = ref(30)  // 默认30米分辨率
 const currentExportLayer = ref(null)
 
 // 切换图层控制面板显示
@@ -1019,28 +1024,24 @@ const exportLayer = (layer) => {
 // 添加确认导出方法
 const confirmExport = async () => {
     const layer = currentExportLayer.value
-    if (!layer || layer.isExporting) return
+    if (!layer) return
     
-    // 设置加载状态
-    layer.isExporting = true
-    const button = document.querySelector(`[data-layer-id="${layer.id}"] .layer-settings`)
-    if (button) {
-        button.disabled = true
-    }
-
+    // 修改这里：使用 .value.isExporting
+    currentExportLayer.value.isExporting = true
+    
     try {
-        await exportManager.exportToCloud(layer, API_ROUTES, exportFolder.value)
-        showExportDialog.value = false  // 导出成功后关闭对话框
+        await exportManager.exportToCloud(
+            layer, 
+            API_ROUTES, 
+            exportFolder.value,
+            exportScale.value
+        )
+        showExportDialog.value = false
+        currentExportLayer.value.isExporting = false
     } catch (error) {
         console.error('Error exporting layer:', error)
+        currentExportLayer.value.isExporting = false
         ElMessage.error('导出图层失败')
-    } finally {
-        // 清除加载状态
-        layer.isExporting = false
-        const button = document.querySelector(`[data-layer-id="${layer.id}"] .layer-settings`)
-        if (button) {
-            button.disabled = false
-        }
     }
 }
 

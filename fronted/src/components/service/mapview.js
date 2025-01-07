@@ -664,19 +664,18 @@ export const baseMapManager = {
 
 // 导出图层管理
 export const exportManager = {
-    exportToCloud: async (layer, API_ROUTES, folder = 'EarthEngine_Exports') => {
+    exportToCloud: async (layer, API_ROUTES, folder = 'EarthEngine_Exports', scale = 30) => {
         try {
-            console.log('MapView.vue - exportToCloud - layer:', layer);
-            
             const requestBody = {
                 layer_id: layer.id,
                 layer_name: layer.name,
                 layer_type: layer.type,
                 vis_params: layer.visParams,
                 geometryType: layer.geometryType,
-                folder: folder  // 添加文件夹参数
+                folder: folder,
+                scale: scale  // 添加分辨率参数
             };
-
+            
             if (layer.type === 'manual') {
                 if (layer.geometryType === 'Polygon') {
                     requestBody.features = [{
