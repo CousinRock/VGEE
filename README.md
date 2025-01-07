@@ -43,11 +43,6 @@ pip install -r requirements.txt
 python app.py
 ```
 
-## 配置说明
-
-1. 复制配置文件模板：
-从Google Cloud 获取服务账号凭证，下载json文件到backend/config目录下
-
 ## Vercel部署（推荐）
 - 前端地址：https://vgee-wrjwrjwrjwrjwrjs-projects.vercel.app/
 - 下载后端代码，在backend文件夹中进行
@@ -59,7 +54,12 @@ python app.py
 
 ## Docker 部署（不推荐，目前无法解决服务账号导出影像问题）
 
-3. 构建并启动服务：
+## 配置说明
+
+1. 复制配置文件模板：
+从Google Cloud 获取服务账号凭证，下载json文件到backend/config目录下
+
+2. 构建并启动服务：
 ```bash
 # 构建镜像
 docker-compose build --no-cache
