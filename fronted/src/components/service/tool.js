@@ -106,6 +106,7 @@ export const updateMapLayer = async (layerResult, mapView) => {
             },
             zIndex: 1000 + mapView.layers.length,
             satellite: originalLayer?.satellite || 'LANDSAT',
+            type: layerResult.type
         }
 
         newLayer.leafletLayer = L.tileLayer(layerResult.tileUrl, {
