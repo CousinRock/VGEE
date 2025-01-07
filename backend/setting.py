@@ -50,7 +50,7 @@ def init_earth_engine():
     #     raise
      # 读取项目配置文件
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_file = os.path.join(current_dir, 'config', 'project')
+    project_file = os.path.join(current_dir, 'config', 'project.txt')
     
     # 读取项目名称
     with open(project_file, 'r') as f:
