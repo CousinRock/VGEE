@@ -268,7 +268,8 @@ def kmeans_clustering():
                     'bands': bandInfo,
                     'min': 0,
                     'max': num_clusters - 1
-                }
+                },
+                'type':'Raster'
             })
 
              # 保存分类结果到数据集
@@ -515,7 +516,8 @@ def random_forest():
                     'bands': bandInfo,
                     'min': 0,
                     'max': len(samples) - 1
-                }
+                },
+                'type':'Raster'
             })
 
             # 保存分类结果到数据集
@@ -554,7 +556,8 @@ def raster_calculator():
             'name': name,
             'tileUrl': map_id['tile_fetcher'].url_format,
             'bandInfo': result.bandNames().getInfo(),
-            'visParams': vis_params
+            'visParams': vis_params,
+            'type':'Raster'
         }
     try:
         data = request.json
