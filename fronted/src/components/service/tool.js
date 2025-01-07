@@ -43,7 +43,7 @@ export const createRequestData = (selectedIds, layers) => {
 export const updateMapLayer = async (layerResult, mapView) => {
     // 查找现有图层
     const layer = mapView.layers.find(l => l.id === layerResult.layer_id)
-    console.log('Tool.js - updateMapLayer - layerResult', layerResult)
+    console.log('Tool.js - updateMapLayer - layer', layer)
 
     if (layer) {
         // 更新现有图层
@@ -67,7 +67,8 @@ export const updateMapLayer = async (layerResult, mapView) => {
             updateWhenIdle: false,
             updateWhenZooming: false,
             keepBuffer: 2,
-            zIndex: layer.zIndex
+            zIndex: layer.zIndex,
+            type: layer.type
         })
 
         // 更新图层引用和波段信息
