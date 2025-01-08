@@ -5,7 +5,7 @@
         <div class="control-section">
             <h4>卫星选择</h4>
             <div class="control-item">
-                <el-select v-model="satellite" placeholder="选择卫星" @change="handleSatelliteChange">
+                <el-select v-model="satellite" placeholder="选择数据集" @change="handleSatelliteChange">
                     <el-option-group v-for="group in satelliteOptions" :key="group.label" :label="group.label">
                         <el-option v-for="item in group.options" :key="item.value" :label="item.label"
                             :value="item.value" />
@@ -84,9 +84,8 @@ const startDate = ref(`${currentYear - 1}-01-01`)
 const endDate = ref(`${currentYear - 1}-12-31`)
 
 // 其他变量
-const satellite = ref([])  // 默认选择
+const satellite = ref(null)
 const satelliteOptions = ref([])
-
 
 const cloudCover = ref(20)
 const layerName = ref('')
@@ -131,6 +130,7 @@ const addNewLayer = async () => {
         alert('请输入图层名称')
         return
     }
+    console.log('ControlPanel.vue - satellite:', satellite.value)
 
     try {
         // 添加加载状态

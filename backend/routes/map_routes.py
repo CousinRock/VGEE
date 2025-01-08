@@ -4,6 +4,7 @@ from config.satellite_config import SATELLITE_CONFIGS
 import ee
 from services.sample_service import add_sample_service, remove_sample_service,get_all_samples
 from flask_cors import CORS
+from scripts.fetch_satellite_dates import fetch_dataset_details
 
 map_bp = Blueprint('map', __name__)
 CORS(map_bp)
@@ -15,7 +16,7 @@ study_areas = []
 def get_map_data():
     try:
         # 获取前端参数
-        satellite = request.args.get('satellite', 'LANDSAT')
+        satellite = request.args.get('satellite', 'LANDSAT/LT05/C02/T1_TOA')
         start_date = request.args.get('startDate', '2023-01-01')
         end_date = request.args.get('endDate', '2023-12-31')
         cloud_cover = float(request.args.get('cloudCover', 20))
@@ -220,56 +221,30 @@ def compute_band_stats():
             'message': f'计算统计值时发生错误: {str(e)}'
         }), 500
 
+
 @map_bp.route('/satellite-config', methods=['GET'])
 def get_satellite_config():
     try:
-        # 从 SATELLITE_CONFIGS 中提取配置信息
         satellite_options = []
         
-        # Landsat 系列
-        landsat_options = {
-            'label': 'Landsat系列',
-            'options': []
-        }
-        for sat_id, config in SATELLITE_CONFIGS.items():
-            if 'LANDSAT' in sat_id:
-                landsat_options['options'].append({
-                    'value': sat_id,
-                    'label': config['name_template'].split('(')[0].strip(),
-                    'startDate': config['start_date'],
-                    'endDate': config['end_date']
+        for collection_id in SATELLITE_CONFIGS:
+            dataset_info = fetch_dataset_details(collection_id)
+            if dataset_info:
+                series = dataset_info['id'].split('/')[0] + '系列'
+                satellite_options.append({
+                    'label': series,
+                    'options': [{
+                        'value': dataset_info['id'],
+                        'label': dataset_info['title'],
+                        'startDate': dataset_info['start_date'],
+                        'endDate': dataset_info['end_date'],
+                        'bands': dataset_info['bands'],
+                        'provider': dataset_info['provider'],
+                        'tags': dataset_info['tags'],
+                        'thumbnail_url': dataset_info['thumbnail_url'],
+                        'asset_url': dataset_info['asset_url']
+                    }]
                 })
-        satellite_options.append(landsat_options)
-        
-        # Sentinel 系列
-        sentinel_options = {
-            'label': 'Sentinel系列',
-            'options': []
-        }
-        for sat_id, config in SATELLITE_CONFIGS.items():
-            if 'SENTINEL' in sat_id:
-                sentinel_options['options'].append({
-                    'value': sat_id,
-                    'label': config['name_template'].split('(')[0].strip(),
-                    'startDate': config['start_date'],
-                    'endDate': config['end_date']
-                })
-        satellite_options.append(sentinel_options)
-        
-        # MODIS 系列
-        modis_options = {
-            'label': 'MODIS系列',
-            'options': []
-        }
-        for sat_id, config in SATELLITE_CONFIGS.items():
-            if 'MODIS' in sat_id:
-                modis_options['options'].append({
-                    'value': sat_id,
-                    'label': config['name_template'].split('(')[0].strip(),
-                    'startDate': config['start_date'],
-                    'endDate': config['end_date']
-                })
-        satellite_options.append(modis_options)
         
         return jsonify({
             'success': True,

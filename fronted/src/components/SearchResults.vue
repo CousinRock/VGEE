@@ -1,7 +1,9 @@
 <template>
   <div class="search-results-container">
     <h2>搜索结果</h2>
-    <el-button @click="closeResults" type="danger" class="close-button">关闭</el-button>
+    <el-button @click="closeResults" type="danger" class="close-button">
+      <i class="fas fa-times"></i>
+    </el-button>
     <el-table :data="datasets" style="width: 100%" height="400" stripe>
       <el-table-column prop="title" label="标题" width="200"></el-table-column>
       <el-table-column prop="provider" label="提供者" width="150"></el-table-column>

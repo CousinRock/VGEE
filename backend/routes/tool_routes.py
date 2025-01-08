@@ -199,13 +199,13 @@ def get_layers():
         landsat_layers = {}
         
         for layer_id, dataset in datasets.items():
-            if 'LANDSAT' in layer_id.upper() or 'SENTINEL-2' in layer_id.upper():
-                layer_name = datasetsNames[layer_id]
-                landsat_layers[layer_id] = {
-                    'id': layer_id,
-                    'name': layer_name,
-                    'dataset': dataset
-                }
+            # if 'LANDSAT' in layer_id.upper() or 'SENTINEL-2' in layer_id.upper():
+            layer_name = datasetsNames[layer_id]
+            landsat_layers[layer_id] = {
+                'id': layer_id,
+                'name': layer_name,
+                'dataset': dataset
+            }
         
         return jsonify({
             'success': True,
