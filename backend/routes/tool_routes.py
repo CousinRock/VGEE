@@ -5,6 +5,7 @@ from tools.preprocessing import PreprocessingTool
 from tools.classification import ClassificationTool 
 from tools.calculateIndex import IndexTool
 import ee
+import geemap
 
 tool_bp = Blueprint('tool', __name__)
 
@@ -641,3 +642,24 @@ def raster_calculator():
     except Exception as e:
         print(f"Error in raster calculator: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@tool_bp.route('/search-data', methods=['POST'])
+def search_data():
+    try:
+        data = request.json
+        dataset_type = data.get('dataset_type', 'Landsat')
+        print('Tool_routes.py - search_data-dataset_type:', dataset_type)
+        
+        # 使用 geemap 搜索数据集
+        datasets = geemap.search_ee_data(dataset_type)
+        dataset_list = [dataset for dataset in datasets]
+        
+        return jsonify({
+            'success': True,
+            'datasets': dataset_list
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500

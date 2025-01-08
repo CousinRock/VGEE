@@ -231,15 +231,19 @@
             </span>
         </template>
     </el-dialog>
+
+    <SearchResults v-if="showSearchResults" :datasets="searchResults" @select="handleDatasetSelect" @close="showSearchResults = false" />
 </template>
 
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { menuItems } from '../config/tools-config'
-import { getAvailableLayers, processLayerSelect, handleVectorAsset, handleImageAsset } from './service/tool'
+import { getAvailableLayers, processLayerSelect, handleVectorAsset,
+     handleImageAsset, searchData } from './service/tool'
 import { API_ROUTES } from '../api/routes'
 import { calculatorTools } from './service/tool'
+import SearchResults from './SearchResults.vue'
 
 const props = defineProps({
     mapView: {
@@ -272,6 +276,8 @@ const rfParams = ref({
 const calculatorExpression = ref('')
 const layerBands = ref({})  // 存储每个图层的波段信息
 const calculatorMode = ref('single')
+const showSearchResults = ref(false)
+const searchResults = ref([])
 
 // 菜单操作方法
 const toggleMenu = (item) => {
@@ -333,6 +339,17 @@ const handleToolClick = async (tool) => {
                 break
             case 'raster-calculator':
                 await handleRasterCalculator(tool)
+                break
+            // 添加搜索数据的处理逻辑
+            case 'search-data-landsat':
+            case 'search-data-sentinel':
+            case 'search-data-modis':
+            case 'search-data-viirs':
+            case 'search-data-glofas':
+                const datasetType = tool.label
+                const datasets = await searchData(datasetType)
+                searchResults.value = datasets
+                showSearchResults.value = true
                 break
             default:
                 ElMessage.warning('该功能尚未实现')
@@ -663,6 +680,11 @@ defineExpose({
         activeSubMenu.value = ''
     }
 })
+
+const handleDatasetSelect = (dataset) => {
+    showSearchResults.value = false
+    console.log('选中的数据集:', dataset)
+}
 </script>
 
 <style src="../styles/tools.css"></style>

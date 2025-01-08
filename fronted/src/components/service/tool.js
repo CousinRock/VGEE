@@ -453,3 +453,27 @@ export const calculatorTools = {
         return layer?.bandInfo || []
     }
 }
+
+//搜索数据
+export const searchData = async (datasetType) => {
+    try {
+        const response = await fetch(API_ROUTES.TOOLS.SEARCH_DATA, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ dataset_type: datasetType })
+        })
+        const data = await response.json()
+        if (data.success) {
+            return data.datasets
+        } else {
+            ElMessage.error(data.message || '搜索数据失败')
+            return []
+        }
+    } catch (error) {
+        console.error('Error searching data:', error)
+        ElMessage.error('搜索数据失败')
+        return []
+    }
+}

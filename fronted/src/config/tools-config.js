@@ -11,6 +11,17 @@ export const menuItems = [
                     { id: 'upload-vector-assets', label: 'Assets' }
                 ]
             },
+            {
+                id: 'search-data',
+                label: '搜索数据',
+                children: [
+                    { id: 'search-data-landsat', label: 'Landsat' },
+                    { id: 'search-data-sentinel', label: 'Sentinel' },
+                    { id: 'search-data-modis', label: 'MODIS' },
+                    { id: 'search-data-viirs', label: 'VIIRS' },
+                    { id: 'search-data-glofas', label: 'Glofas' },
+                ]
+            }
         ]
     },
     {
