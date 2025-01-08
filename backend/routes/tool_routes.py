@@ -6,6 +6,7 @@ from tools.classification import ClassificationTool
 from tools.calculateIndex import IndexTool
 import ee
 import geemap
+from config.satellite_config import SATELLITE_CONFIGS, save_satellite_configs
 
 tool_bp = Blueprint('tool', __name__)
 
@@ -663,3 +664,21 @@ def search_data():
             'success': False,
             'message': str(e)
         }), 500
+
+@tool_bp.route('/add-satellite', methods=['POST'])
+def add_satellite():
+    try:
+        data = request.json
+        new_satellite = data.get('id')
+        print('Tool_routes.py - add_satellite-new_satellite:', new_satellite)
+        
+        if new_satellite and new_satellite not in SATELLITE_CONFIGS:
+            # 添加新的卫星到列表
+            SATELLITE_CONFIGS.append(new_satellite)
+            # 保存更新后的配置
+            save_satellite_configs(SATELLITE_CONFIGS)
+            return jsonify({'success': True, 'message': 'Satellite added successfully.'})
+        else:
+            return jsonify({'success': False, 'message': 'Satellite already exists or invalid input.'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500

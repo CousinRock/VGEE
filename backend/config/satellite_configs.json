@@ -1,0 +1,11 @@
+{
+    "satellites": [
+        "LANDSAT/LT05/C02/T1_TOA",
+        "LANDSAT/LE07/C02/T1_TOA",
+        "LANDSAT/LC08/C02/T1_TOA",
+        "LANDSAT/LC09/C02/T1_TOA",
+        "COPERNICUS/S2_HARMONIZED",
+        "GLOBAL_FLOOD_DB/MODIS_EVENTS/V1",
+        "MODIS/006/MCD12Q1"
+    ]
+}

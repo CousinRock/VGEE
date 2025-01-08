@@ -1,5 +1,4 @@
 # 忽略配置文件和凭证
-config/*.json
 config/*.txt
 !config/satellite_config.py
 config/project

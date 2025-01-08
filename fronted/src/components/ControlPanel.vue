@@ -68,13 +68,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { API_ROUTES } from '../api/routes'
+import eventBus from '../utils/eventBus'
 
 // 定义emit事件 'add-layer' 用于向父组件 Map.vue 发送添加新图层的事件
 // 当用户点击添加图层按钮时,会触发此事件并传递图层名称和地图数据
 // Map.vue 中的 handleAddLayer 方法会接收这些数据并调用 MapView 组件的 addNewLayer 方法来实际添加图层
-const emit = defineEmits(['add-layer', 'update-map'])
+const emit = defineEmits(['add-layer', 'update-map', 'dataset-selected'])
 
 // 日期控制
 const currentYear = new Date().getFullYear()
@@ -105,9 +106,57 @@ const fetchSatelliteConfig = async () => {
     }
 }
 
+const addDatasetToOptions = (dataset) => {
+    const newOption = {
+        label: dataset.title,
+        options: [{
+            value: dataset.id,
+            label: dataset.title,
+            startDate: dataset.start_date,
+            endDate: dataset.end_date,
+            asset_url: dataset.asset_url,
+            thumbnail_url: dataset.thumbnail_url,
+            provider: dataset.provider,
+            tags: dataset.tags
+        }]
+    }
+    satelliteOptions.value.push(newOption)
+    console.log('ControlPanel.vue - addDatasetToOptions - satelliteOptions:', satelliteOptions)
+}
+
 // 在组件挂载时获取配置
 onMounted(() => {
     fetchSatelliteConfig()
+})
+
+// 在组件挂载时添加事件监听
+onMounted(() => {
+    // 监听事件总线的事件
+    eventBus.on('dataset-selected', (dataset) => {
+        console.log('ControlPanel.vue - Received dataset:', dataset)
+        addDatasetToOptions(dataset)
+        // 发送到后端存储
+        fetch(API_ROUTES.TOOLS.ADD_SATELLITE, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dataset)
+        }).then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('Failed to add satellite:', data.message)
+                }
+            })
+            .catch(error => {
+                console.error('Error adding satellite:', error)
+            })
+    })
+})
+
+// 在组件卸载时移除事件监听
+onUnmounted(() => {
+    eventBus.off('dataset-selected')
 })
 
 // 修改计算属性以使用后端数据

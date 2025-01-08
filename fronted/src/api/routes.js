@@ -37,6 +37,7 @@ export const API_ROUTES = {
         ADD_IMAGE_ASSET: `${BASE_URL}/tools/add-image-asset`,
         RANDOM_FOREST: `${BASE_URL}/tools/random-forest`,
         RASTER_CALCULATOR: `${BASE_URL}/tools/raster-calculator`,
-        SEARCH_DATA: `${BASE_URL}/tools/search-data`
+        SEARCH_DATA: `${BASE_URL}/tools/search-data`,
+        ADD_SATELLITE: `${BASE_URL}/tools/add-satellite`
     }
 } 
