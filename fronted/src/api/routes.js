@@ -1,6 +1,5 @@
 // API 路由配置
-// const BASE_URL = 'http://localhost:5000'、
-const BASE_URL = 'http://192.168.108.1:5000'
+const BASE_URL = 'http://localhost:5000'
 
 export const API_ROUTES = {
     // 地图相关

@@ -1,4 +1,5 @@
 <template>
+    <!-- 工具菜单 -->
     <div class="tools-menu">
         <div class="nav-item" v-for="item in menuItems" :key="item.id" @click="toggleMenu(item)"
             :class="{ active: activeMenu === item.id }">
@@ -222,6 +223,7 @@
             </el-tree>
         </div>
 
+        <!-- 添加资产 -->
         <template #footer>
             <span class="dialog-footer">
                 <el-button @click="showAssetsDialog = false">取消</el-button>
@@ -231,7 +233,7 @@
             </span>
         </template>
     </el-dialog>
-
+    <!-- 搜索数据 -->
     <SearchResults v-if="showSearchResults" :datasets="searchResults" @select="handleDatasetSelect" @close="showSearchResults = false" />
 </template>
 
@@ -354,6 +356,7 @@ const handleToolClick = async (tool) => {
                 const datasetType = tool.label
                 const datasets = await searchData(datasetType)
                 searchResults.value = datasets
+                console.log('Tools.vue - handleToolClick - searchResults', searchResults.value)
                 showSearchResults.value = true
                 break
             default:
