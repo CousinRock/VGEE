@@ -244,7 +244,7 @@ import { getAvailableLayers, processLayerSelect, handleVectorAsset,
 import { API_ROUTES } from '../api/routes'
 import { calculatorTools } from './service/tool'
 import SearchResults from './SearchResults.vue'
-import eventBus from '../utils/eventBus'
+import eventBus from '../util/eventBus'
 
 const props = defineProps({
     mapView: {
