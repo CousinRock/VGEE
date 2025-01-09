@@ -290,7 +290,6 @@ const showAssetsDialog = ref(false)
 const assetsList = ref([])
 const selectedAsset = ref(null)
 const isLoadingAssets = ref(false)
-const selectedAssetIds = ref([])  // 用于存储选中的资产ID
 const rfParams = ref({
     numberOfTrees: 50,
     trainRatio: 0.7
@@ -334,13 +333,13 @@ const handleToolClick = async (tool) => {
     try {
         switch (tool.id) {
             case 'cloud-removal':
-                await handleCloudRemoval(tool)
+                await commonMethod(tool)
                 break
             case 'image-filling':
-                await handleImageFilling(tool)
+                await commonMethod(tool)
                 break
             case 'kmeans':
-                await handleKMeansClustering(tool)
+                await commonMethod(tool)
                 break
             // 添加所有指数计算的处理
             case 'ndvi':
@@ -350,20 +349,22 @@ const handleToolClick = async (tool) => {
             case 'savi':
             case 'mndwi':
             case 'bsi':
-                await handleIndexCalculation(tool)
+                await commonMethod(tool)
                 break
             case 'histogram-equalization':
-                await handleHistogramEqualization(tool)
+                await commonMethod(tool)
                 break
             case 'upload-vector-assets':
                 showAssetsDialog.value = true
                 await loadAssets()
                 break
             case 'random-forest':
-                await handleRandomForest(tool)
+                await commonMethod(tool)
                 break
             case 'raster-calculator':
-                await handleRasterCalculator(tool)
+                await commonMethod(tool)
+                 // 初始化计算表达式
+                calculatorExpression.value = ''
                 break
             // 添加搜索数据的处理逻辑
             case 'search-data-landsat':
@@ -389,6 +390,7 @@ const handleToolClick = async (tool) => {
     }
 }
 
+//通用函数
 const commonMethod = async (tool) => {
     const layers = await getAvailableLayers()
     if (!layers) return
@@ -397,45 +399,6 @@ const commonMethod = async (tool) => {
     availableLayers.value = layers
     currentTool.value = tool
     showLayerSelect.value = true
-}
-
-// 添加指数计算处理函数
-async function handleIndexCalculation(tool) {
-    commonMethod(tool)
-}
-
-// 云去除功能处理函数
-async function handleCloudRemoval(tool) {
-    commonMethod(tool)
-}
-
-// 图像填补功能处理函数
-async function handleImageFilling(tool) {
-    commonMethod(tool)
-}
-
-// 添加K-means聚类处理函数
-async function handleKMeansClustering(tool) {
-    commonMethod(tool)
-}
-
-// 添加直方图均衡化处理函数
-async function handleHistogramEqualization(tool) {
-    commonMethod(tool)
-}
-
-// 添加随机森林分类处理方法
-const handleRandomForest = async (tool) => {
-    commonMethod(tool)
-}
-
-// 添加栅格计算器处理方法
-const handleRasterCalculator = async (tool) => {
-    commonMethod(tool)
-
-    // 初始化计算表达式
-    calculatorExpression.value = ''
-
 }
 
 // 添加对话框标题计算属性

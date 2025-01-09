@@ -21,6 +21,7 @@ def get_map_data():
         end_date = request.args.get('endDate', '2023-12-31')
         cloud_cover = float(request.args.get('cloudCover', 20))
         layerName = request.args.get('layerName',None)
+        compositeMethod = request.args.get('compositeMethod', 'median')
         
         print(f"Map_routes.py - Received satellite: {satellite}, startDate: {start_date}," +
               f"endDate: {end_date}, cloudCover: {cloud_cover}, layerName:{layerName}")
@@ -33,7 +34,7 @@ def get_map_data():
 
         # 传入合并后的研究区域进行筛选和裁
         result = get_map_data_service(satellite, start_date, end_date, 
-                                      cloud_cover, merged_area,layerName)
+                                      cloud_cover, merged_area,layerName,compositeMethod)
         return jsonify(result)
         
     except Exception as e:

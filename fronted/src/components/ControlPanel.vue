@@ -31,6 +31,20 @@
         </div>
 
         <div class="control-section">
+            <h4>合成方式</h4>
+            <div class="control-item">
+                <el-select v-model="compositeMethod" placeholder="选择合成方式">
+                    <el-option
+                        v-for="item in compositeMethods"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value"
+                    />
+                </el-select>
+            </div>
+        </div>
+
+        <div class="control-section">
             <h4>云量设置</h4>
             <div class="control-item">
                 <div class="range-container">
@@ -93,6 +107,16 @@ const satelliteOptions = ref([])
 const cloudCover = ref(20)
 const layerName = ref('')
 
+// 添加合成方式选项
+const compositeMethods = [
+    { label: '中值', value: 'median' },
+    { label: '均值', value: 'mean' },
+    { label: '最大值', value: 'max' },
+    { label: '最小值', value: 'min' },
+    { label: '第一幅影像', value: 'first' }
+]
+const compositeMethod = ref('median') // 默认使用中值
+
 // 获取卫星配置
 const fetchSatelliteConfig = async () => {
     satelliteOptions.value = await satelliteManager.satelliteConfig()
@@ -152,6 +176,7 @@ const addNewLayer = async () => {
             endDate: endDate.value,
             cloudCover: cloudCover.value,
             layerName: layerName.value,
+            compositeMethod: compositeMethod.value, // 添加合成方式参数
             _t: Date.now()
         })
 
