@@ -94,7 +94,7 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
     try:
         # 移除全局 index 变量，直接使用时间戳作为唯一标识
         layer_id = f"layer-{int(time.time())}-{satellite}"
-
+        
         # 获取数据集信息
         dataset_info = fetch_dataset_details(satellite)
         if not dataset_info:
@@ -102,30 +102,32 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
 
         # 获取图像集合
         collection = ee.ImageCollection(satellite)
-        first_word = satellite.split('/')[0]
 
         # 时间过滤
         if start_date and end_date:
             collection = collection.filterDate(start_date, end_date)
-
-        # 云量过滤
-        if 'COPERNICUS' in first_word:
-            collection = collection.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_cover))
-        elif 'LANDSAT' in first_word:
-            collection = collection.filter(ee.Filter.lt('CLOUD_COVER', cloud_cover))
+        
+        collection = ee.Algorithms.If(collection.get('CLOUD_COVER'),
+                                      collection.filter(ee.Filter.lt('CLOUD_COVER', cloud_cover)),
+                                      ee.Algorithms.If(collection.get('CLOUDY_PIXEL_PERCENTAGE'),
+                                      collection.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_cover)),
+                                      collection)
+        )
 
         # 获取中值图像
-        dataset = collection.median()
+        dataset = ee.ImageCollection(collection).median()
 
         # 保存原始波段名称
         original_band_names = dataset.bandNames()
 
         # 区域裁剪
         if region:
-            dataset = dataset.clip(region)
+            dataset = dataset.clip(region)   
 
         # 确保波段名称保持一致
         dataset = dataset.rename(original_band_names)
+
+        
 
         # 获取可视化参数
         vis_params = {

@@ -10,6 +10,7 @@ def get_layer_info():
         layer_id = request.args.get('id', '0')
 
         satellite = request.args.get('satellite', 'LANDSAT')
+        print(f"Layer_routes.py - get_layer_info - satellite: {satellite}")
         current_dataset = get_dataset(layer_id)
         result = get_layer_info_service(current_dataset, satellite)
         print(f"Layer_routes.py - get_layer_info - result: {result}")

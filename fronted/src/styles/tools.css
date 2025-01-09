@@ -281,3 +281,14 @@
     margin-bottom: 8px;
     color: #409EFF;
 }
+
+.id-search {
+    padding: 0 10px;
+    margin-left: 10px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.id-search .el-input {
+    width: 300px;
+}

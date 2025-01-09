@@ -17,6 +17,22 @@
                             @click.stop="handleToolClick(tool)" :class="{ 'processing': isProcessing }">
                             <i :class="tool.icon"></i>
                             <span>{{ tool.label }}</span>
+                            <!-- 为 search-data-id 添加输入框，只在激活时显示 -->
+                            <div v-if="tool.id === 'search-data-id' && activeSearchId" 
+                                class="id-search" 
+                                @click.stop
+                            >
+                                <el-input 
+                                    v-model="customDatasetId"
+                                    placeholder="输入数据集ID"
+                                    size="small"
+                                    @keyup.enter="handleIdSearch"
+                                >
+                                    <template #append>
+                                        <el-button @click="handleIdSearch">搜索</el-button>
+                                    </template>
+                                </el-input>
+                            </div>
                             <i class="fas fa-spinner fa-spin" v-if="isProcessing"></i>
                         </div>
                     </div>
@@ -285,6 +301,8 @@ const calculatorMode = ref('single')
 const showSearchResults = ref(false)
 const searchResults = ref([])
 const selectedDataset = ref(null)
+const customDatasetId = ref('')
+const activeSearchId = ref(false)
 
 // 菜单操作方法
 const toggleMenu = (item) => {
@@ -352,12 +370,15 @@ const handleToolClick = async (tool) => {
             case 'search-data-sentinel':
             case 'search-data-modis':
             case 'search-data-viirs':
-            case 'search-data-glofas':
+            case 'search-data-dem':
                 const datasetType = tool.label
                 const datasets = await searchData(datasetType)
                 searchResults.value = datasets
                 console.log('Tools.vue - handleToolClick - searchResults', searchResults.value)
                 showSearchResults.value = true
+                break
+            case 'search-data-id':
+                activeSearchId.value = !activeSearchId.value // 切换输入框的显示状态
                 break
             default:
                 ElMessage.warning('该功能尚未实现')
@@ -680,6 +701,8 @@ const handleBandClick = (layerId, band) => {
     }
 }
 
+////// 栅格计算器操作方法 //////
+
 // 暴露方法父组件
 defineExpose({
     closeAllMenus: () => {
@@ -693,6 +716,23 @@ const handleDatasetSelect = (dataset) => {
     selectedDataset.value = dataset
     console.log('Tools.vue - handleDatasetSelect - dataset:', dataset)
     eventBus.emit('dataset-selected', dataset)
+}
+
+// 添加 ID 搜索处理方法
+const handleIdSearch = async () => {
+    if (!customDatasetId.value.trim()) {
+        ElMessage.warning('请输入数据集 ID')
+        return
+    }
+    console.log('Tools.vue - handleIdSearch - customDatasetId:', customDatasetId.value)
+    try {
+        const datasets = await searchData(customDatasetId.value.trim())
+        searchResults.value = datasets
+        showSearchResults.value = true
+    } catch (error) {
+        console.error('Error searching dataset:', error)
+        ElMessage.error('搜索失败')
+    }
 }
 </script>
 

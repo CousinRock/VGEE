@@ -7,8 +7,8 @@
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  width: 80%;
-  max-width: 800px;
+  width: 90%;
+  max-width: 1200px;
   z-index: 1000;
 }
 
@@ -22,3 +22,60 @@ h2 {
     top: 10px;
     right: 10px;
 } 
+
+.thumbnail-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.image-placeholder {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  color: #909399;
+}
+
+.title-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dataset-title {
+  flex: 1;
+}
+
+.dataset-link {
+  color: #409EFF;
+  text-decoration: none;
+}
+
+.dataset-link:hover {
+  color: #66b1ff;
+}
+
+.date-range {
+  font-size: 0.9em;
+  color: #606266;
+}
+
+/* 表格样式优化 */
+.el-table {
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.el-table th {
+  background-color: #f5f7fa !important;
+}
+
+/* 标签样式 */
+.el-tag {
+  text-transform: capitalize;
+}

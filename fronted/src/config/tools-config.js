@@ -19,7 +19,8 @@ export const menuItems = [
                     { id: 'search-data-sentinel', label: 'Sentinel' },
                     { id: 'search-data-modis', label: 'MODIS' },
                     { id: 'search-data-viirs', label: 'VIIRS' },
-                    { id: 'search-data-glofas', label: 'Glofas' },
+                    { id: 'search-data-dem', label: 'DEM' },
+                    {id:'search-data-id', label:'输入id'}
                 ]
             }
         ]
