@@ -1,5 +1,5 @@
 import { ElMessage } from 'element-plus'
-import { API_ROUTES } from '../../api/routes'
+import { API_ROUTES } from '../api/routes'
 
 
 export const satelliteManager = {
@@ -38,14 +38,15 @@ export const satelliteManager = {
                 asset_url: dataset.asset_url,
                 thumbnail_url: dataset.thumbnail_url,
                 provider: dataset.provider,
-                tags: dataset.tags
+                tags: dataset.tags,
+                type: dataset.type
             }]
         }
         satelliteOptions.value.push(newOption)
         console.log('ControlPanel.vue - addDatasetToOptions - satelliteOptions:', satelliteOptions)
 
         // 发送到后端存储
-        fetch(API_ROUTES.TOOLS.ADD_SATELLITE, {
+        fetch(API_ROUTES.SEARCH.ADD_SATELLITE, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

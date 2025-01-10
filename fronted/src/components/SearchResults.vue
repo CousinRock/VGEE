@@ -67,7 +67,7 @@
       <el-table-column label="操作" width="100" fixed="right">
         <template #default="scope">
           <el-button @click="selectDataset(scope.row)" type="primary" size="small">
-            选择
+            import
           </el-button>
         </template>
       </el-table-column>

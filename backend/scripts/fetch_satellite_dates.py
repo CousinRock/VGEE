@@ -21,10 +21,16 @@ def fetch_dataset_details(collection_id):
         for dataset in datasets:
             if dataset['id'] == collection_id:
                 # 获取波段信息
-                collection = ee.ImageCollection(collection_id)
-                first_image = ee.Image(collection.first())
-                band_names = first_image.bandNames().getInfo()
-                bands = band_names[:3] if len(band_names) >= 3 else band_names
+                if dataset['type'] == 'image_collection':
+                    collection = ee.ImageCollection(collection_id)
+                
+                    first_image = ee.Image(collection.first())
+                    band_names = first_image.bandNames().getInfo()
+                    bands = band_names[:3] if len(band_names) >= 3 else band_names
+                elif dataset['type'] == 'image':
+                    image = ee.Image(collection_id)
+                    band_names = image.bandNames().getInfo()
+                    bands = band_names[:3] if len(band_names) >= 3 else band_names
 
                 return {
                     'id': dataset['id'],
@@ -35,7 +41,8 @@ def fetch_dataset_details(collection_id):
                     'provider': dataset['provider'],
                     'tags': dataset['tags'],
                     'thumbnail_url': dataset['thumbnail_url'],
-                    'asset_url': dataset['asset_url']
+                    'asset_url': dataset['asset_url'],
+                    'type': dataset['type']
                 }
     except Exception as e:
         print(f"Error fetching data for {collection_id}: {str(e)}")

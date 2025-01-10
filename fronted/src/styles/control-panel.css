@@ -21,6 +21,7 @@
     border-radius: 4px;
 }
 
+
 .control-section h4 {
     font-size: 0.9rem;
     margin: 10px 0;
@@ -116,4 +117,31 @@
     font-size: 0.9em;
     margin-bottom: 10px;
     padding: 0 5px;
+}
+
+.satellite-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.satellite-option .el-tag {
+    margin-left: 8px;
+}
+
+.el-select-dropdown__item {
+    padding: 0 12px !important;
+}
+
+.selected-satellite-info {
+    margin-top: 8px;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.satellite-provider {
+    color: #666;
 }

@@ -1,7 +1,7 @@
 import { ElMessage } from 'element-plus'
 import L from 'leaflet'
-import { API_ROUTES } from '../../api/routes'
-import { layerChangeRemove, normalizeRange } from '../../util/methods'
+import { API_ROUTES } from '../api/routes'
+import { layerChangeRemove, normalizeRange } from '../util/methods'
 
 // 定义图标常量
 export const MENU_ICONS = {
@@ -215,7 +215,7 @@ export const handleStyle = {
                 console.log('Sending style params:', style_params);
 
                 // 获取新的瓦片URL
-                const response = await fetch(API_ROUTES.TOOLS.ADD_VECTOR_ASSET, {
+                const response = await fetch(API_ROUTES.UPLOAD.ADD_VECTOR_ASSET, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

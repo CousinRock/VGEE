@@ -49,7 +49,7 @@ python app.py
 - 创建conda环境：conda create --name VGEE python=3.13 -y
 - 激活conda环境：conda activate VGEE/VGEE(Windows下将bin文件夹添加到环境变量中)
 - 安装依赖：pip install -r requirements.txt
-- 创建名为project的文本文件，将GEE项目地址填入，并放到backend/config文件夹中
+- 在系统环境变量中创建名为PROXY_CONFIG的变量，值为本机的代理端口:GEE项目地址,例如：1080:ee-project
 - 启动服务：python app.py
 
 

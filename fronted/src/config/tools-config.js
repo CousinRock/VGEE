@@ -5,9 +5,8 @@ export const menuItems = [
         children: [
             {
                 id: 'upload-vector',
-                label: '上传矢量',
+                label: '上传数据',
                 children: [
-                    { id: 'upload-vector-local', label: 'Local' },
                     { id: 'upload-vector-assets', label: 'Assets' }
                 ]
             },
@@ -20,7 +19,7 @@ export const menuItems = [
                     { id: 'search-data-modis', label: 'MODIS' },
                     { id: 'search-data-viirs', label: 'VIIRS' },
                     { id: 'search-data-dem', label: 'DEM' },
-                    {id:'search-data-id', label:'输入id'}
+                    { id: 'search-data-id', label:'输入id'}
                 ]
             }
         ]

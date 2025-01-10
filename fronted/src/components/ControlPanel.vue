@@ -7,10 +7,19 @@
             <div class="control-item">
                 <el-select v-model="satellite" placeholder="选择数据集" @change="handleSatelliteChange">
                     <el-option-group v-for="group in satelliteOptions" :key="group.label" :label="group.label">
-                        <el-option v-for="item in group.options" :key="item.value" :label="item.label"
-                            :value="item.value" />
+                        <el-option 
+                            v-for="item in group.options" 
+                            :key="item.value" 
+                            :label="item.label"
+                            :value="item.value"
+                        />
                     </el-option-group>
                 </el-select>
+                <div v-if="selectedSatelliteInfo" class="selected-satellite-info">
+                    <el-tag size="small" :type="getTypeTagType(selectedSatelliteInfo.type)">
+                        {{ formatType(selectedSatelliteInfo.type) }}
+                    </el-tag>
+                </div>
             </div>
         </div>
 
@@ -86,7 +95,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { API_ROUTES } from '../api/routes'
 import eventBus from '../util/eventBus'
 import { ElMessage } from 'element-plus'
-import { satelliteManager } from './service/controlPanel'
+import { satelliteManager } from '../service/controlPanel'
 
 // 定义emit事件 'add-layer' 用于向父组件 Map.vue 发送添加新图层的事件
 // 当用户点击添加图层按钮时,会触发此事件并传递图层名称和地图数据
@@ -120,6 +129,7 @@ const compositeMethod = ref('median') // 默认使用中值
 // 获取卫星配置
 const fetchSatelliteConfig = async () => {
     satelliteOptions.value = await satelliteManager.satelliteConfig()
+    console.log('ControlPanel.vue - satelliteOptions:', satelliteOptions.value)
 }
 
 // 在组件挂载时获取配置
@@ -177,6 +187,7 @@ const addNewLayer = async () => {
             cloudCover: cloudCover.value,
             layerName: layerName.value,
             compositeMethod: compositeMethod.value, // 添加合成方式参数
+            type: selectedSatelliteInfo.value.type,
             _t: Date.now()
         })
 
@@ -217,6 +228,35 @@ const handleSatelliteChange = (value) => {
         cloudCover: cloudCover.value
     })
 }
+
+// 添加数据类型格式化函数
+const formatType = (type) => {
+    const typeMap = {
+        'image_collection': '影像集合',
+        'image': '影像',
+        'feature_collection': '矢量集合',
+        'feature': '矢量'
+    }
+    return typeMap[type] || type
+}
+
+// 添加标签类型函数
+const getTypeTagType = (type) => {
+    const typeTagMap = {
+        'image_collection': 'success',
+        'image': 'primary',
+        'feature_collection': 'warning',
+        'feature': 'info'
+    }
+    return typeTagMap[type] || ''
+}
+
+// 添加计算属性获取选中卫星的信息
+const selectedSatelliteInfo = computed(() => {
+    return satelliteOptions.value
+        .flatMap(group => group.options)
+        .find(option => option.value === satellite.value)
+})
 
 // 导出属性供父组件使用
 defineExpose({

@@ -24,6 +24,19 @@ export const API_ROUTES = {
         EXPORT_TO_CLOUD: `${BASE_URL}/export-to-cloud`
     },
 
+    // 搜索相关
+    SEARCH: {
+        SEARCH_DATA: `${BASE_URL}/search/search-data`,
+        ADD_SATELLITE: `${BASE_URL}/search/add-satellite`
+    },
+
+    // 上传相关
+    UPLOAD: {
+        GET_ASSETS: `${BASE_URL}/upload/get-assets`,
+        ADD_VECTOR_ASSET: `${BASE_URL}/upload/add-vector-asset`,
+        ADD_IMAGE_ASSET: `${BASE_URL}/upload/add-image-asset`
+    },
+
     // 工具相关
     TOOLS: {
         GET_LAYERS: `${BASE_URL}/tools/get-layers`,
@@ -32,12 +45,7 @@ export const API_ROUTES = {
         IMAGE_FILLING: `${BASE_URL}/tools/image-filling`,
         KMEANS_CLUSTERING: `${BASE_URL}/tools/kmeans-clustering`,
         HISTOGRAM_EQUALIZATION: `${BASE_URL}/tools/histogram-equalization`,
-        GET_ASSETS: `${BASE_URL}/tools/get-assets`,
-        ADD_VECTOR_ASSET: `${BASE_URL}/tools/add-vector-asset`,
-        ADD_IMAGE_ASSET: `${BASE_URL}/tools/add-image-asset`,
         RANDOM_FOREST: `${BASE_URL}/tools/random-forest`,
-        RASTER_CALCULATOR: `${BASE_URL}/tools/raster-calculator`,
-        SEARCH_DATA: `${BASE_URL}/tools/search-data`,
-        ADD_SATELLITE: `${BASE_URL}/tools/add-satellite`
+        RASTER_CALCULATOR: `${BASE_URL}/tools/raster-calculator`
     }
 } 

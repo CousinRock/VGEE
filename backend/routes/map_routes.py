@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, request
-from services.map_service import get_map_data_service,remove_dataset,compute_image_stats,get_dataset,save_dataset,get_all_datasets
+from services import map_service 
 from config.satellite_config import SATELLITE_CONFIGS
 import ee
-from services.sample_service import add_sample_service, remove_sample_service,get_all_samples
+from services import sample_service
 from flask_cors import CORS
 from scripts.fetch_satellite_dates import fetch_dataset_details
 
@@ -22,9 +22,10 @@ def get_map_data():
         cloud_cover = float(request.args.get('cloudCover', 20))
         layerName = request.args.get('layerName',None)
         compositeMethod = request.args.get('compositeMethod', 'median')
+        type = request.args.get('type', 'image_collection')
         
         print(f"Map_routes.py - Received satellite: {satellite}, startDate: {start_date}," +
-              f"endDate: {end_date}, cloudCover: {cloud_cover}, layerName:{layerName}")
+              f"endDate: {end_date}, cloudCover: {cloud_cover}, layerName:{layerName}, type:{type}")
         
         # 如果有多个研究区域，将它们合并成一个多边形
         merged_area = None
@@ -33,8 +34,13 @@ def get_map_data():
             merged_area = ee.Geometry.MultiPolygon([area['coordinates'] for area in study_areas])
 
         # 传入合并后的研究区域进行筛选和裁
-        result = get_map_data_service(satellite, start_date, end_date, 
-                                      cloud_cover, merged_area,layerName,compositeMethod)
+        if type == 'image_collection' or type == 'image':
+            result = map_service.get_map_data_service(satellite, start_date, end_date, 
+                                      cloud_cover, merged_area,layerName,compositeMethod,type)
+        elif type == 'table':
+            result = None
+            return jsonify({'success': False, 'message': '不支持的类型'})
+        
         return jsonify(result)
         
     except Exception as e:
@@ -160,7 +166,7 @@ def remove_layer():
             }), 400
             
         # 调用已有的 remove_dataset 服务
-        remove_dataset(layer_id)
+        map_service.remove_dataset(layer_id)
         
         return jsonify({
             'success': True,
@@ -189,7 +195,7 @@ def compute_band_stats():
             }), 400
             
         # 从服务中获取数据集
-        dataset = get_dataset(layer_id)
+        dataset = map_service.get_dataset(layer_id)
         if not dataset:
             return jsonify({
                 'success': False,
@@ -199,7 +205,7 @@ def compute_band_stats():
 
         
         # 计算统计值
-        stats = compute_image_stats(dataset, bands, dataset.geometry())
+        stats = map_service.compute_image_stats(dataset, bands, dataset.geometry())
         
         if stats:
             stats_dict = stats.getInfo()
@@ -243,7 +249,8 @@ def get_satellite_config():
                         'provider': dataset_info['provider'],
                         'tags': dataset_info['tags'],
                         'thumbnail_url': dataset_info['thumbnail_url'],
-                        'asset_url': dataset_info['asset_url']
+                        'asset_url': dataset_info['asset_url'],
+                        'type': dataset_info['type']
                     }]
                 })
         
@@ -263,7 +270,7 @@ def get_satellite_config():
 def add_sample():
     try:
         data = request.json
-        result = add_sample_service(
+        result = sample_service.add_sample_service(
             layer_id=data.get('layer_id'),
             class_name=data.get('class_name'),
             geometry_type=data.get('geometry_type'),
@@ -282,7 +289,7 @@ def add_sample():
 def remove_sample():
     try:
         data = request.json
-        result = remove_sample_service(data.get('layer_id'))
+        result = sample_service.remove_sample_service(data.get('layer_id'))
         return jsonify(result)
     except Exception as e:
         print(f"Map_routes.py - Error in remove_sample: {str(e)}")
@@ -295,7 +302,7 @@ def remove_sample():
 def get_samples():
     try:
         # 从 sample_service 获取所有样本
-        samples = get_all_samples()
+        samples = sample_service.get_all_samples()
         return jsonify({
             'success': True,
             'samples': samples
@@ -321,7 +328,7 @@ def rename_layer():
             }), 400
             
         # 更新图层名称
-        save_dataset(layer_id, get_dataset(layer_id), new_name)
+        map_service.save_dataset(layer_id, map_service.get_dataset(layer_id), new_name)
             
         return jsonify({
             'success': True,
@@ -355,7 +362,7 @@ def export_layer_to_cloud():
         print(f"Map_routes.py - Received layer_type: {layer_type}")
         
         if layer_type == 'Raster':
-            dataset, datasetsNames = get_all_datasets()
+            dataset, datasetsNames = map_service.get_all_datasets()
             img = ee.Image(dataset[layer_id]).toFloat()
             
             task = ee.batch.Export.image.toDrive(

@@ -89,7 +89,7 @@ def compute_image_stats(dataset, bands,region=None):
         print(f"Warning: Could not compute image statistics: {stats_error}")
         return None, None
 
-def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=None, layerName=None, compositeMethod='median'):
+def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=None, layerName=None, compositeMethod='median',type='image_collection'):
     """获取地图数据服务"""
     try:
         # 移除全局 index 变量，直接使用时间戳作为唯一标识
@@ -100,33 +100,36 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
         if not dataset_info:
             raise ValueError(f"Unsupported satellite type: {satellite}")
 
-        # 获取图像集合
-        collection = ee.ImageCollection(satellite)
+        if type == 'image_collection':
+            # 获取图像集合
+            collection = ee.ImageCollection(satellite)
 
         # 时间过滤
-        if start_date and end_date:
-            collection = collection.filterDate(start_date, end_date)
+            if start_date and end_date:
+                collection = collection.filterDate(start_date, end_date)
         
-        collection = ee.ImageCollection(ee.Algorithms.If(collection.get('CLOUD_COVER'),
-                                      collection.filter(ee.Filter.lt('CLOUD_COVER', cloud_cover)),
-                                      ee.Algorithms.If(collection.get('CLOUDY_PIXEL_PERCENTAGE'),
-                                      collection.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_cover)),
-                                      collection))
-        )
+            collection = ee.ImageCollection(ee.Algorithms.If(collection.get('CLOUD_COVER'),
+                                        collection.filter(ee.Filter.lt('CLOUD_COVER', cloud_cover)),
+                                        ee.Algorithms.If(collection.get('CLOUDY_PIXEL_PERCENTAGE'),
+                                        collection.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_cover)),
+                                        collection))
+            )
 
-        print(f"Map_service.py - get_map_data_service-compositeMethod: {compositeMethod}")
-        
-        # 根据合成方式选择不同的处理方法
-        if compositeMethod == 'mean':
-            dataset = collection.mean()
-        elif compositeMethod == 'max':
-            dataset = collection.max()
-        elif compositeMethod == 'min':
-            dataset = collection.min()
-        elif compositeMethod == 'first':
-            dataset = collection.first()
-        else:  # default to median
-            dataset = collection.median()
+            print(f"Map_service.py - get_map_data_service-compositeMethod: {compositeMethod}")
+
+            # 根据合成方式选择不同的处理方法
+            if compositeMethod == 'mean':
+                dataset = collection.mean()
+            elif compositeMethod == 'max':
+                dataset = collection.max()
+            elif compositeMethod == 'min':
+                dataset = collection.min()
+            elif compositeMethod == 'first':
+                dataset = collection.first()
+            else:  # default to median
+                dataset = collection.median()
+        else:
+            dataset = ee.Image(satellite)
 
         # 保存原始波段名称
         original_band_names = dataset.bandNames()

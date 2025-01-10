@@ -26,10 +26,10 @@
                                     v-model="customDatasetId"
                                     placeholder="输入数据集ID"
                                     size="small"
-                                    @keyup.enter="handleIdSearch"
+                                    @keyup.enter="handleCustomIdSearch"
                                 >
                                     <template #append>
-                                        <el-button @click="handleIdSearch">搜索</el-button>
+                                        <el-button @click="handleCustomIdSearch">搜索</el-button>
                                     </template>
                                 </el-input>
                             </div>
@@ -250,19 +250,18 @@
         </template>
     </el-dialog>
     <!-- 搜索数据 -->
-    <SearchResults v-if="showSearchResults" :datasets="searchResults" @select="handleDatasetSelect" @close="showSearchResults = false" />
+    <SearchResults v-if="showSearchResults" :datasets="searchResults" @select="onDatasetSelect" @close="showSearchResults = false" />
 </template>
 
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { menuItems } from '../config/tools-config'
-import { getAvailableLayers, processLayerSelect, handleVectorAsset,
-     handleImageAsset, searchData } from './service/tool'
-import { API_ROUTES } from '../api/routes'
-import { calculatorTools } from './service/tool'
+import { getAvailableLayers, processLayerSelect } from '../service/headTools/tool'
+import { calculatorTools } from '../service/headTools/tool'
 import SearchResults from './SearchResults.vue'
-import eventBus from '../util/eventBus'
+import { handleDatasetSelect, handleIdSearch , searchData} from '../service/headTools/searchData'
+import { onLoadAssets, onHandleAssetSelect, onConfirmAssetSelect } from '../service/headTools/upload'
 
 const props = defineProps({
     mapView: {
@@ -331,6 +330,7 @@ const handleSubMenuClick = (item) => {
 // 工具处理方法
 const handleToolClick = async (tool) => {
     try {
+        // 处理其他工具...
         switch (tool.id) {
             case 'cloud-removal':
                 await commonMethod(tool)
@@ -519,95 +519,17 @@ watch(selectedLayerName, (newVal) => {
 
 // 修改 loadAssets 方法
 const loadAssets = async (folder = null) => {
-    try {
-        isLoadingAssets.value = true
-        const url = new URL(API_ROUTES.TOOLS.GET_ASSETS)
-        if (folder) {
-            url.searchParams.append('folder', folder)
-        }
-
-        const response = await fetch(url)
-        const data = await response.json()
-
-        if (!data.success) {
-            ElMessage.error(data.message || '获取资产列表失败')
-            return
-        }
-
-        assetsList.value = data.assets
-        console.log('Tools.vue - loadAssets - assets:', data.assets)
-    } catch (error) {
-        console.error('Tools.vue - Error loading assets:', error)
-        ElMessage.error('获取资产列表失败')
-    } finally {
-        isLoadingAssets.value = false
-    }
+    await onLoadAssets(folder,isLoadingAssets,assetsList)
 }
 
 // 修改资产选择处理方法
 const handleAssetSelect = async (data) => {
-    try {
-        // 如果是文件夹，不进行选择
-        if (data.type === 'FOLDER') {
-            return
-        }
-
-        // 只更新选中状态，不关闭对话框
-        selectedAsset.value = data
-        console.log('Tools.vue - handleAssetSelect - selected asset:', data)
-    } catch (error) {
-        console.error('Tools.vue - Error selecting asset:', error)
-        ElMessage.error('选择资产失败')
-    }
+    await onHandleAssetSelect(data,selectedAsset)
 }
 
 // 修改确认选择方法
 const confirmAssetSelect = async () => {
-    try {
-        if (!selectedAsset.value) {
-            ElMessage.warning('请选择一个资产')
-            return
-        }
-
-        // 设置加载状态
-        isLoadingAssets.value = true
-
-        console.log('Tools.vue - confirmAssetSelect - selectedAsset:', selectedAsset.value)
-        // 根据资产类型处理
-        if (selectedAsset.value.type === 'TABLE') {
-            // 处理矢量数据
-            const loadingMessage = ElMessage({
-                message: '正在添加矢量图层...',
-                type: 'info',
-                duration: 0
-            })
-            const success = await handleVectorAsset(selectedAsset.value, props.mapView)
-            loadingMessage.close()  // 只关闭加载消息
-            if (success) {
-                ElMessage.success(`已添加矢量图层: ${selectedAsset.value.name}`)
-            }
-        } else if (selectedAsset.value.type === 'IMAGE') {
-            // 处理栅格影像
-            const loadingMessage = ElMessage({
-                message: '正在添加栅格图层...',
-                type: 'info',
-                duration: 0
-            })
-            const success = await handleImageAsset(selectedAsset.value, props.mapView)
-            loadingMessage.close()  // 只关闭加载消息
-            if (success) {
-                ElMessage.success(`已添加栅格图层: ${selectedAsset.value.name}`)
-            }
-        }
-
-        showAssetsDialog.value = false
-    } catch (error) {
-        console.error('Tools.vue - Error confirming asset selection:', error)
-        ElMessage.error('添加图层失败')
-    } finally {
-        // 清除加载状态
-        isLoadingAssets.value = false
-    }
+    await onConfirmAssetSelect(selectedAsset,showAssetsDialog,isLoadingAssets,props)
 }
 
 // 修改波段信息获取监听器
@@ -675,27 +597,14 @@ defineExpose({
     }
 })
 
-const handleDatasetSelect = (dataset) => {
-    selectedDataset.value = dataset
-    console.log('Tools.vue - handleDatasetSelect - dataset:', dataset)
-    eventBus.emit('dataset-selected', dataset)
+// 处理数据集选择
+const onDatasetSelect = (dataset) => {
+    handleDatasetSelect(dataset, selectedDataset, showSearchResults)
 }
 
-// 添加 ID 搜索处理方法
-const handleIdSearch = async () => {
-    if (!customDatasetId.value.trim()) {
-        ElMessage.warning('请输入数据集 ID')
-        return
-    }
-    console.log('Tools.vue - handleIdSearch - customDatasetId:', customDatasetId.value)
-    try {
-        const datasets = await searchData(customDatasetId.value.trim())
-        searchResults.value = datasets
-        showSearchResults.value = true
-    } catch (error) {
-        console.error('Error searching dataset:', error)
-        ElMessage.error('搜索失败')
-    }
+// 添加处理ID搜索的方法
+const handleCustomIdSearch = () => {
+    handleIdSearch(customDatasetId.value, searchResults, showSearchResults)
 }
 </script>
 

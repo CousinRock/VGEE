@@ -364,10 +364,10 @@ import 'leaflet-draw'
 import 'leaflet-draw/dist/leaflet.draw.css'
 import { API_ROUTES } from '../api/routes'
 import { handleSample, handleStudyArea, handleStyle
-    ,getPalettePreviewStyle,getSliderStep,formatSliderValue,debounce } from './service/mapview'
-import { layerManager,baseMapManager } from './service/mapview'
-import { MENU_ICONS } from './service/mapview'
-import { exportManager } from './service/mapview'
+    ,getPalettePreviewStyle,getSliderStep,formatSliderValue,debounce } from '../service/mapview'
+import { layerManager,baseMapManager } from '../service/mapview'
+import { MENU_ICONS } from '../service/mapview'
+import { exportManager } from '../service/mapview'
 
 const props = defineProps({
     mapData: {
