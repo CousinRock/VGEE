@@ -242,3 +242,20 @@ export const getLayerBands = (mapView, layerId) => {
     const layer = mapView.layers.find(l => l.id === layerId)
     return layer?.bandInfo || []
 }
+
+// 获取所选图层的共同波段
+export const getCommonBands = (layerBands) => {
+    console.log('Tools.vue - getCommonBands - layerBands', layerBands);
+    
+    // 提取所有图层的波段名
+    const allBands = Object.values(layerBands).map(bands => new Set(bands));
+
+    // 使用 reduce 方法找出所有集合的交集
+    const commonBands = [...allBands.reduce((acc, curr) => {
+        return new Set([...acc].filter(band => curr.has(band)));
+    })];
+
+    console.log('共同波段:', commonBands);
+    return commonBands;
+}
+

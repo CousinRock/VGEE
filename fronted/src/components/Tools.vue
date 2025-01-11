@@ -62,7 +62,8 @@
             </div>
 
             <!-- 右侧分类设置区域 -->
-            <div v-if="(currentTool?.id === 'kmeans' || currentTool?.id === 'random-forest' || currentTool?.id === 'raster-calculator') && selectedLayerName.length > 0"
+            <div v-if="(currentTool?.id === 'kmeans' || currentTool?.id === 'random-forest' || 
+            currentTool?.id === 'raster-calculator' || currentTool?.id === 'image-bands-rename') && selectedLayerName.length > 0"
                 class="layer-select-right">
                 
                 <!-- K-means 设置 -->
@@ -97,6 +98,11 @@
                         @update-calcumode="calculatorMode = $event"
                     />
                 </div>
+
+                <!-- 重命名波段 -->
+                <div v-if="currentTool?.id === 'image-bands-rename'">
+                    <RenameBands :availableBands="ToolService.getCommonBands(layerBands)" />
+                </div>
             </div>
         </div>
 
@@ -120,13 +126,17 @@
 import { ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { menuItems } from '../config/tools-config'
-import { getAvailableLayers, processLayerSelect,getLayerBands } from '../service/headTools/tool'
+
+//自定义工具
+import * as ToolService from '../service/headTools/tool'// 导入工具服务
+import * as SearchDataService from '../service/headTools/searchData'// 导入搜索数据服务
+
+// 导入工具视图组件
 import SearchResults from './ToolsView/SearchResults.vue'
-import { handleDatasetSelect, handleIdSearch , searchData} from '../service/headTools/searchData'
-import { BAND_OPTIONS, handleBandRename } from '../service/headTools/bandRename'
 import RasterCalculator from './ToolsView/RasterCalculator.vue'
 import MacLeaClassify from './ToolsView/MacLeaClassify.vue'
 import UploadData from './ToolsView/UploadData.vue'
+import RenameBands from './ToolsView/RenameBands.vue'
 
 const props = defineProps({
     mapView: {
@@ -220,7 +230,7 @@ const handleToolClick = async (tool) => {
             case 'search-data-viirs':
             case 'search-data-dem':
                 const datasetType = tool.label
-                const datasets = await searchData(datasetType)
+                const datasets = await SearchDataService.searchData(datasetType)
                 searchResults.value = datasets
                 console.log('Tools.vue - handleToolClick - searchResults', searchResults.value)
                 showSearchResults.value = true
@@ -239,7 +249,7 @@ const handleToolClick = async (tool) => {
 
 //通用函数
 const commonMethod = async (tool) => {
-    const layers = await getAvailableLayers()
+    const layers = await ToolService.getAvailableLayers()
     if (!layers) return
 
     selectedLayerName.value = []  // 清空之前的选择
@@ -272,7 +282,7 @@ const handleLayerSelect = async () => {
             }
             console.log('Tools.vue - handleLayerSelect - calculatorMode:', calculatorMode.value)
             // 添加计算模式参数
-            result = await processLayerSelect(
+            result = await ToolService.processLayerSelect(
                 selectedLayerName.value,
                 currentTool.value,
                 props.mapView,
@@ -284,7 +294,7 @@ const handleLayerSelect = async () => {
             )
         } else if (currentTool.value.id === 'kmeans') {
             // kmeans 处理逻辑
-            result = await processLayerSelect(
+            result = await ToolService.processLayerSelect(
                 selectedLayerName.value,
                 currentTool.value,
                 props.mapView,
@@ -293,7 +303,7 @@ const handleLayerSelect = async () => {
             )
         } else if (currentTool.value.id === 'random-forest') {
             // 随机森林处理逻辑
-            result = await processLayerSelect(
+            result = await ToolService.processLayerSelect(
                 selectedLayerName.value,
                 currentTool.value,
                 props.mapView,
@@ -303,7 +313,7 @@ const handleLayerSelect = async () => {
             console.log('Tools.vue - handleLayerSelect - result', result)
         } else {
             // 其他工具处理逻辑
-            result = await processLayerSelect(
+            result = await ToolService.processLayerSelect(
                 selectedLayerName.value,
                 currentTool.value,
                 props.mapView,
@@ -366,10 +376,10 @@ watch(selectedLayerName, (newVal) => {
 
 // 监听选中图层的变化，初始化波段信息
 watch(selectedLayerName, async (newVal) => {
-    if (currentTool.value?.id === 'raster-calculator') {
+    if (currentTool.value?.id === 'raster-calculator' || currentTool.value?.id === 'image-bands-rename') {
         for (const layerId of newVal) {
             if (!layerBands.value[layerId]) {
-                layerBands.value[layerId] = getLayerBands(props.mapView, layerId)
+                layerBands.value[layerId] = ToolService.getLayerBands(props.mapView, layerId)
                 console.log('Tools.vue - watch - layerBands', layerBands.value)
             }
         }
@@ -393,12 +403,12 @@ defineExpose({
 
 // 处理数据集选择
 const onDatasetSelect = (dataset) => {
-    handleDatasetSelect(dataset, selectedDataset, showSearchResults)
+    SearchDataService.handleDatasetSelect(dataset, selectedDataset, showSearchResults)
 }
 
 // 添加处理ID搜索的方法
 const handleCustomIdSearch = () => {
-    handleIdSearch(customDatasetId.value, searchResults, showSearchResults)
+    SearchDataService.handleIdSearch(customDatasetId.value, searchResults, showSearchResults)
 }
 </script>
 
