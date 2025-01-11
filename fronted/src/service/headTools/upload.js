@@ -46,7 +46,7 @@ export const onHandleAssetSelect = async (data,selectedAsset) => {
 }
 
 // 修改确认选择方法
-export const onConfirmAssetSelect = async (selectedAsset,showAssetsDialog,isLoadingAssets,props) => {
+export const onConfirmAssetSelect = async (selectedAsset, showAssetsDialog, isLoadingAssets, mapView) => {
     try {
         if (!selectedAsset.value) {
             ElMessage.warning('请选择一个资产')
@@ -65,7 +65,7 @@ export const onConfirmAssetSelect = async (selectedAsset,showAssetsDialog,isLoad
                 type: 'info',
                 duration: 0
             })
-            const success = await handleVectorAsset(selectedAsset.value, props.mapView)
+            const success = await handleVectorAsset(selectedAsset.value, mapView)
             loadingMessage.close()  // 只关闭加载消息
             if (success) {
                 ElMessage.success(`已添加矢量图层: ${selectedAsset.value.name}`)
@@ -77,7 +77,7 @@ export const onConfirmAssetSelect = async (selectedAsset,showAssetsDialog,isLoad
                 type: 'info',
                 duration: 0
             })
-            const success = await handleImageAsset(selectedAsset.value, props.mapView)
+            const success = await handleImageAsset(selectedAsset.value, mapView)
             loadingMessage.close()  // 只关闭加载消息
             if (success) {
                 ElMessage.success(`已添加栅格图层: ${selectedAsset.value.name}`)
@@ -141,13 +141,10 @@ const handleVectorAsset = async (selectedAsset, mapView) => {
 
         // 使用返回的边界信息进行定位
         if (data.bounds) {
-            // 转换坐标格式为 Leaflet 所需的格式
             const bounds = L.latLngBounds([
                 [data.bounds[0][1], data.bounds[0][0]], // 西南角
                 [data.bounds[2][1], data.bounds[2][0]]  // 东北角
             ])
-
-            // 定位到边界范围
             mapView.map.fitBounds(bounds, {
                 padding: [50, 50],
                 maxZoom: 13

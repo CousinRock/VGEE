@@ -1,10 +1,11 @@
 from flask import Blueprint, jsonify, request
-from services.map_service import save_dataset, get_all_datasets
+from services.map_service import save_dataset, get_all_datasets, get_dataset
 from services.sample_service import get_all_samples
 from tools.preprocessing import PreprocessingTool
 from tools.classification import ClassificationTool 
 from tools.calculateIndex import IndexTool
 import ee
+import time
 
 tool_bp = Blueprint('tool', __name__)
 
@@ -417,6 +418,8 @@ def raster_calculator():
         
         if not layer_ids or not expression:
             raise ValueError('Missing required parameters')
+        
+        print('Tool_routes.py - raster_calculator-calc_mode:', calc_mode)
             
         layer_results = []
         
@@ -425,7 +428,7 @@ def raster_calculator():
             result = PreprocessingTool.raster_calculator_multi(layer_ids, expression, datasets, datasetsNames)
             
             # 创建结果图层
-            calc_id = f"calc_multi_{layer_ids[0]}"
+            calc_id = f"calc_multi_{int(time.time())}-{layer_ids[0]}"
             calc_name = "多图层计算结果"
             save_dataset(calc_id, result, calc_name)
             
@@ -452,7 +455,7 @@ def raster_calculator():
                 )
                 
                 # 创建结果图层
-                calc_id = f"calc_all_{layer_id}"
+                calc_id = f"calc_all_{int(time.time())}-{layer_id}"
                 calc_name = f"{datasetsNames.get(layer_id, f'Layer_{layer_id}')} (多波段计算结果)"
                 save_dataset(calc_id, result, calc_name)
                 
@@ -471,9 +474,9 @@ def raster_calculator():
                     raise ValueError(f'Invalid layer ID: {layer_id}')
                     
                 result = PreprocessingTool.raster_calculator_single(datasets[layer_id], expression)
-                
+                print('Tool_routes.py - raster_calculator-layer_id:', layer_id)
                 # 创建结果图层
-                calc_id = f"calc_{layer_id}"
+                calc_id = f"calc_{int(time.time())}-{layer_id}"
                 calc_name = f"{datasetsNames.get(layer_id, f'Layer_{layer_id}')} (计算结果)"
                 save_dataset(calc_id, result, calc_name)
                 
@@ -490,3 +493,39 @@ def raster_calculator():
     except Exception as e:
         print(f"Error in raster calculator: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@tool_bp.route('/rename-bands', methods=['POST'])
+def rename_bands():
+    try:
+        data = request.json
+        layer_id = data.get('layer_id')
+        band_mappings = data.get('band_mappings')
+        
+        if not layer_id or not band_mappings:
+            raise ValueError('Missing required parameters')
+            
+        # 获取当前图层
+        current_dataset = get_dataset(layer_id)
+        if not current_dataset:
+            raise ValueError(f'No dataset found for layer {layer_id}')
+            
+        # 重命名波段
+        renamed_image = current_dataset.select(
+            list(band_mappings.keys()),  # 原始波段名
+            list(band_mappings.values()) # 新波段名
+        )
+        
+        # 更新数据集
+        save_dataset(layer_id, renamed_image)
+        
+        return jsonify({
+            'success': True,
+            'message': '波段重命名成功'
+        })
+        
+    except Exception as e:
+        print(f"Error renaming bands: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500

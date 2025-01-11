@@ -66,7 +66,7 @@
     color: #606266;
 }
 
-/* 确保滑块在���器内正确显示 */
+/* 确保滑块在器内正确显示 */
 .el-slider {
     width: 100%;
     margin: 10px 0;
@@ -291,4 +291,27 @@
 
 .id-search .el-input {
     width: 300px;
+}
+
+/* 添加或修改样式以支持 MacLeaClassify 的显示 */
+.mac-lea-classify {
+    padding: 10px;
+}
+.layer-option-item {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f5f7fa;
+}
+.layer-name {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #409EFF;
+}
+.option-item {
+    margin-bottom: 10px;
+}
+.option-item label {
+    display: block;
+    margin-bottom: 8px;
+    color: #606266;
 }

@@ -82,6 +82,7 @@ const props = defineProps({
   datasets: Array
 })
 
+
 const emit = defineEmits(['select', 'close'])
 
 const selectDataset = (dataset) => {
@@ -115,4 +116,4 @@ const getTypeTagType = (type) => {
 }
 </script>
 
-<style src="../styles/search-results.css"></style>
+<style src="../../styles/search-results.css"></style>

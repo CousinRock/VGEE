@@ -128,7 +128,7 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
                 dataset = collection.first()
             else:  # default to median
                 dataset = collection.median()
-        else:
+        elif type == 'image':
             dataset = ee.Image(satellite)
 
         # 保存原始波段名称

@@ -57,6 +57,8 @@ class IndexTool(BaseTool):
             type = satellite+'-'+num
             bands = IndexTool.BAND_MAPPINGS.get(type, IndexTool.BAND_MAPPINGS['LANDSAT-8'])
             print('CalculateIndex.py - calculate_index-bands:', bands)
+
+            
             
             index_functions = {
                 'ndvi': lambda img: img.normalizedDifference([bands['NIR'], bands['RED']]).rename('NDVI'),

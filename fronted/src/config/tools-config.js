@@ -34,13 +34,8 @@ export const menuItems = [
                 children: [
                     { id: 'cloud-removal', label: '影像除云', icon: 'fas fa-cloud-sun' },
                     { id: 'image-filling', label: '影像填补', icon: 'fas fa-fill-drip' },
-                    { id: 'histogram-equalization', label: '直方图均值化', icon: 'fas fa-chart-line' },
-                    { 
-                        id: 'raster-calculator', 
-                        label: '栅格计算器', 
-                        icon: 'fas fa-calculator',
-                        description: '对影像波段进行数学运算'
-                    },
+                    { id: 'image-bands-rename', label: '影像波段重命名', icon: 'fas fa-palette' },
+                    { id: 'histogram-equalization', label: '直方图均值化', icon: 'fas fa-chart-line' }
                 ]
             },
             {
@@ -104,6 +99,14 @@ export const menuItems = [
                     { id: 'random-forest', label: '随机森林分类', icon: 'fas fa-brain' }
                 ]
             },
+            {
+                id: 'raster-operation',
+                label: '栅格运算',
+                children: [
+                    { id: 'raster-calculator', label: '栅格计算器', icon: 'fas fa-calculator' }
+                ]
+            }
+            
         ]
     },
     {

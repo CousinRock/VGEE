@@ -46,6 +46,7 @@ export const API_ROUTES = {
         KMEANS_CLUSTERING: `${BASE_URL}/tools/kmeans-clustering`,
         HISTOGRAM_EQUALIZATION: `${BASE_URL}/tools/histogram-equalization`,
         RANDOM_FOREST: `${BASE_URL}/tools/random-forest`,
-        RASTER_CALCULATOR: `${BASE_URL}/tools/raster-calculator`
+        RASTER_CALCULATOR: `${BASE_URL}/tools/raster-calculator`,
+        RENAME_BANDS: `${BASE_URL}/tools/rename-bands`
     }
 } 
