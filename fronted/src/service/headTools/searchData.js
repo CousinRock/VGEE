@@ -27,7 +27,7 @@ export const searchData = async (datasetType) => {
 }
 
 // 处理数据集选择
-export const handleDatasetSelect = (dataset, selectedDataset, showSearchResults) => {
+export const handleDatasetSelect = (dataset, selectedDataset) => {
     selectedDataset.value = dataset
     console.log('searchData.js - handleDatasetSelect - dataset:', dataset)
     eventBus.emit('dataset-selected', dataset)

@@ -300,6 +300,7 @@ def histogram_equalization():
         PreprocessingTool.validate_inputs(layer_ids, datasets)
         selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
         results = selected_images.map(PreprocessingTool.histogram_equalization).toList(selected_images.size())
+
         
         return common_process(layer_ids, results, vis_params, '直方图均衡化处理完成')
         
@@ -482,6 +483,7 @@ def raster_calculator():
                 
                 # 设置可视化参数
                 vis_params = get_vis_params(result)
+                print('Tool_routes.py - raster_calculator-vis_params:', vis_params)
                 layer_results.append(create_layer_result(calc_id, calc_name, result, vis_params))
         
         return jsonify({
@@ -497,30 +499,94 @@ def raster_calculator():
 @tool_bp.route('/rename-bands', methods=['POST'])
 def rename_bands():
     try:
+        def create_layer_result(layer_id, result, vis_params):
+            """创建图层结果对象"""
+            print('Tool_routes.py - rename_bands-create_layer_result-vis_params:', vis_params)
+            map_id = result.getMapId(vis_params)
+            return {
+                'layer_id': layer_id,
+                'tileUrl': map_id['tile_fetcher'].url_format,
+                'visParams': vis_params,
+                'bandInfo': result.bandNames().getInfo()
+            }
+
         data = request.json
-        layer_id = data.get('layer_id')
-        band_mappings = data.get('band_mappings')
+        layer_ids = data.get('layer_ids')
+        bands_mapping = data.get('bands')
+        vis_params = data.get('vis_params', [])
+        print('Tool_routes.py - rename_bands-vis_params:', vis_params)
+        print('Tool_routes.py - rename_bands-bands_mapping:', bands_mapping)
         
-        if not layer_id or not band_mappings:
+        if not layer_ids or not bands_mapping:
             raise ValueError('Missing required parameters')
             
-        # 获取当前图层
-        current_dataset = get_dataset(layer_id)
-        if not current_dataset:
-            raise ValueError(f'No dataset found for layer {layer_id}')
+        # 创建波段名称映射字典，用于快速查找
+        band_name_map = {
+            band['original']: band['customName'] if band['new'] == 'custom' else band['new']
+            for band in bands_mapping
+        }
+        print('Tool_routes.py - rename_bands - band_name_map:', band_name_map)
             
-        # 重命名波段
-        renamed_image = current_dataset.select(
-            list(band_mappings.keys()),  # 原始波段名
-            list(band_mappings.values()) # 新波段名
-        )
-        
-        # 更新数据集
-        save_dataset(layer_id, renamed_image)
+        results = []
+        for i, layer_id in enumerate(layer_ids):
+            # 获取当前图层
+            current_dataset = datasets.get(layer_id)
+            if not current_dataset:
+                raise ValueError(f'No dataset found for layer {layer_id}')
+            
+            # 准备波段映射
+            original_bands = []
+            new_bands = []
+            for band in bands_mapping:
+                original_bands.append(band['original'])
+                new_name = band['customName'] if band['new'] == 'custom' else band['new']
+                new_bands.append(new_name)
+            
+            print(f"Renaming bands for {layer_id}:")    
+            print(f"Original bands: {original_bands}")
+            print(f"New bands: {new_bands}")
+            
+            # 获取所有波段名
+            all_bands = current_dataset.bandNames().getInfo()                         
+            # 获取未重命名的波段
+            unchanged_bands = [b for b in all_bands if b not in original_bands]
+            
+            # 重命名选定的波段
+            renamed_bands = current_dataset.select(original_bands, new_bands)
+            # 选择未更改的波段
+            unchanged_image = current_dataset.select(unchanged_bands)
+            
+            # 合并重命名的波段和未更改的波段
+            final_image = renamed_bands.addBands(unchanged_image)
+            print('Tool_routes.py - rename_bands - layer_id:', layer_id)
+            print('Tool_routes.py - rename_bands - final_image:', final_image.bandNames().getInfo())
+            
+            # 更新数据集
+            datasets[layer_id] = final_image
+
+            # 获取并更新可视化参数
+            layer_vis = next((v['visParams'] for v in vis_params if v['id'] == layer_id), {
+                'bands': ['B4', 'B3', 'B2'],
+                'min': 0,
+                'max': 0.3,
+                'gamma': 1.4
+            })
+
+            # 更新可视化参数中的波段名称
+            if 'bands' in layer_vis:
+                layer_vis['bands'] = [
+                    band_name_map.get(band, band) for band in layer_vis['bands']
+                ]
+
+            print('Tool_routes.py - rename_bands - layer_vis:', layer_vis)
+
+            # 添加到结果列表
+            results.append(create_layer_result(layer_id, final_image, layer_vis))
         
         return jsonify({
             'success': True,
-            'message': '波段重命名成功'
+            'message': '波段重命名成功',
+            'results': results
         })
         
     except Exception as e:

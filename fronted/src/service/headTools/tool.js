@@ -71,9 +71,16 @@ export const updateMapLayer = async (layerResult, mapView) => {
             type: layer.type
         })
 
-        // 更新图层引用和波段信息
+        // 更新图层引用和信息
         layer.leafletLayer = newLeafletLayer
-        layer.bandInfo = layerResult.bandInfo  // 更新波段信息
+        layer.bandInfo = layerResult.bandInfo
+        layer.visParams = layerResult.visParams || {
+            bands: layerResult.bandInfo.slice(0, 3),
+            min: 0,
+            max: 0.3,
+            gamma: 1.4
+        }
+        layer.satellite = layer.satellite || 'LANDSAT'  // 保持卫星信息
 
         console.log('Tool.js - updateMapLayer - updated layer:', layer)
 
@@ -148,12 +155,8 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
             case 'kmeans':
                 endpoint = API_ROUTES.TOOLS.KMEANS_CLUSTERING
                 requestData = {
-                    layer_ids: selectedLayerName,
-                    cluster_counts: params,
-                    vis_params: selectedLayerName.map(id => ({
-                        id: id,
-                        visParams: mapView.layers.find(l => l.id === id)?.visParams
-                    }))
+                    ...createRequestData(selectedLayerName, mapView.layers),
+                    cluster_counts: params
                 }
                 break
             case 'random-forest':
@@ -195,12 +198,15 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
                 console.log('Tool.js - processLayerSelect - layer', mapView.layers.find(l => l.id === selectedLayerName[0].id))
                 endpoint = API_ROUTES.TOOLS.RASTER_CALCULATOR
                 requestData = {
-                    layer_ids: selectedLayerName,
-                    expression: params,
-                    vis_params: selectedLayerName.map(id => ({
-                        id: id,
-                        visParams: mapView.layers.find(l => l.id === id)?.visParams
-                    }))
+                    ...createRequestData(selectedLayerName, mapView.layers),
+                    expression: params
+                }
+                break
+            case 'image-bands-rename':
+                endpoint = API_ROUTES.TOOLS.RENAME_BANDS
+                requestData = {
+                    ...createRequestData(selectedLayerName, mapView.layers),
+                    bands: params  // 波段映射对象
                 }
                 break
             default:

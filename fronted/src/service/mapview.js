@@ -488,9 +488,10 @@ export const layerManager = {
     
             // 添加加载状态到 Apply 按钮
             const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
-            if (applyButton) {
+            if (applyButton) {   
                 applyButton.disabled = true
                 applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 计算中...'
+                console.log('MapView.vue - updateRangeBasedOnBands - applyButton:', applyButton.innerHTML)
             }
             console.log('MapView.vue - updateRangeBasedOnBands - vis:', vis);
     
@@ -543,34 +544,31 @@ export const layerManager = {
     },
 
     // 应用可视化参数
-    applyVisParams: async (map,currentLayer, visParams, showLayerSettings,bandMode, palettes,selectedPalette,layers, API_ROUTES) => {
+    applyVisParams: async (map, currentLayer, visParams, showLayerSettings, bandMode, palettes, selectedPalette, layers, API_ROUTES) => {
         try {
             if (!currentLayer.value || !map) return;
-    
+
             // 添加加载状态
             const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
             if (applyButton) {
                 applyButton.disabled = true
                 applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 应用中...'
             }
-            
-            console.log('MapView.vue - applyVisParams - visParams:', visParams);
+
             const updatedVisParams = {
                 bands: visParams.bands,
                 min: visParams.range[0],
                 max: visParams.range[1],
                 gamma: visParams.gamma,
             }
-    
-            console.log('MapView.vue - applyVisParams - updatedVisParams:', updatedVisParams);
-    
+
             // 如果是单波段，添加调色板
             if (bandMode.value === 1) {
                 updatedVisParams.bands = [visParams.bands[0]]
                 updatedVisParams.palette = palettes[selectedPalette.value]
                 updatedVisParams.gamma = null
             }
-    
+
             const response = await fetch(API_ROUTES.LAYER.UPDATE_VIS_PARAMS, {
                 method: 'POST',
                 headers: {
@@ -582,9 +580,9 @@ export const layerManager = {
                     layerId: currentLayer.value.id
                 })
             })
-    
+
             const data = await response.json()
-    
+
             if (data.tileUrl) {
                 const layer = layers.value.find(l => l.id === currentLayer.value.id)
                 if (layer) {

@@ -10,6 +10,8 @@
         "CANADA/NFIS/NTEMS/CA_FOREST_AGE",
         "AHN/AHN2_05M_INT",
         "COPERNICUS/DEM/GLO30",
-        "ESA/CCI/FireCCI/5_1"
+        "ESA/CCI/FireCCI/5_1",
+        "NRCan/CDEM",
+        "NASA/LANCE/NOAA20_VIIRS/C2"
     ]
 }

@@ -24,14 +24,18 @@
         v-model="band.customName"
         placeholder="输入自定义名称"
       />
+      <el-button @click="removeBand(index)" type="danger" circle class="delete-btn">
+        ×
+      </el-button>
     </div>
-    <el-button @click="addBand">添加波段</el-button>
-    <el-button type="primary" @click="renameBands">重命名波段</el-button>
+    <div class="button-group">
+      <el-button @click="addBand">添加波段</el-button>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, defineProps } from 'vue'
+import { ref, defineProps, defineEmits, watch } from 'vue'
 
 const props = defineProps({
   availableBands: {
@@ -40,20 +44,24 @@ const props = defineProps({
   }
 })
 
-const newBandNames = ['红', '绿', '蓝'] // 固定的新波段名
+const emit = defineEmits(['update:bands'])
+
+const newBandNames = ['RED', 'GREEN', 'BLUE', 'NIR', 'SWIR1', 'SWIR2'] 
 const bands = ref([{ original: '', new: '', customName: '' }])
 
 const addBand = () => {
   bands.value.push({ original: '', new: '', customName: '' })
 }
 
-const renameBands = () => {
-  bands.value.forEach(band => {
-    const newName = band.new === 'custom' ? band.customName : band.new
-    console.log(`重命名 ${band.original} 为 ${newName}`)
-    // 在这里添加实际的重命名逻辑
-  })
+const removeBand = (index) => {
+  bands.value.splice(index, 1)
 }
+
+watch(bands, (newVal) => {
+    console.log('RenameBands.vue - watch - bands:', newVal)
+    emit('update:bands', newVal)
+}, { deep: true })
+
 </script>
 
 <style scoped>
@@ -63,6 +71,17 @@ const renameBands = () => {
 .band-row {
   display: flex;
   align-items: center;
+  gap: 10px;
   margin-bottom: 10px;
+}
+.button-group {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+.delete-btn {
+  font-size: 20px;
+  padding: 8px;
+  line-height: 1;
 }
 </style>
