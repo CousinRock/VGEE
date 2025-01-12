@@ -210,3 +210,34 @@ class PreprocessingTool(BaseTool):
         except Exception as e:
             raise Exception(f"Error in single-band calculation: {str(e)}")
 
+    @staticmethod
+    def rename_bands(image, bands_mapping):
+        """重命名影像的波段"""
+        try:
+            # 创建波段名称映射字典
+            band_name_map = {
+                band['original']: band['customName'] if band['new'] == 'custom' else band['new']
+                for band in bands_mapping
+            }
+            
+            # 准备波段映射
+            original_bands = [band['original'] for band in bands_mapping]
+            new_bands = [band_name_map[band] for band in original_bands]
+            
+            # 获取所有波段名
+            all_bands = image.bandNames()
+            # 获取未重命名的波段
+            unchanged_bands = all_bands.filter(ee.Filter.inList('item', original_bands).Not())
+            
+            # 重命名选定的波段
+            renamed_bands = image.select(original_bands, new_bands)
+            # 选择未更改的波段
+            unchanged_image = image.select(unchanged_bands)
+            
+            # 合并重命名的波段和未更改的波段
+            final_image = renamed_bands.addBands(unchanged_image)
+            
+            return final_image
+        except Exception as e:
+            raise Exception(f"Error renaming bands: {str(e)}")
+
