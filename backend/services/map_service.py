@@ -89,7 +89,7 @@ def compute_image_stats(dataset, bands,region=None):
         print(f"Warning: Could not compute image statistics: {stats_error}")
         return None, None
 
-def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=None, layerName=None, compositeMethod='median',type='image_collection'):
+def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=None, layerName=None, compositeMethod='median', type='image_collection'):
     """获取地图数据服务"""
     try:
         # 移除全局 index 变量，直接使用时间戳作为唯一标识
@@ -104,18 +104,18 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
             # 获取图像集合
             collection = ee.ImageCollection(satellite)
 
-        # 时间过滤
+            # 时间过滤
             if start_date and end_date:
                 collection = collection.filterDate(start_date, end_date)
-        
-            collection = ee.ImageCollection(ee.Algorithms.If(collection.get('CLOUD_COVER'),
-                                        collection.filter(ee.Filter.lt('CLOUD_COVER', cloud_cover)),
-                                        ee.Algorithms.If(collection.get('CLOUDY_PIXEL_PERCENTAGE'),
-                                        collection.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_cover)),
-                                        collection))
-            )
+            
+            # 检查并应用云覆盖过滤
+            if 'CLOUD_COVER' in collection.first().propertyNames().getInfo():
+                collection = collection.filter(ee.Filter.lt('CLOUD_COVER', cloud_cover))
+            elif 'CLOUDY_PIXEL_PERCENTAGE' in collection.first().propertyNames().getInfo():
+                collection = collection.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_cover))
+            else:
+                print("No cloud cover attribute found for filtering.")
 
-            print(f"Map_service.py - get_map_data_service-compositeMethod: {compositeMethod}")
 
             # 根据合成方式选择不同的处理方法
             if compositeMethod == 'mean':
@@ -140,8 +140,6 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
 
         # 确保波段名称保持一致
         dataset = dataset.rename(original_band_names)
-
-        
 
         # 获取可视化参数
         vis_params = {
@@ -201,4 +199,4 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
         return {
             'success': False,
             'message': str(e)
-        }
+        }        
