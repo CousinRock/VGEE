@@ -288,47 +288,6 @@ export const handleStyle = {
     }
 }; 
 
-// 添加获取调色板预览样的方法
-export const getPalettePreviewStyle = (colors) => {
-    return {
-        background: `linear-gradient(to right, ${colors.join(',')})`
-    }
-}
-
-// 取滑块步长和范围
-export const getSliderStep = (satelliteType) => {
-    if (!satelliteType) return 0.1;
-    return 0.001;
-    // switch (satelliteType) {
-    //     case 'SENTINEL-2':
-    //         return 100;  // Sentinel-2 反射率数据范围较大，用100作为步长
-    //     case 'MODIS-NDVI':
-    //         return 100;  // MODIS NDVI 数据范围在 -2000 到 10000
-    //     case 'LANDSAT-8':
-    //     case 'LANDSAT-7':
-    //     case 'LANDSAT-5':
-    //         return 0.001;  // Landsat TOA 反射率数据范围在 0-1
-    //     default:
-    //         return 0.001;
-    // }
-}
-
-// 格式化显示
-export const formatSliderValue = (value) => {
-    return value.toFixed(3);
-}
-
-// 添加防抖函数,防止缩放移动时图层卡死
-export const debounce = (fn, delay) => {
-    let timer = null;
-    return function (...args) {
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(() => {
-            fn.apply(this, args);
-        }, delay);
-    };
-};
-
 // 栅格图层管理相关方法
 export const layerManager = {
     // 添加新图层
@@ -627,7 +586,7 @@ export const layerManager = {
             }
         }
     }
-}
+};
 
 // 底图管理相关方法
 export const baseMapManager = {
@@ -658,7 +617,7 @@ export const baseMapManager = {
         }
         return null
     }
-}
+};
 
 // 导出图层管理
 export const exportManager = {
@@ -707,28 +666,55 @@ export const exportManager = {
     }
 };
 
-// 添加颜色转换函数
-const convertColor = (color) => {
-    // 如果是 rgba 格式，转换为十六进制
-    if (color.startsWith('rgba')) {
-        const values = color.match(/[\d.]+/g);
-        if (values.length >= 3) {
-            const r = parseInt(values[0]);
-            const g = parseInt(values[1]);
-            const b = parseInt(values[2]);
-            const a = parseFloat(values[3]);
-            
-            // 转换为十六进制，不包含 # 符号
-            const hex = ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
-            return {
-                color: hex,
-                opacity: a
-            };
+
+export const toolManager = {
+    getPalettePreviewStyle: (colors) => {
+        return {
+            background: `linear-gradient(to right, ${colors.join(',')})`
         }
+    },
+    getSliderStep: (satelliteType) => {
+        if (!satelliteType) return 0.1;
+             return 0.001;
+    },
+    formatSliderValue: (value) => {
+        return value.toFixed(3);
+    },
+    debounce : (fn, delay) => {
+        let timer = null;
+        return function (...args) {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => {
+                fn.apply(this, args);
+            }, delay);
+        };
+    },
+    convertColor : (color) => {
+        // 如果是 rgba 格式，转换为十六进制
+        if (color.startsWith('rgba')) {
+            const values = color.match(/[\d.]+/g);
+            if (values.length >= 3) {
+                const r = parseInt(values[0]);
+                const g = parseInt(values[1]);
+                const b = parseInt(values[2]);
+                const a = parseFloat(values[3]);
+                
+                // 转换为十六进制，不包含 # 符号
+                const hex = ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+                return {
+                    color: hex,
+                    opacity: a
+                };
+            }
+        }
+        // 如果是十六进制格式，移除 # 符号
+        return {
+            color: color.replace('#', ''),
+            opacity: 1
+        };
+    },
+    getPixelValue: async (e) => {
+        const { lat, lng } = e.latlng;
+        console.log(`Clicked at latitude: ${lat}, longitude: ${lng}`);
     }
-    // 如果是十六进制格式，移除 # 符号
-    return {
-        color: color.replace('#', ''),
-        opacity: 1
-    };
 };

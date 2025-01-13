@@ -14,6 +14,7 @@ export const API_ROUTES = {
         REMOVE_SAMPLE: `${BASE_URL}/remove-sample`,
         GET_SAMPLES: `${BASE_URL}/get-samples`,
         RENAME_LAYER: `${BASE_URL}/rename-layer`,
+        GET_PIXEL_VALUE: `${BASE_URL}/get-pixel-value`,
     },
 
     // 图层相关

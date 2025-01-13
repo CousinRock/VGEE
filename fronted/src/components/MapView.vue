@@ -4,9 +4,12 @@
 
         <!-- 地图工具栏 -->
         <div class="map-tools">
-            <div class="tool-group">
+            <div class="tool-group">          
                 <div class="tool-button" @click="toggleLayerControl" :class="{ active: showLayerControl }" title="图层">
                     <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="tool-button" @click="togglePixelTool" :class="{ active: isPixelToolActive }" title="获取像素值">
+                    <i class="fas fa-wrench"></i>
                 </div>
             </div>
 
@@ -174,7 +177,7 @@
                             popper-class="palette-select-dropdown">
                             <el-option v-for="(colors, name) in palettes" :key="name" :label="name" :value="name">
                                 <div class="palette-preview-item">
-                                    <div class="palette-preview" :style="getPalettePreviewStyle(colors)"></div>
+                                    <div class="palette-preview" :style="toolManager.getPalettePreviewStyle(colors)"></div>
                                     <span>{{ name }}</span>
                                 </div>
                             </el-option>
@@ -220,10 +223,10 @@
                 <div class="range-setting">
                     <label>Range:</label>
                     <el-slider v-model="visParams.range" range :min="currentLayer.min" :max="currentLayer.max"
-                        :step="getSliderStep(currentLayer.satellite)" :format-tooltip="val => formatSliderValue(val)"
+                        :step="toolManager.getSliderStep(currentLayer.satellite)" :format-tooltip="val => toolManager.formatSliderValue(val)"
                         @change="handleRangeChange" />
                     <div class="range-values">
-                        {{ formatSliderValue(visParams.range[0]) }} – {{ formatSliderValue(visParams.range[1]) }}
+                        {{ toolManager.formatSliderValue(visParams.range[0]) }} – {{ toolManager.formatSliderValue(visParams.range[1]) }}
                     </div>
                 </div>
 
@@ -363,9 +366,7 @@ import '@fortawesome/fontawesome-free/css/all.css'
 import 'leaflet-draw'
 import 'leaflet-draw/dist/leaflet.draw.css'
 import { API_ROUTES } from '../api/routes'
-import { handleSample, handleStudyArea, handleStyle
-    ,getPalettePreviewStyle,getSliderStep,formatSliderValue,debounce } from '../service/mapview'
-import { layerManager,baseMapManager } from '../service/mapview'
+import { layerManager,baseMapManager,toolManager,handleSample, handleStudyArea, handleStyle } from '../service/mapview'
 import { MENU_ICONS } from '../service/mapview'
 import { exportManager } from '../service/mapview'
 
@@ -378,15 +379,16 @@ const props = defineProps({
 
 // 状态变量
 const layers = ref([])
-const showLayerControl = ref(false)
-const baseLayerVisible = ref(true)
-const showBaseMapSettings = ref(false)
-const showLayerSettings = ref(false)
-const selectedBaseMap = ref('satellite')
-const currentLayer = ref(null)
-const availableBands = ref([])
-const bandMode = ref(3)
-const stretchType = ref('custom')
+const showLayerControl = ref(false)//图层显示控制
+const isPixelToolActive = ref(false);//像素工具
+const baseLayerVisible = ref(true)//底图显示控制
+const showBaseMapSettings = ref(false)//底图设置
+const showLayerSettings = ref(false)//图层设置
+const selectedBaseMap = ref('satellite')//底图选择
+const currentLayer = ref(null)//当前图层
+const availableBands = ref([])//可用波段
+const bandMode = ref(3)//波段模式
+const stretchType = ref('custom')//拉伸方式
 // reactive() 用于创建一个响应式对象，当对象的属性发生变化时会自动触发视图更新
 const visParams = reactive({
     bands: ['B4', 'B3', 'B2'],  // 显示的波段组合
@@ -400,31 +402,31 @@ const map = ref(null)
 let baseLayer = null
 
 // 添加调色板状态
-const selectedPalette = ref('default')
+const selectedPalette = ref('default')//调色板
 
 // 添加绘制控制相关的状态
-const drawnItems = ref(null)
-const drawControl = ref(null)
+const drawnItems = ref(null)//绘制项
+const drawControl = ref(null)//绘制控件
 
 // 添加新的状态变量
-const showVectorStyleDialog = ref(false)
-const currentVectorLayer = ref(null)
+const showVectorStyleDialog = ref(false)//矢量样式对话框
+const currentVectorLayer = ref(null)//当前矢量图层
 const vectorStyle = ref({
     color: '#3388ff',
     weight: 2,
     opacity: 1,
     fillOpacity: 0.2
-})
+})//矢量样式
 
 // 在 script setup 顶部添加新的 ref
 const pointFeatures = ref([]);  // 存储所有点要素
 
 //样本数据
-const showSampleDialog = ref(false);
+const showSampleDialog = ref(false);//样本对话框
 const sampleForm = ref({
     className: ''
-});
-const currentSampleLayer = ref(null);
+});//样本表单
+const currentSampleLayer = ref(null);//当前样本图层
 
 // 在 script setup 顶部添加计数器
 const pointLayerCounter = ref(0);
@@ -434,18 +436,35 @@ const showPropertiesDialog = ref(false)
 const layerProperties = ref([])
 
 // 添加重命名相关的响应式变量
-const showRenameDialog = ref(false)
+const showRenameDialog = ref(false)//重命名对话框
 const newLayerName = ref('')
 const currentRenameLayer = ref(null)
 
 // 添加加载状态变量
-const isApplyingStyle = ref(false);
+const isApplyingStyle = ref(false);//应用样式
 
 // 添加导出相关的响应式变量
-const showExportDialog = ref(false)
+const showExportDialog = ref(false)//导出对话框
 const exportFolder = ref('EarthEngine_Exports')  // 默认文件夹名
 const exportScale = ref(30)  // 默认30米分辨率
-const currentExportLayer = ref(null)
+const currentExportLayer = ref(null)//当前导出图层
+
+
+// 添加切换像素工具的方法
+const togglePixelTool = () => {
+    isPixelToolActive.value = !isPixelToolActive.value;
+    
+    // 根据工具状态添加或移除点击事件
+    if (isPixelToolActive.value) {
+        map.value.on('click', toolManager.getPixelValue);
+        // 改变鼠标样式为十字准星
+        map.value.getContainer().style.cursor = 'crosshair';
+    } else {
+        map.value.off('click', toolManager.getPixelValue);
+        // 恢复默认鼠标样式
+        map.value.getContainer().style.cursor = '';
+    }
+};
 
 // 切换图层控制面板显示
 const toggleLayerControl = () => {
@@ -470,7 +489,7 @@ const renameLayer = async () => {
 }
 
 // 监听图层变化时使用防抖
-watch(layers, debounce((newLayers) => {
+watch(layers, toolManager.debounce((newLayers) => {
     if (!map) return;
 
     nextTick(() => {
@@ -593,9 +612,6 @@ onMounted(async () => {
                 });
             }, 250);
         });
-
-       
-
         // 触发初化完成事件
         emit('map-initialized', map.value)
 
