@@ -2,92 +2,39 @@ from .base_tool import BaseTool
 import ee
 
 class IndexTool(BaseTool):
-    # 定义不同卫星的波段映射
-    BAND_MAPPINGS = {
-        'LANDSAT-9': {
-            'BLUE': 'B2',
-            'GREEN': 'B3',
-            'RED': 'B4',
-            'NIR': 'B5',
-            'SWIR1': 'B6',
-            'SWIR2': 'B7'
-        },
-        'LANDSAT-8': {
-            'BLUE': 'B2',
-            'GREEN': 'B3',
-            'RED': 'B4',
-            'NIR': 'B5',
-            'SWIR1': 'B6',
-            'SWIR2': 'B7'
-        },
-        'LANDSAT-5': {
-            'BLUE': 'B1',
-            'GREEN': 'B2',
-            'RED': 'B3',
-            'NIR': 'B4',
-            'SWIR1': 'B5',
-            'SWIR2': 'B7'
-        },
-        'LANDSAT-7': {
-            'BLUE': 'B1',
-            'GREEN': 'B2',
-            'RED': 'B3',
-            'NIR': 'B4',
-            'SWIR1': 'B5',
-            'SWIR2': 'B7'
-        },
-        'SENTINEL-2': {
-            'BLUE': 'B2',
-            'GREEN': 'B3',
-            'RED': 'B4',
-            'NIR': 'B8',
-            'SWIR1': 'B11',
-            'SWIR2': 'B12'
-        }
-    }
-
     @staticmethod
-    def calculate_index(image, index_type, layer_id):
+    def calculate_index(image, index_type):
         """计算各种遥感指数"""
         try:
-            # 从layer_id获取卫星类型
-            satellite = layer_id.split('-')[-2]  # 获取倒数第二部分作为卫星类型
-            num = layer_id.split('-')[-1]  # 获取倒数第一部分作为卫星编号
-            print('CalculateIndex.py - calculate_index-satellite:', satellite)
-            type = satellite+'-'+num
-            bands = IndexTool.BAND_MAPPINGS.get(type, IndexTool.BAND_MAPPINGS['LANDSAT-8'])
-            print('CalculateIndex.py - calculate_index-bands:', bands)
-
-            
-            
+            # 定义指数计算函数
             index_functions = {
-                'ndvi': lambda img: img.normalizedDifference([bands['NIR'], bands['RED']]).rename('NDVI'),
-                'ndwi': lambda img: img.normalizedDifference([bands['GREEN'], bands['NIR']]).rename('NDWI'),
-                'ndbi': lambda img: img.normalizedDifference([bands['SWIR1'], bands['NIR']]).rename('NDBI'),
+                'ndvi': lambda img: img.normalizedDifference([IndexTool.get_band_name(img, 'NIR'), IndexTool.get_band_name(img, 'RED')]).rename('NDVI'),
+                'ndwi': lambda img: img.normalizedDifference([IndexTool.get_band_name(img, 'GREEN'), IndexTool.get_band_name(img, 'NIR')]).rename('NDWI'),
+                'ndbi': lambda img: img.normalizedDifference([IndexTool.get_band_name(img, 'SWIR1'), IndexTool.get_band_name(img, 'NIR')]).rename('NDBI'),
                 'evi': lambda img: img.expression(
                     '2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))',
                     {
-                        'NIR': img.select(bands['NIR']),
-                        'RED': img.select(bands['RED']),
-                        'BLUE': img.select(bands['BLUE'])
+                        'NIR': img.select(IndexTool.get_band_name(img, 'NIR')),
+                        'RED': img.select(IndexTool.get_band_name(img, 'RED')),
+                        'BLUE': img.select(IndexTool.get_band_name(img, 'BLUE'))
                     }
                 ).rename('EVI'),
                 'savi': lambda img: img.expression(
                     '((NIR - RED) * (1 + L)) / (NIR + RED + L)',
                     {
-                        'NIR': img.select(bands['NIR']),
-                        'RED': img.select(bands['RED']),
+                        'NIR': img.select(IndexTool.get_band_name(img, 'NIR')),
+                        'RED': img.select(IndexTool.get_band_name(img, 'RED')),
                         'L': 0.5
                     }
                 ).rename('SAVI'),
-                'mndwi': lambda img: img.normalizedDifference([bands['GREEN'], bands['SWIR1']]).rename('MNDWI'),
+                'mndwi': lambda img: img.normalizedDifference([IndexTool.get_band_name(img, 'GREEN'), IndexTool.get_band_name(img, 'SWIR1')]).rename('MNDWI'),
                 'bsi': lambda img: img.expression(
                     '((SWIR1 + RED) - (NIR + BLUE)) / ((SWIR1 + RED) + (NIR + BLUE))',
                     {
-                        'SWIR1': img.select(bands['SWIR1']),
-                        'RED': img.select(bands['RED']),
-                        'NIR': img.select(bands['NIR']),
-                        'BLUE': img.select(bands['BLUE'])
+                        'SWIR1': img.select(IndexTool.get_band_name(img, 'SWIR1')),
+                        'RED': img.select(IndexTool.get_band_name(img, 'RED')),
+                        'NIR': img.select(IndexTool.get_band_name(img, 'NIR')),
+                        'BLUE': img.select(IndexTool.get_band_name(img, 'BLUE'))
                     }
                 ).rename('BSI')
             }
@@ -100,3 +47,11 @@ class IndexTool(BaseTool):
             
         except Exception as e:
             raise Exception(f"Error calculating {index_type}: {str(e)}")
+
+    @staticmethod
+    def get_band_name(image, target_band):
+        """获取目标波段的名称"""
+        band_names = image.bandNames()
+        # 使用服务器端的字符串匹配来查找波段
+        matched_band = band_names.filter(ee.Filter.stringContains('item', target_band)).get(0)
+        return ee.String(matched_band)

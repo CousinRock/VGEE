@@ -19,12 +19,19 @@ def common_process(layer_ids, results, vis_params, message):
     layer_results = []
     for i, layer_id in enumerate(layer_ids):
         result = ee.Image(results.get(i))
-        datasets[layer_id] = result
-        
         # 获取波段信息
-        bandNames = result.bandNames().getInfo()
-        print(f"Tool_routes.py - common_process - bandNames for {layer_id}:", bandNames)
+        try:
+            bandNames = result.bandNames().getInfo()
+        except Exception as e:
+            print(f"Error getting band names: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': f"Error processing layer: {str(e)}"
+            }), 500
         
+        print(f"Tool_routes.py - common_process - bandNames for {layer_id}:", bandNames)
+
+        datasets[layer_id] = result        
         layer_vis = next((v for v in vis_params if v['id'] == layer_ids[i]), None)
         params = layer_vis['visParams'] if layer_vis else {
             'bands': ['B4', 'B3', 'B2'],
@@ -124,13 +131,13 @@ def calculate_index():
         # 修改这里，传入layer_id
         results = []
         for i, layer_id in enumerate(layer_ids):
-            image = ee.Image(selected_images.get(i))
-            result = IndexTool.calculate_index(image, index_type, layer_id)
-            results.append(result)
             
+                image = ee.Image(selected_images.get(i))
+                result = IndexTool.calculate_index(image, index_type)
+                results.append(result)
+        
+    
         results = ee.List(results)
-        # bandNames = ee.Image(results.get(0)).bandNames().getInfo()
-        # print('Tool_routes.py - calculate_index-bandNames:',bandNames)
         
         return common_process(layer_ids, results, vis_params, f'已添加 {index_type.upper()} 波段')
         
