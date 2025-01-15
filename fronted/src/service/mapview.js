@@ -334,7 +334,8 @@ export const layerManager = {
                     updateWhenIdle: false,
                     updateWhenZooming: false,
                     keepBuffer: 2,
-                    zIndex: newLayer.zIndex
+                    zIndex: newLayer.zIndex,
+                    interactive: false
                 })
 
                 // 4. 添加到地图和图层数组
@@ -645,7 +646,7 @@ export const exportManager = {
                 }
             }
             
-            const response = await fetch(API_ROUTES.LAYER.EXPORT_TO_CLOUD, {
+            const response = await fetch(API_ROUTES.MAP.EXPORT_TO_CLOUD, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody)
@@ -713,8 +714,41 @@ export const toolManager = {
             opacity: 1
         };
     },
-    getPixelValue: async (e) => {
-        const { lat, lng } = e.latlng;
-        console.log(`Clicked at latitude: ${lat}, longitude: ${lng}`);
+    getPixelValue: async (e, isPixelToolActive, pixelValues) => {
+        if (!isPixelToolActive) return;
+        
+        try {
+            const response = await fetch(API_ROUTES.MAP.GET_PIXEL_VALUE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    lat: e.latlng.lat, 
+                    lng: e.latlng.lng 
+                })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                pixelValues.value = data.pixel_values;
+            } else {
+                ElMessage.error(data.message || '获取像素值失败');
+            }
+        } catch (error) {
+            console.error('Error getting pixel values:', error);
+            ElMessage.error('获取像素值失败');
+        }
+    },
+    togglePixelTool: (isPixelToolActive, map, pixelValues) => {
+        isPixelToolActive.value = !isPixelToolActive.value;
+    
+        if (isPixelToolActive.value) {
+            map.value.getContainer().style.cursor = 'crosshair';
+            // 添加点击事件监听器，传入所需参数
+            map.value.on('click', (e) => toolManager.getPixelValue(e, isPixelToolActive, pixelValues));
+        } else {
+            map.value.off('click');
+            map.value.getContainer().style.cursor = '';
+            pixelValues.value = null;
+        }
     }
-};
+}

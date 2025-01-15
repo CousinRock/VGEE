@@ -441,3 +441,46 @@ def export_layer_to_cloud():
             'success': False,
             'message': str(e)
         }), 500
+    
+@map_bp.route('/get-pixel-value', methods=['POST'])
+def get_pixel_value():
+    try:
+        data = request.get_json()
+        lat = data.get('lat')
+        lng = data.get('lng')
+        print(f"Map_routes.py - Received lat: {lat}, lng: {lng}")
+        dataset, datasetsNames = map_service.get_all_datasets()
+
+        point = ee.Geometry.Point([lng, lat])
+        pixel_values = {}  # 创建一个字典来存储结果
+
+        # 遍历所有影像并获取像素值
+        for layer_id, image in dataset.items():
+            try:
+                # 获取该点的像素值
+                pixel_value = ee.Image(image).sample(
+                    region=point, 
+                    scale=60
+                ).first().getInfo()
+                
+                if pixel_value and 'properties' in pixel_value:
+                    # 使用图层名称作为键
+                    layer_name = datasetsNames.get(layer_id, layer_id)
+                    pixel_values[layer_name] = pixel_value['properties']
+            except Exception as e:
+                print(f"Error getting pixel value for layer {layer_id}: {str(e)}")
+                continue
+        
+        return jsonify({
+            'success': True,
+            'message': '获取像素值成功',
+            'pixel_values': pixel_values
+        })
+
+    except Exception as e:
+        print(f"Error getting pixel value: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+

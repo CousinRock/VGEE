@@ -15,14 +15,15 @@ export const API_ROUTES = {
         GET_SAMPLES: `${BASE_URL}/get-samples`,
         RENAME_LAYER: `${BASE_URL}/rename-layer`,
         GET_PIXEL_VALUE: `${BASE_URL}/get-pixel-value`,
+        EXPORT_TO_CLOUD: `${BASE_URL}/export-to-cloud`
     },
 
     // 图层相关
     LAYER: {
         GET_LAYER_INFO: `${BASE_URL}/layer-info`,
         UPDATE_VIS_PARAMS: `${BASE_URL}/update-vis-params`,
-        GET_PROPERTIES: `${BASE_URL}/get-properties`,
-        EXPORT_TO_CLOUD: `${BASE_URL}/export-to-cloud`
+        GET_PROPERTIES: `${BASE_URL}/get-properties`
+        
     },
 
     // 搜索相关
@@ -47,7 +48,11 @@ export const API_ROUTES = {
         KMEANS_CLUSTERING: `${BASE_URL}/tools/kmeans-clustering`,
         HISTOGRAM_EQUALIZATION: `${BASE_URL}/tools/histogram-equalization`,
         RANDOM_FOREST: `${BASE_URL}/tools/random-forest`,
+        SVM: `${BASE_URL}/tools/svm`,
         RASTER_CALCULATOR: `${BASE_URL}/tools/raster-calculator`,
         RENAME_BANDS: `${BASE_URL}/tools/rename-bands`
+    },
+    AI: {
+        SEGMENT: `${BASE_URL}/ai/segment`
     }
 } 

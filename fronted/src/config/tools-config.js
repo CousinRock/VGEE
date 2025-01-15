@@ -96,7 +96,8 @@ export const menuItems = [
                         icon: 'fas fa-brain',
                         description: '使用K-means算法对影像进行无监督分类'
                     },
-                    { id: 'random-forest', label: '随机森林分类', icon: 'fas fa-brain' }
+                    { id: 'random-forest', label: '随机森林', icon: 'fas fa-brain' },
+                    { id: 'svm', label: '支持向量机', icon: 'fas fa-brain' }
                 ]
             },
             {
@@ -110,6 +111,13 @@ export const menuItems = [
         ]
     },
     {
+        id: 'ai-tools',
+        label: 'AI工具',
+        children: [
+            { id: 'clay', label: 'clay model', icon: 'fas fa-brain' },
+        ]
+    },
+    {
         id: 'help',
         label: '帮助',
         children: [
@@ -117,5 +125,5 @@ export const menuItems = [
             { id: 'docs', label: '文档', icon: 'fas fa-book' },
             { id: 'tutorial', label: '教程', icon: 'fas fa-graduation-cap' }
         ]
-    }
+    },
 ] 

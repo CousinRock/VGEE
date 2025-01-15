@@ -63,7 +63,7 @@
 
             <!-- 右侧分类设置区域 -->
             <div v-if="(currentTool?.id === 'kmeans' || currentTool?.id === 'random-forest' || 
-            currentTool?.id === 'raster-calculator' || currentTool?.id === 'image-bands-rename') && selectedLayerName.length > 0"
+            currentTool?.id === 'raster-calculator' || currentTool?.id === 'svm' || currentTool?.id === 'image-bands-rename') && selectedLayerName.length > 0"
                 class="layer-select-right">
                 
                 <!-- K-means 设置 -->
@@ -77,12 +77,13 @@
                 </div>
 
                 <!-- 随机森林设置 -->
-                <div v-if="currentTool?.id === 'random-forest'">
+                <div v-if="currentTool?.id === 'random-forest'||currentTool?.id === 'svm'">
                     <MacLeaClassify 
                         :selectedLayerName="selectedLayerName" 
                         :availableLayers="availableLayers" 
                         :clusterCounts="clusterCounts" 
                         :rfParams="rfParams" 
+                        :svmParams="svmParams"
                         :currentTool="currentTool.id"
                     />
                 </div>
@@ -104,7 +105,6 @@
                         :availableBands="ToolService.getCommonBands(layerBands)" 
                         @update:bands="bands = $event"
                     />
-                    <!-- <RenameBands /> -->
                 </div>
             </div>
         </div>
@@ -166,6 +166,7 @@ const isIndeterminate = ref(false)
 //机器学习分类
 const clusterCounts = ref({})  // 用于存储每个图层的分类数量
 const rfParams = ref({})  // 用于存储随机森林参数
+const svmParams = ref({});
 
 //栅格计算器
 const calculatorExpression = ref('')
@@ -185,6 +186,7 @@ const uploadDataRef = ref(null)
 // 添加 bands 状态变量
 const bands = ref({})  // 用于存储波段映射信息
 
+
 //////////////状态变量///////////////
 
 // 菜单操作方法
@@ -200,6 +202,7 @@ const toggleMenu = (item) => {
 }
 
 const handleSubMenuClick = (item) => {
+    console.log('Tools.vue - handleSubMenuClick - item', item)
     if (item.children) {
         if (activeSubMenu.value === item.id) {
             activeSubMenu.value = ''
@@ -230,8 +233,10 @@ const handleToolClick = async (tool) => {
             case 'bsi':
             case 'histogram-equalization':
             case 'random-forest':
+            case 'svm':
             case 'raster-calculator':
             case 'image-bands-rename':
+            case 'clay':
                 console.log('Tools.vue - handleToolClick - tool', tool)
                 await commonMethod(tool)
                 break
@@ -328,6 +333,16 @@ const handleLayerSelect = async () => {
             )
             console.log('Tools.vue - handleLayerSelect - result', result)
         } 
+        else if (currentTool.value.id === 'svm') {
+            // 支持向量机处理逻辑
+            result = await ToolService.processLayerSelect(
+                selectedLayerName.value,
+                currentTool.value,
+                props.mapView,
+                svmParams.value,
+                isProcessing
+            )
+        }
         else if (currentTool.value.id === 'image-bands-rename') {
             // 重命名波段处理逻辑
             console.log('Tools.vue - handleLayerSelect - bands:', bands.value)

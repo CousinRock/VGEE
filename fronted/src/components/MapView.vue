@@ -13,6 +13,26 @@
                 </div>
             </div>
 
+            <!-- 像素值显示面板 -->
+            <div class="pixel-value-panel" v-if="isPixelToolActive && pixelValues">
+                <h3>Pixel Values</h3>
+                <div class="pixel-values-container">
+                    <div v-for="(values, layerName) in pixelValues" 
+                         :key="layerName" 
+                         class="layer-pixel-values">
+                        <h4>{{ layerName }}</h4>
+                        <div class="band-values">
+                            <div v-for="(value, band) in values" 
+                                 :key="band" 
+                                 class="band-value">
+                                <span class="band-name">{{ band }}:</span>
+                                <span class="band-value-number">{{ value.toFixed(6) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- 图层控制面板 -->
             <div class="layer-control" v-if="showLayerControl">
                 <div class="layer-item">
@@ -380,7 +400,8 @@ const props = defineProps({
 // 状态变量
 const layers = ref([])
 const showLayerControl = ref(false)//图层显示控制
-const isPixelToolActive = ref(false);//像素工具
+const isPixelToolActive = ref(false)//像素工具
+const pixelValues = ref(null)//像素值
 const baseLayerVisible = ref(true)//底图显示控制
 const showBaseMapSettings = ref(false)//底图设置
 const showLayerSettings = ref(false)//图层设置
@@ -450,20 +471,9 @@ const exportScale = ref(30)  // 默认30米分辨率
 const currentExportLayer = ref(null)//当前导出图层
 
 
-// 添加切换像素工具的方法
+// 修改 togglePixelTool 方法
 const togglePixelTool = () => {
-    isPixelToolActive.value = !isPixelToolActive.value;
-    
-    // 根据工具状态添加或移除点击事件
-    if (isPixelToolActive.value) {
-        map.value.on('click', toolManager.getPixelValue);
-        // 改变鼠标样式为十字准星
-        map.value.getContainer().style.cursor = 'crosshair';
-    } else {
-        map.value.off('click', toolManager.getPixelValue);
-        // 恢复默认鼠标样式
-        map.value.getContainer().style.cursor = '';
-    }
+    toolManager.togglePixelTool(isPixelToolActive, map, pixelValues)
 };
 
 // 切换图层控制面板显示
@@ -778,57 +788,42 @@ onUnmounted(() => {
 const initDrawControl = () => {
     // 创建绘制图层组
     drawnItems.value = new L.FeatureGroup()
-    // map.value.addLayer(drawnItems.value)
 
     // 配置绘制控件
     const drawOptions = {
         position: 'topleft',
         draw: {
             polyline: false,
-            polygon: true,
+            polygon: {
+                allowIntersection: false,
+                drawError: {
+                    color: '#e1e100',
+                    message: '<strong>误：</strong>多边形不自相交！'
+                },
+                shapeOptions: {
+                    color: '#bada55',
+                    fillOpacity: 0.5,
+                }
+            },
             circle: false,
             circlemarker: false,
-            rectangle: true,
-            marker: true,
+            rectangle: {
+                showArea: false,
+                shapeOptions: {
+                    color: '#4a80f5',
+                    fill: false,
+                    weight: 5,
+                    clickable: true,
+                },
+                repeatMode: false,
+                metric: false
+            },
+            marker: {
+                icon: new L.Icon.Default(),
+                repeatMode: true,
+            }
         },
-        edit: false  // 禁用编辑工具栏（包括删除工具）
-    };
-
-    // // 单独配置每个绘制具
-    // drawOptions.draw.polyline = {
-    //     shapeOptions: {
-    //         color: '#f357a1',
-    //         weight: 3
-    //     }
-    // };
-
-    drawOptions.draw.polygon = {
-        allowIntersection: false,
-        drawError: {
-            color: '#e1e100',
-            message: '<strong>误：</strong>多边形不自相交！'
-        },
-        shapeOptions: {
-            color: '#bada55',
-            fillOpacity: 0.5
-        }
-    };
-
-    drawOptions.draw.rectangle = {
-        showArea: false,
-        shapeOptions: {
-            color: '#4a80f5',
-            fill: false,
-            weight: 5,
-            clickable: true
-        },
-        repeatMode: false,
-        metric: false
-    };
-
-    drawOptions.draw.marker = {
-        icon: new L.Icon.Default(),
-        repeatMode: true
+        edit: false
     };
 
     // 创建绘制控件
@@ -865,7 +860,7 @@ const initDrawControl = () => {
                         color: '#3388ff',
                         weight: 2,
                         opacity: 1,
-                        fillOpacity: 0.2
+                        fillOpacity: 0.2,
                     },
                     geometry: coordinates,
                     geometryType: geometryType,
@@ -873,7 +868,8 @@ const initDrawControl = () => {
                 };
 
                 const vectorLayer = L.geoJSON(coordinates, {
-                    style: newLayer.visParams
+                    style: newLayer.visParams,
+                    interactive: false
                 });
 
                 newLayer.leafletLayer = vectorLayer;
@@ -1060,6 +1056,13 @@ const confirmExport = async () => {
         ElMessage.error('导出图层失败')
     }
 }
+
+// 在组件卸载时清理事件监听
+onUnmounted(() => {
+    if (map.value) {
+        map.value.off('click');
+    }
+});
 
 </script>
 

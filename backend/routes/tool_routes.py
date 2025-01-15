@@ -148,22 +148,6 @@ def calculate_index():
             'message': str(e)
         }), 500
 
-@tool_bp.route('/supervised-classification', methods=['POST'])
-def supervised_classification():
-    try:
-        data = request.json
-        result = ClassificationTool.supervised_classification(
-            data.get('image'),
-            data.get('training_data'),
-            data.get('params')
-        )
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
 @tool_bp.route('/image-filling', methods=['POST'])
 def image_filling():
     try:
@@ -257,7 +241,7 @@ def kmeans_clustering():
 
              # 获取原始图层名称
             original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
-            kmeans_id = f"kmeans_{layer_id}"  # 为分类结果创建新的ID
+            kmeans_id = f"kmeans_{int(time.time())}-{layer_id}"  # 为分类结果创建新的ID
             
             # 创建新的图层名称，包含原始名称和工具名称
             kmeans_name = f"{original_name} (K-means聚类)"  
@@ -354,7 +338,7 @@ def random_forest():
 
              # 获取原始图层名称
             original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
-            rf_id = f"rf_{layer_id}"  # 为分类结果创建新的ID
+            rf_id = f"rf_{int(time.time())}-{layer_id}"  # 为分类结果创建新的ID
             
             # 创建新的图层名称，包含原始名称和工具名称
             rf_name = f"{original_name} (随机森林分类)"
@@ -537,6 +521,83 @@ def rename_bands():
         
     except Exception as e:
         print(f"Error renaming bands: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@tool_bp.route('/svm', methods=['POST'])
+def svm_classification():
+    try:
+        data = request.json
+        layer_ids = data.get('layer_ids')
+        svm_params = data.get('svm_params', {})
+        
+        # 获取参数
+        kernel = svm_params.get('kernel', 'RBF')
+        train_ratio = svm_params.get('trainRatio', 0.7)
+        print('Tool_routes.py - svm_classification-svm_params:', svm_params)
+        print('Tool_routes.py - svm_classification-train_ratio:', train_ratio)
+        
+        # 获取样本数据
+        samples = get_all_samples()
+        if not samples:
+            raise ValueError('No training samples available')
+            
+        # 获取影像
+        selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
+        
+        # 处理结果
+        layer_results = []
+        bandInfo = ['classification']  # 分类结果波段名
+        num = len(layer_ids)
+        
+        for i, layer_id in enumerate(layer_ids):
+            image = ee.Image(selected_images.toList(num).get(i))
+            classified = ClassificationTool.svm_classification(
+                image, 
+                samples,
+                kernel=kernel,
+                train_ratio=train_ratio
+            )
+
+            # 获取原始图层名称
+            original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
+            svm_id = f"svm_{int(time.time())}-{layer_id}"  # 为分类结果创建新的ID
+            
+            # 创建新的图层名称
+            svm_name = f"{original_name} (SVM分类)"
+            
+            # 设置可视化参数
+            map_id = classified.getMapId({
+                'min': 0,
+                'max': len(samples) - 1
+            })
+            
+            layer_results.append({
+                'layer_id': svm_id,
+                'name': svm_name,
+                'tileUrl': map_id['tile_fetcher'].url_format,
+                'bandInfo': bandInfo,
+                'visParams': {
+                    'bands': bandInfo,
+                    'min': 0,
+                    'max': len(samples) - 1
+                },
+                'type':'Raster'
+            })
+
+            # 保存分类结果到数据集
+            save_dataset(svm_id, classified.select(bandInfo), svm_name)     
+
+        return jsonify({
+            'success': True,
+            'message': 'SVM分类完成',
+            'results': layer_results
+        })
+        
+    except Exception as e:
+        print(f"Error in svm_classification: {str(e)}")
         return jsonify({
             'success': False,
             'message': str(e)

@@ -162,16 +162,17 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
             case 'random-forest':
                 endpoint = API_ROUTES.TOOLS.RANDOM_FOREST
                 requestData = {
-                    layer_ids: selectedLayerName,
-                    rf_params: {
-                        numberOfTrees: params.numberOfTrees,
-                        trainRatio: params.trainRatio
-                    },
-                    vis_params: selectedLayerName.map(id => ({
-                        id: id,
-                        visParams: mapView.layers.find(l => l.id === id)?.visParams
-                    }))
+                    ...createRequestData(selectedLayerName, mapView.layers),
+                    rf_params: params
                 }
+                break
+            case 'svm':
+                endpoint = API_ROUTES.TOOLS.SVM
+                requestData = {
+                    ...createRequestData(selectedLayerName, mapView.layers),
+                    svm_params: params
+                }
+                console.log('Tool.js - processLayerSelect - requestData', requestData)
                 break
             case 'image-filling':
                 endpoint = API_ROUTES.TOOLS.IMAGE_FILLING
@@ -207,6 +208,12 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
                 requestData = {
                     ...createRequestData(selectedLayerName, mapView.layers),
                     bands: params  // 波段映射对象
+                }
+                break
+            case 'clay':
+                endpoint = API_ROUTES.AI.SEGMENT
+                requestData = {
+                    ...createRequestData(selectedLayerName, mapView.layers),
                 }
                 break
             default:

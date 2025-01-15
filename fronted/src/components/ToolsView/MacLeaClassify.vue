@@ -46,6 +46,38 @@
                 </div>
             </div>
         </div>
+
+        <!-- 添加 SVM 分类设置 -->
+        <div v-if="currentTool === 'svm'">
+            <h5>支持向量机设置</h5>
+            <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
+                <div class="layer-name">
+                    {{ availableLayers.find(l => l.id === layerId)?.name }}
+                </div>
+                <div class="option-item">
+                    <label>核函数类型：</label>
+                    <el-select v-model="svmParams.kernel" class="kernel-select">
+                        <el-option label="RBF (径向基函数)" value="RBF" />
+                        <el-option label="Linear (线性核)" value="LINEAR" />
+                    </el-select>
+                </div>
+                <div class="option-item">
+                    <label>训练集比例：</label>
+                    <el-slider 
+                        v-model="svmParams.trainRatio" 
+                        :min="0.5" 
+                        :max="0.9" 
+                        :step="0.1" 
+                        show-input 
+                        :marks="{
+                            0.5: '50%',
+                            0.7: '70%',
+                            0.9: '90%'
+                        }" 
+                    />
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -70,6 +102,11 @@ const props = defineProps({
         required: true
     },
     rfParams: {
+        type: Object,
+        required: true
+    },
+    // 添加 SVM 参数
+    svmParams: {
         type: Object,
         required: true
     }
@@ -99,5 +136,23 @@ const props = defineProps({
     display: block;
     margin-bottom: 8px;
     color: #606266;
+}
+
+/* 添加新样式 */
+.kernel-select {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.el-select {
+    width: 100%;
+}
+
+/* 提示信息样式 */
+.parameter-hint {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 4px;
+    line-height: 1.4;
 }
 </style>

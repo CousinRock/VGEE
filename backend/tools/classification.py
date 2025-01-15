@@ -21,17 +21,6 @@ class ClassificationTool(BaseTool):
         except Exception as e:
             raise Exception(f"Error in kmeans clustering: {str(e)}")
 
-    @staticmethod
-    def supervised_classification(image, training_data, params):
-        """监督分类"""
-        try:
-            # 实现监督分类逻辑
-            return {
-                'success': True,
-                'message': '监督分类完成'
-            }
-        except Exception as e:
-            raise Exception(f"Error in supervised classification: {str(e)}")
 
     @staticmethod
     def random_forest_classification(image, samples, num_trees=50, train_ratio=0.7):
@@ -140,3 +129,96 @@ class ClassificationTool(BaseTool):
         except Exception as e:
             print(f"Error in random forest classification: {str(e)}")
             raise Exception(f"Error in random forest classification: {str(e)}")
+
+    @staticmethod
+    def svm_classification(image, samples, kernel='RBF', train_ratio=0.7):
+        """支持向量机分类
+        Args:
+            image: 输入影像
+            samples: 训练样本
+            kernel: 核函数类型 ('RBF', 'LINEAR')
+            train_ratio: 训练集比例
+        """
+        try:
+            # 创建训练特征集合
+            training_features = ee.FeatureCollection([])
+            
+            # 处理每个类别的样本
+            class_index = 0
+            for layer_id, sample_data in samples.items():
+                features = sample_data['features']
+                class_name = sample_data['class_name']
+                
+                # 将样本转换为 Earth Engine 特征
+                if sample_data['geometry_type'] == 'Point':
+                    points = []
+                    for f in features:
+                        point = ee.Feature(
+                            ee.Geometry.Point(f['coordinates']),
+                            {'class': class_index}
+                        )
+                        points.append(point)
+                    class_features = ee.FeatureCollection(points)
+                    
+                elif sample_data['geometry_type'] == 'Vector':
+                    vector_fc = ee.FeatureCollection(layer_id)
+                    class_features = vector_fc.map(lambda f: f.set('class', class_index))
+                    
+                else:
+                    polygons = []
+                    for f in features:
+                        polygon = ee.Feature(
+                            ee.Geometry.Polygon(f['coordinates']),
+                            {'class': class_index}
+                        )
+                        polygons.append(polygon)
+                    class_features = ee.FeatureCollection(polygons)
+                
+                training_features = training_features.merge(class_features)
+                class_index += 1
+                
+            # 获取图像波段
+            bands = image.bandNames()
+            
+            # 分割训练和测试数据
+            withRandom = training_features.randomColumn('random')
+            training_partition = withRandom.filter(ee.Filter.lt('random', train_ratio))
+            test_partition = withRandom.filter(ee.Filter.gte('random', train_ratio))
+            
+            # 从训练样本中提取值
+            training = image.sampleRegions(
+                collection=training_partition,
+                properties=['class'],
+                scale=30
+            )
+
+            test = image.sampleRegions(
+                collection=test_partition,
+                properties=['class'],
+                scale=30
+            )
+            
+            # 创建和训练分类器
+            classifier = ee.Classifier.libsvm(kernelType=kernel).train(
+                features=training,
+                classProperty='class',
+                inputProperties=bands
+            )
+            
+            # 执行分类
+            classified = image.classify(classifier).toByte()
+            
+            # 获取精度评估
+            trainAccuracy = classifier.confusionMatrix()
+            
+            # 设置分类结果的属性
+            classified = classified.set({
+                'kappa': trainAccuracy.kappa(),
+                'accuracy': trainAccuracy.accuracy()
+            })
+            
+            return classified
+            
+        except Exception as e:
+            print(f"Error in SVM classification: {str(e)}")
+            raise Exception(f"Error in SVM classification: {str(e)}")
