@@ -236,7 +236,7 @@ const handleToolClick = async (tool) => {
             case 'svm':
             case 'raster-calculator':
             case 'image-bands-rename':
-            case 'clay':
+            case 'samgeo-segment':
                 console.log('Tools.vue - handleToolClick - tool', tool)
                 await commonMethod(tool)
                 break

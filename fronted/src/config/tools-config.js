@@ -114,7 +114,7 @@ export const menuItems = [
         id: 'ai-tools',
         label: 'AI工具',
         children: [
-            { id: 'clay', label: 'clay model', icon: 'fas fa-brain' },
+            { id: 'samgeo', label: 'samgeo',children:[{id:'samgeo-segment',label:'segment',icon:'fas fa-brain'}]},
         ]
     },
     {

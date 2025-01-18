@@ -337,10 +337,12 @@ export const layerManager = {
                     zIndex: newLayer.zIndex,
                     interactive: false
                 })
+                newLayer.tileUrl = layerData.url
 
                 // 4. 添加到地图和图层数组
                 newLayer.leafletLayer.addTo(map.value)
                 layers.value.push(newLayer)
+                console.log('MapView.vue - addNewLayer - newLayer', newLayer)
             })
         } catch (error) {
             console.error('Error adding layer:', error)

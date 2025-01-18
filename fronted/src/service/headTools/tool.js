@@ -80,6 +80,7 @@ export const updateMapLayer = async (layerResult, mapView) => {
             max: 0.3,
             gamma: 1.4
         }
+        layer.tileUrl = layerResult.tileUrl
         layer.satellite = layer.satellite || 'LANDSAT'  // 保持卫星信息
 
         console.log('Tool.js - updateMapLayer - updated layer:', layer)
@@ -113,7 +114,8 @@ export const updateMapLayer = async (layerResult, mapView) => {
             },
             zIndex: 1000 + mapView.layers.length,
             satellite: originalLayer?.satellite || 'LANDSAT',
-            type: layerResult.type
+            type: layerResult.type,
+            tileUrl: layerResult.tileUrl
         }
 
         newLayer.leafletLayer = L.tileLayer(layerResult.tileUrl, {
@@ -130,7 +132,7 @@ export const updateMapLayer = async (layerResult, mapView) => {
         if (mapView.map) {
             newLayer.leafletLayer.addTo(mapView.map)
         }
-
+        console.log('Tool.js - updateMapLayer - newLayer', newLayer)
         mapView.layers.push(newLayer)
     }
 }
@@ -210,10 +212,12 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
                     bands: params  // 波段映射对象
                 }
                 break
-            case 'clay':
+            case 'samgeo-segment':
                 endpoint = API_ROUTES.AI.SEGMENT
+                console.log('Tool.js - processLayerSelect - mapView.layers', mapView.layers);
                 requestData = {
                     ...createRequestData(selectedLayerName, mapView.layers),
+                    url:mapView.layers.find(l => l.id === selectedLayerName[0]).tileUrl
                 }
                 break
             default:
