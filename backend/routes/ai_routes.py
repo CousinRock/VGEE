@@ -60,6 +60,13 @@ def segment_image():
         
         # 获取瓦片URL
         map_id = result.getMapId(style_params)
+        
+        # 获取所有特征的坐标
+        features = result.getInfo()['features']
+        coordinates = []
+        for feature in features:
+            coords = feature['geometry']['coordinates'][0]  # 获取每个多边形的外环坐标
+            coordinates.append(coords)
 
         # 返回分割结果
         return jsonify({
@@ -72,7 +79,7 @@ def segment_image():
                 'geometryType': 'Polygon',
                 'tileUrl': map_id['tile_fetcher'].url_format,
                 'visParams': style_params,
-                'bounds': bounds
+                'coordinates': coordinates  # 添加坐标数据
             }]
         }), 200
 

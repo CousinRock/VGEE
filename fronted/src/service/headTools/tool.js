@@ -115,6 +115,26 @@ export const updateMapLayer = async (layerResult, mapView) => {
                 fillOpacity: 0.3
             }
             newLayer.geometryType = layerResult.geometryType
+
+            // 创建 GeoJSON 数据
+            const geojsonData = {
+                type: "FeatureCollection",
+                features: layerResult.coordinates.map(coords => ({
+                    type: "Feature",
+                    geometry: {
+                        type: "Polygon",
+                        coordinates: [coords]  // 每个坐标数组代表一个多边形
+                    },
+                    properties: {}
+                }))
+            };
+
+            console.log('Tool.js - updateMapLayer - geojsonData:', geojsonData);
+
+            // 创建 GeoJSON 图层
+            newLayer.leafletLayer = L.geoJSON(geojsonData, {
+                style: newLayer.visParams
+            });
         } else {
             // 栅格图层的属性
             newLayer.bandInfo = layerResult.bandInfo
@@ -127,19 +147,19 @@ export const updateMapLayer = async (layerResult, mapView) => {
                 gamma: layerResult.visParams?.gamma || 1.4
             }
             newLayer.satellite = originalLayer?.satellite || 'LANDSAT'
-        }
 
-        // 创建 Leaflet 图层
-        newLayer.leafletLayer = L.tileLayer(layerResult.tileUrl, {
-            opacity: newLayer.opacity,
-            maxZoom: 20,
-            maxNativeZoom: 20,
-            tileSize: 256,
-            updateWhenIdle: false,
-            updateWhenZooming: false,
-            keepBuffer: 2,
-            zIndex: newLayer.zIndex
-        })
+            // 创建栅格图层
+            newLayer.leafletLayer = L.tileLayer(layerResult.tileUrl, {
+                opacity: newLayer.opacity,
+                maxZoom: 20,
+                maxNativeZoom: 20,
+                tileSize: 256,
+                updateWhenIdle: false,
+                updateWhenZooming: false,
+                keepBuffer: 2,
+                zIndex: newLayer.zIndex
+            })
+        }
 
         if (mapView.map) {
             newLayer.leafletLayer.addTo(mapView.map)

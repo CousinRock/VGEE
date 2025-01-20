@@ -4,7 +4,7 @@
 
         <!-- 地图工具栏 -->
         <div class="map-tools">
-            <div class="tool-group">          
+            <div class="tool-group">
                 <div class="tool-button" @click="toggleLayerControl" :class="{ active: showLayerControl }" title="图层">
                     <i class="fas fa-layer-group"></i>
                 </div>
@@ -17,14 +17,10 @@
             <div class="pixel-value-panel" v-if="isPixelToolActive && pixelValues">
                 <h3>Pixel Values</h3>
                 <div class="pixel-values-container">
-                    <div v-for="(values, layerName) in pixelValues" 
-                         :key="layerName" 
-                         class="layer-pixel-values">
+                    <div v-for="(values, layerName) in pixelValues" :key="layerName" class="layer-pixel-values">
                         <h4>{{ layerName }}</h4>
                         <div class="band-values">
-                            <div v-for="(value, band) in values" 
-                                 :key="band" 
-                                 class="band-value">
+                            <div v-for="(value, band) in values" :key="band" class="band-value">
                                 <span class="band-name">{{ band }}:</span>
                                 <span class="band-value-number">{{ value.toFixed(6) }}</span>
                             </div>
@@ -59,33 +55,27 @@
                         <div class="layer-actions">
                             <template v-if="layer.type === 'vector' || layer.type === 'manual'">
                                 <el-dropdown trigger="click" :teleported="false">
-                                    <button 
-                                        class="layer-settings" 
-                                        title="图层设置" 
-                                        :disabled="layer.isSettingStudyArea"
-                                    >
+                                    <button class="layer-settings" title="图层设置" :disabled="layer.isSettingStudyArea">
                                         <i :class="[
                                             'fas',
-                                            layer.isSettingStudyArea||layer.isExporting ? 'fa-spinner fa-spin' : 'fa-cog'
+                                            layer.isSettingStudyArea || layer.isExporting ? 'fa-spinner fa-spin' : 'fa-cog'
                                         ]"></i>
                                         <!-- {{ layer.isSettingStudyArea ? '设置中...' : '' }} -->
                                     </button>
                                     <template #dropdown>
                                         <el-dropdown-menu>
-                                            <el-dropdown-item 
+                                            <el-dropdown-item
                                                 v-if="layer.geometryType === 'Polygon' || layer.type === 'vector'"
-                                                @click="toggleStudyArea(layer)" 
-                                                tabindex="0"
-                                            >
-                                                <i :class="layer.isStudyArea ? MENU_ICONS.STUDY_AREA_ACTIVE : MENU_ICONS.STUDY_AREA"></i>
+                                                @click="toggleStudyArea(layer)" tabindex="0">
+                                                <i
+                                                    :class="layer.isStudyArea ? MENU_ICONS.STUDY_AREA_ACTIVE : MENU_ICONS.STUDY_AREA"></i>
                                                 {{ layer.isStudyArea ? '取消研究区域' : '设为研究区域' }}
                                             </el-dropdown-item>
-                                            <el-dropdown-item 
+                                            <el-dropdown-item
                                                 v-if="layer.geometryType === 'Polygon' || layer.type === 'vector' || layer.geometryType === 'Point'"
-                                                @click="toggleSample(layer)" 
-                                                tabindex="0"
-                                            >
-                                                <i :class="layer.isSample ? MENU_ICONS.SAMPLE_ACTIVE : MENU_ICONS.SAMPLE"></i>
+                                                @click="toggleSample(layer)" tabindex="0">
+                                                <i
+                                                    :class="layer.isSample ? MENU_ICONS.SAMPLE_ACTIVE : MENU_ICONS.SAMPLE"></i>
                                                 {{ layer.isSample ? '取消样本' : '设为样本' }}
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="openVectorStyleSettings(layer)" tabindex="0">
@@ -108,11 +98,8 @@
                             </template>
                             <template v-else>
                                 <el-dropdown trigger="click" :teleported="false">
-                                    <button 
-                                        class="layer-settings" 
-                                        title="图层设置"
-                                        :disabled="layer.isLoadingProperties || layer.isExporting"
-                                    >
+                                    <button class="layer-settings" title="图层设置"
+                                        :disabled="layer.isLoadingProperties || layer.isExporting">
                                         <i :class="[
                                             'fas',
                                             layer.isLoadingProperties || layer.isExporting ? 'fa-spinner fa-spin' : 'fa-cog'
@@ -136,7 +123,7 @@
                                                 <i :class="[
                                                     layer.isExporting ? 'fas fa-spinner fa-spin' : MENU_ICONS.EXPORT
                                                 ]"></i>
-                                               导出到云盘
+                                                导出到云盘
                                             </el-dropdown-item>
                                         </el-dropdown-menu>
                                     </template>
@@ -181,12 +168,7 @@
                     <div class="band-select">
                         <label>Band</label>
                         <el-select v-model="visParams.bands[0]">
-                            <el-option 
-                                v-for="band in currentLayer.bandInfo" 
-                                :key="band" 
-                                :label="band" 
-                                :value="band" 
-                            />
+                            <el-option v-for="band in currentLayer.bandInfo" :key="band" :label="band" :value="band" />
                         </el-select>
                     </div>
 
@@ -197,7 +179,8 @@
                             popper-class="palette-select-dropdown">
                             <el-option v-for="(colors, name) in palettes" :key="name" :label="name" :value="name">
                                 <div class="palette-preview-item">
-                                    <div class="palette-preview" :style="toolManager.getPalettePreviewStyle(colors)"></div>
+                                    <div class="palette-preview" :style="toolManager.getPalettePreviewStyle(colors)">
+                                    </div>
                                     <span>{{ name }}</span>
                                 </div>
                             </el-option>
@@ -243,10 +226,11 @@
                 <div class="range-setting">
                     <label>Range:</label>
                     <el-slider v-model="visParams.range" range :min="currentLayer.min" :max="currentLayer.max"
-                        :step="toolManager.getSliderStep(currentLayer.satellite)" :format-tooltip="val => toolManager.formatSliderValue(val)"
-                        @change="handleRangeChange" />
+                        :step="toolManager.getSliderStep(currentLayer.satellite)"
+                        :format-tooltip="val => toolManager.formatSliderValue(val)" @change="handleRangeChange" />
                     <div class="range-values">
-                        {{ toolManager.formatSliderValue(visParams.range[0]) }} – {{ toolManager.formatSliderValue(visParams.range[1]) }}
+                        {{ toolManager.formatSliderValue(visParams.range[0]) }} – {{
+                            toolManager.formatSliderValue(visParams.range[1]) }}
                     </div>
                 </div>
 
@@ -386,7 +370,7 @@ import '@fortawesome/fontawesome-free/css/all.css'
 import 'leaflet-draw'
 import 'leaflet-draw/dist/leaflet.draw.css'
 import { API_ROUTES } from '../api/routes'
-import { layerManager,baseMapManager,toolManager,handleSample, handleStudyArea, handleStyle } from '../service/mapview'
+import { layerManager, baseMapManager, toolManager, handleSample, handleStudyArea, handleStyle } from '../service/mapview'
 import { MENU_ICONS } from '../service/mapview'
 import { exportManager } from '../service/mapview'
 
@@ -704,7 +688,7 @@ const updateRangeBasedOnBands = async (vis) => {
 
 // 应用可视化参数
 const applyVisParams = async () => {
-    layerManager.applyVisParams(map,currentLayer, visParams, showLayerSettings,bandMode, palettes,selectedPalette,layers, API_ROUTES)
+    layerManager.applyVisParams(map, currentLayer, visParams, showLayerSettings, bandMode, palettes, selectedPalette, layers, API_ROUTES)
 }
 
 // 修改波段变化的监听
@@ -831,106 +815,108 @@ const initDrawControl = () => {
 
     map.value.addControl(drawControl.value)
 
-     // 修改绘制完成事件处理
-     map.value.on(L.Draw.Event.CREATED, async (event) => {
-            const layer = event.layer;
-            drawnItems.value.addLayer(layer);
+    // 修改绘制完成事件处理
+    map.value.on(L.Draw.Event.CREATED, async (event) => {
+        const layer = event.layer;
+        drawnItems.value.addLayer(layer);
 
-            let coordinates;
-            let geometryType;
+        let coordinates;
+        let geometryType;
 
-            // 根据类型处理坐标
-            if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
-                // 多边形处理保持不变
-                coordinates = {
-                    type: 'Polygon',
-                    coordinates: [layer.getLatLngs()[0].map(latLng => [latLng.lng, latLng.lat])]
-                };
-                geometryType = 'Polygon';
+        // 根据类型处理坐标
+        if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
+            // 多边形处理保持不变
+            coordinates = {
+                type: 'Polygon',
+                coordinates: [layer.getLatLngs()[0].map(latLng => [latLng.lng, latLng.lat])]
+            };
+            geometryType = 'Polygon';
+            console.log('MapView.vue - initDrawControl - coordinates:', coordinates.coordinates);
 
-                // 多边形仍然创建独立图层
-                const newLayer = {
-                    id: `drawn_${Date.now()}`,
-                    name: '绘制区域',
-                    type: 'manual',
-                    visible: true,
-                    isStudyArea: false,
+
+            // 多边形仍然创建独立图层
+            const newLayer = {
+                id: `drawn_${Date.now()}`,
+                name: '绘制区域',
+                type: 'manual',
+                visible: true,
+                isStudyArea: false,
+                opacity: 1,
+                visParams: {
+                    color: '#3388ff',
+                    weight: 2,
                     opacity: 1,
+                    fillOpacity: 0.2,
+                },
+                geometry: coordinates,
+                geometryType: geometryType,
+                zIndex: 1000 + layers.value.length
+            };
+
+            const vectorLayer = L.geoJSON(coordinates, {
+                style: newLayer.visParams,
+                interactive: false
+            });
+
+            newLayer.leafletLayer = vectorLayer;
+            layers.value.push(newLayer);
+            vectorLayer.addTo(map.value);
+        }
+        else if (layer instanceof L.Marker) {
+            coordinates = {
+                type: 'Point',
+                coordinates: [layer.getLatLng().lng, layer.getLatLng().lat]
+            };
+
+            // 查找或创建点图层
+            let pointLayer = layers.value.find(l => l.id === `points_layer_${pointLayerCounter.value}`);
+            if (!pointLayer) {
+                // 创建新的点图层
+                pointLayer = {
+                    id: `points_layer_${pointLayerCounter.value}`,
+                    name: `点集合 ${pointLayerCounter.value + 1}`,
+                    icon: 'fas fa-map-marker-alt',
+                    type: 'manual',
+                    geometryType: 'Point',
+                    visible: true,
+                    opacity: 1,
+                    features: [],
                     visParams: {
-                        color: '#3388ff',
+                        radius: 6,
+                        fillColor: "#3388ff",
+                        color: "#ffffff",
                         weight: 2,
                         opacity: 1,
-                        fillOpacity: 0.2,
-                    },
-                    geometry: coordinates,
-                    geometryType: geometryType,
-                    zIndex: 1000 + layers.value.length
+                        fillOpacity: 0.8
+                    }
                 };
 
-                const vectorLayer = L.geoJSON(coordinates, {
-                    style: newLayer.visParams,
-                    interactive: false
-                });
+                // 创建 Leaflet 图层
+                pointLayer.leafletLayer = L.geoJSON({
+                    type: 'FeatureCollection',
+                    features: []
+                }, {
+                    pointToLayer: (feature, latlng) => {
+                        return L.circleMarker(latlng, pointLayer.visParams);
+                    }
+                }).addTo(map.value);
 
-                newLayer.leafletLayer = vectorLayer;
-                layers.value.push(newLayer);
-                vectorLayer.addTo(map.value);
+                // 添加到图层列表
+                layers.value.push(pointLayer);
             }
-            else if (layer instanceof L.Marker) {
-                coordinates = {
-                    type: 'Point',
-                    coordinates: [layer.getLatLng().lng, layer.getLatLng().lat]
-                };
-                
-                // 查找或创建点图层
-                let pointLayer = layers.value.find(l => l.id === `points_layer_${pointLayerCounter.value}`);
-                if (!pointLayer) {
-                    // 创建新的点图层
-                    pointLayer = {
-                        id: `points_layer_${pointLayerCounter.value}`,
-                        name: `点集合 ${pointLayerCounter.value + 1}`,
-                        icon: 'fas fa-map-marker-alt',
-                        type: 'manual',
-                        geometryType: 'Point',
-                        visible: true,
-                        opacity: 1,
-                        features: [],
-                        visParams: {
-                            radius: 6,
-                            fillColor: "#3388ff",
-                            color: "#ffffff",
-                            weight: 2,
-                            opacity: 1,
-                            fillOpacity: 0.8
-                        }
-                    };
 
-                    // 创建 Leaflet 图层
-                    pointLayer.leafletLayer = L.geoJSON({
-                        type: 'FeatureCollection',
-                        features: []
-                    }, {
-                        pointToLayer: (feature, latlng) => {
-                            return L.circleMarker(latlng, pointLayer.visParams);
-                        }
-                    }).addTo(map.value);
+            // 添加新点到特征集合
+            pointLayer.features.push(coordinates);
+            pointFeatures.value = [...pointLayer.features];
 
-                    // 添加到图层列表
-                    layers.value.push(pointLayer);
-                }
-
-                // 添加新点到特征集合
-                pointLayer.features.push(coordinates);
-                pointFeatures.value = [...pointLayer.features];
-
-                // 只添加新点，而不是重新创建整个图层
-                pointLayer.leafletLayer.addData({
-                    type: 'Feature',
-                    geometry: coordinates,
-                    properties: {}
-                });
-            }
-        });
+            // 只添加新点，而不是重新创建整个图层
+            pointLayer.leafletLayer.addData({
+                type: 'Feature',
+                geometry: coordinates,
+                properties: {}
+            });
+        }
+    });
 }
 
 // 在 script setup 中添加
@@ -997,7 +983,7 @@ const showLayerProperties = async (layer) => {
         currentLayer.value = layer
         const response = await fetch(`${API_ROUTES.LAYER.GET_PROPERTIES}?id=${layer.id}`)
         const data = await response.json()
-        
+
         if (data.success) {
             layerProperties.value = Object.entries(data.properties).map(([name, value]) => ({
                 name,
@@ -1037,14 +1023,14 @@ const exportLayer = (layer) => {
 const confirmExport = async () => {
     const layer = currentExportLayer.value
     if (!layer) return
-    
+
     // 修改这里：使用 .value.isExporting
     currentExportLayer.value.isExporting = true
-    
+
     try {
         await exportManager.exportToCloud(
-            layer, 
-            API_ROUTES, 
+            layer,
+            API_ROUTES,
             exportFolder.value,
             exportScale.value
         )
