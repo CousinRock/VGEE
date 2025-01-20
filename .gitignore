@@ -1,1 +1,23 @@
- 
+# Model cache directories
+backend/cache/
+**/cache/
+
+# Model files
+*.pt
+*.pth
+*.bin
+*.onnx
+
+# HuggingFace cache
+.huggingface/
+**/.huggingface/
+
+# Temporary files
+*.tmp
+*-*-*-*
+bf*-*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class 

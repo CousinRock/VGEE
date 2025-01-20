@@ -2,7 +2,7 @@ import { API_ROUTES } from '../../api/routes'
 import { ElMessage } from 'element-plus'
 
 // 修改 loadAssets 方法
-export const onLoadAssets = async (folder = null,isLoadingAssets,assetsList) => {
+export const onLoadAssets = async (folder = null, isLoadingAssets, assetsList) => {
     try {
         isLoadingAssets.value = true
         const url = new URL(API_ROUTES.UPLOAD.GET_ASSETS)
@@ -29,7 +29,7 @@ export const onLoadAssets = async (folder = null,isLoadingAssets,assetsList) => 
 }
 
 // 修改资产选择处理方法
-export const onHandleAssetSelect = async (data,selectedAsset) => {
+export const onHandleAssetSelect = async (data, selectedAsset) => {
     try {
         // 如果是文件夹，不进行选择
         if (data.type === 'FOLDER') {
@@ -168,8 +168,8 @@ const handleImageAsset = async (selectedAsset, mapView) => {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ 
-                asset_id: selectedAsset.id ,
+            body: JSON.stringify({
+                asset_id: selectedAsset.id,
                 layerName: selectedAsset.name
             })
         })

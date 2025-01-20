@@ -76,8 +76,8 @@ def compute_image_stats(dataset, bands,region=None):
         max_values = max_keys.map(lambda key: ee.Number(ee.Dictionary(stats).get(key)))
         
          # 计算全局最小值和最大值
-        global_min = ee.Number(min_values.reduce(ee.Reducer.min()))
-        global_max = ee.Number(max_values.reduce(ee.Reducer.max()))
+        global_min = ee.Number(min_values.reduce(ee.Reducer.min())).multiply(ee.Number(0.8))
+        global_max = ee.Number(max_values.reduce(ee.Reducer.max())).multiply(ee.Number(1.2))
         
         # 返回全局最小值和最大值
         return ee.Dictionary({
@@ -115,7 +115,10 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
                 collection = collection.filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_cover))
             else:
                 print("No cloud cover attribute found for filtering.")
-
+            
+            # 区域过滤
+            if region:
+                collection = collection.filterBounds(region)
 
             # 根据合成方式选择不同的处理方法
             if compositeMethod == 'mean':

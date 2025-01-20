@@ -41,9 +41,8 @@ export const createRequestData = (selectedIds, layers) => {
 
 // 更新地图图层
 export const updateMapLayer = async (layerResult, mapView) => {
-    // 查找现有图层
+    console.log('Tool.js - updateMapLayer - layerResult', layerResult)
     const layer = mapView.layers.find(l => l.id === layerResult.layer_id)
-    console.log('Tool.js - updateMapLayer - layer', layer)
 
     if (layer) {
         // 更新现有图层
@@ -92,7 +91,6 @@ export const updateMapLayer = async (layerResult, mapView) => {
     } else {
         // 处理新图层
         const [originalId] = layerResult.layer_id.split('_')
-        console.log('Tool.js - updateMapLayer - originalId', originalId)
         const originalLayer = mapView.layers.find(l => l.id === originalId)
 
         const newLayer = {
@@ -102,22 +100,36 @@ export const updateMapLayer = async (layerResult, mapView) => {
             visible: true,
             opacity: 1,
             leafletLayer: null,
-            bandInfo: layerResult.bandInfo,  // 保存完整的波段信息
-            visParams: {
-                // 如果有超过3个波段，默认显示前3个波段
-                bands: layerResult.bandInfo.length > 3 
-                    ? layerResult.bandInfo.slice(0, 3) 
-                    : layerResult.bandInfo,
-                min: layerResult.visParams.min,
-                max: layerResult.visParams.max,
-                gamma: layerResult.visParams.gamma || 1.4
-            },
             zIndex: 1000 + mapView.layers.length,
-            satellite: originalLayer?.satellite || 'LANDSAT',
             type: layerResult.type,
             tileUrl: layerResult.tileUrl
         }
 
+        // 根据图层类型添加不同的属性
+        if (layerResult.type === 'vector') {
+            // 矢量图层的属性
+            newLayer.visParams = layerResult.visParams || {
+                color: '#ff0000',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.3
+            }
+            newLayer.geometryType = layerResult.geometryType
+        } else {
+            // 栅格图层的属性
+            newLayer.bandInfo = layerResult.bandInfo
+            newLayer.visParams = {
+                bands: layerResult.bandInfo?.length > 3
+                    ? layerResult.bandInfo.slice(0, 3)
+                    : layerResult.bandInfo,
+                min: layerResult.visParams?.min,
+                max: layerResult.visParams?.max,
+                gamma: layerResult.visParams?.gamma || 1.4
+            }
+            newLayer.satellite = originalLayer?.satellite || 'LANDSAT'
+        }
+
+        // 创建 Leaflet 图层
         newLayer.leafletLayer = L.tileLayer(layerResult.tileUrl, {
             opacity: newLayer.opacity,
             maxZoom: 20,
@@ -131,8 +143,9 @@ export const updateMapLayer = async (layerResult, mapView) => {
 
         if (mapView.map) {
             newLayer.leafletLayer.addTo(mapView.map)
+            newLayer.leafletLayer.setZIndex(newLayer.zIndex)
         }
-        console.log('Tool.js - updateMapLayer - newLayer', newLayer)
+
         mapView.layers.push(newLayer)
     }
 }
@@ -214,12 +227,16 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
                 break
             case 'samgeo-segment':
                 endpoint = API_ROUTES.AI.SEGMENT
-                console.log('Tool.js - processLayerSelect - mapView.layers', mapView.layers);
+                const layer = mapView.layers.find(l => l.id === selectedLayerName[0])
+                console.log('Tool.js - processLayerSelect - layer', layer)
                 requestData = {
-                    ...createRequestData(selectedLayerName, mapView.layers),
-                    url:mapView.layers.find(l => l.id === selectedLayerName[0]).tileUrl
+                    layer_ids: selectedLayerName,
+                    url: layer.tileUrl,
+                    min: layer.visParams.min,
+                    max: layer.visParams.max
                 }
                 break
+
             default:
                 throw new Error('未知的工具类型')
         }
@@ -233,12 +250,14 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
         })
 
         const data = await response.json()
+        console.log('Tool.js - processLayerSelect - data', data)
 
         if (!data.success) {
             throw new Error(data.message || '处理失败')
         }
         // 更新地图图层
         for (const result of data.results) {
+
             await updateMapLayer(result, mapView)
         }
 
@@ -263,7 +282,7 @@ export const getLayerBands = (mapView, layerId) => {
 // 获取所选图层的共同波段
 export const getCommonBands = (layerBands) => {
     console.log('Tools.vue - getCommonBands - layerBands', layerBands);
-    
+
     // 提取所有图层的波段名
     const allBands = Object.values(layerBands).map(bands => new Set(bands));
 

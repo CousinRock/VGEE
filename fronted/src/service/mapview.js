@@ -114,7 +114,7 @@ export const handleStudyArea = {
             layer.isStudyArea = !layer.isStudyArea;
 
             // 准备请求参数
-            const endpoint = layer.isStudyArea ? 
+            const endpoint = layer.isStudyArea ?
                 API_ROUTES.MAP.FILTER_BY_GEOMETRY : API_ROUTES.MAP.REMOVE_GEOMETRY;
 
             const requestBody = {
@@ -149,7 +149,7 @@ export const handleStyle = {
     openVectorStyleSettings: (layer, currentVectorLayer, vectorStyle, showVectorStyleDialog) => {
         currentVectorLayer.value = layer;
         console.log('MapView.vue - openVectorStyleSettings - layer:', layer);
-        
+
         if (layer.geometryType === 'Point') {
             vectorStyle.value = {
                 color: layer.visParams.fillColor,
@@ -157,7 +157,7 @@ export const handleStyle = {
                 opacity: layer.visParams.opacity,
                 fillOpacity: layer.visParams.fillOpacity
             };
-        } else if(layer.geometryType === 'Polygon') {
+        } else if (layer.geometryType === 'Polygon') {
             vectorStyle.value = {
                 color: layer.visParams.color,
                 opacity: layer.visParams.opacity,
@@ -179,6 +179,8 @@ export const handleStyle = {
     applyVectorStyle: async (currentVectorLayer, vectorStyle, showVectorStyleDialog, map) => {
         try {
             if (!currentVectorLayer.value) return;
+
+            console.log('MapView.vue - applyVectorStyle - currentVectorLayer:', currentVectorLayer.value);
             if (currentVectorLayer.value.geometryType === 'Point') {
                 currentVectorLayer.value.visParams = {
                     radius: vectorStyle.value.weight * 3,
@@ -188,11 +190,11 @@ export const handleStyle = {
                     opacity: vectorStyle.value.opacity,
                     fillOpacity: vectorStyle.value.fillOpacity
                 };
-    
+
                 // 更新点图层
                 handleStyle.updatePointLayer(currentVectorLayer.value, map);
             }
-            else if(currentVectorLayer.value.geometryType === 'Polygon') {
+            else if (currentVectorLayer.value.geometryType === 'Polygon') {
                 const style = {
                     color: vectorStyle.value.color,
                     weight: vectorStyle.value.weight,
@@ -204,8 +206,8 @@ export const handleStyle = {
             }
             else {
                 // 转换颜色格式
-                const colorInfo = convertColor(vectorStyle.value.color);
-                
+                const colorInfo = toolManager.convertColor(vectorStyle.value.color);
+
                 // 准备样式参数，只使用 Earth Engine 支持的参数
                 const style_params = {
                     color: '#' + colorInfo.color,
@@ -286,7 +288,7 @@ export const handleStyle = {
             }
         }).addTo(map);
     }
-}; 
+};
 
 // 栅格图层管理相关方法
 export const layerManager = {
@@ -322,7 +324,7 @@ export const layerManager = {
                     },
                     min: mapData.overlayLayers[0].min,
                     max: mapData.overlayLayers[0].max,
-                    type:mapData.type
+                    type: mapData.type
                 }
 
                 // 3. 创建 Leaflet 图层
@@ -361,7 +363,7 @@ export const layerManager = {
                     ElMessage.error('该图层仍在被用作研究区，无法移除')
                     return
                 }
-                if(layer.isSample) {
+                if (layer.isSample) {
                     ElMessage.error('该图层仍在被用作样本点，无法移除')
                     return
                 }
@@ -427,7 +429,7 @@ export const layerManager = {
             if (layer.leafletLayer && layer.visible) {
                 const zIndex = 1000 + index;
                 layer.zIndex = zIndex;
-    
+
                 // 只有栅格图层才有 setZIndex 方法
                 if (layer.type === 'manual' || layer.type === 'vector') {
                     // 对于矢量图层，需要重新添加到地图以更新顺序
@@ -447,16 +449,16 @@ export const layerManager = {
     updateRangeBasedOnBands: async (currentLayer, vis, visParams, API_ROUTES) => {
         try {
             if (!currentLayer.value) return;
-    
+
             // 添加加载状态到 Apply 按钮
             const applyButton = document.querySelector('.el-dialog__body .button-group .el-button--primary')
-            if (applyButton) {   
+            if (applyButton) {
                 applyButton.disabled = true
                 applyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 计算中...'
                 console.log('MapView.vue - updateRangeBasedOnBands - applyButton:', applyButton.innerHTML)
             }
             console.log('MapView.vue - updateRangeBasedOnBands - vis:', vis);
-    
+
             // 调用后端口计算统计值
             const response = await fetch(API_ROUTES.MAP.COMPUTE_STATS, {
                 method: 'POST',
@@ -468,18 +470,18 @@ export const layerManager = {
                     bands: visParams.bands
                 })
             });
-    
+
             const result = await response.json();
-    
+
             if (result.success) {
                 // 使用范围标准化函数处理最大最小值
                 const normalizedRange = normalizeRange(result.min, result.max);
-    
+
                 // 更新当前图层最大小值
                 currentLayer.value.min = normalizedRange.min;
                 currentLayer.value.max = normalizedRange.max;
-    
-    
+
+
                 console.log('MapView.vue - updateRangeBasedOnBands - new range:', normalizedRange);
             } else {
                 // 如果计算失败，使用传入的值
@@ -550,9 +552,9 @@ export const layerManager = {
                 if (layer) {
                     // 修改图层移除逻辑
                     if (layer.leafletLayer && map.value.hasLayer(layer.leafletLayer)) {
-                            layerChangeRemove(map.value, layer.leafletLayer);
+                        layerChangeRemove(map.value, layer.leafletLayer);
                     }
-    
+
                     // 创建新图层
                     const newLeafletLayer = L.tileLayer(data.tileUrl, {
                         opacity: currentLayer.value.opacity,
@@ -564,11 +566,11 @@ export const layerManager = {
                         keepBuffer: 2,
                         zIndex: layer.zIndex
                     })
-    
+
                     // 更新图层引用和参数
                     layer.leafletLayer = newLeafletLayer
                     layer.visParams = { ...updatedVisParams }
-    
+
                     // 如果图层是可见的，则添加到地图
                     if (layer.visible) {
                         newLeafletLayer.addTo(map.value)
@@ -596,7 +598,7 @@ export const baseMapManager = {
     // 切换底图
     changeBaseMap: (map, baseLayer, baseMaps, selectedBaseMap, baseLayerVisible) => {
         // 正确移除旧底图
-        if (baseLayer) {   
+        if (baseLayer) {
             layerChangeRemove(map.value, baseLayer)
         }
 
@@ -615,7 +617,7 @@ export const baseMapManager = {
                 newBaseLayer.addTo(map.value)
                 newBaseLayer.setZIndex(0)
             }
-            
+
             return newBaseLayer  // 返回新创建的图层
         }
         return null
@@ -627,7 +629,7 @@ export const exportManager = {
     exportToCloud: async (layer, API_ROUTES, folder = 'EarthEngine_Exports', scale = 30) => {
         try {
             console.log('MapView.vue - exportToCloud - layer:', layer);
-            
+
             const requestBody = {
                 layer_id: layer.id,
                 layer_name: layer.name,
@@ -637,7 +639,7 @@ export const exportManager = {
                 folder: folder,
                 scale: scale  // 添加分辨率参数
             };
-            
+
             if (layer.type === 'manual') {
                 if (layer.geometryType === 'Polygon') {
                     requestBody.features = [{
@@ -647,7 +649,7 @@ export const exportManager = {
                     requestBody.features = layer.features;
                 }
             }
-            
+
             const response = await fetch(API_ROUTES.MAP.EXPORT_TO_CLOUD, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -678,12 +680,12 @@ export const toolManager = {
     },
     getSliderStep: (satelliteType) => {
         if (!satelliteType) return 0.1;
-             return 0.001;
+        return 0.001;
     },
     formatSliderValue: (value) => {
         return value.toFixed(3);
     },
-    debounce : (fn, delay) => {
+    debounce: (fn, delay) => {
         let timer = null;
         return function (...args) {
             if (timer) clearTimeout(timer);
@@ -692,7 +694,7 @@ export const toolManager = {
             }, delay);
         };
     },
-    convertColor : (color) => {
+    convertColor: (color) => {
         // 如果是 rgba 格式，转换为十六进制
         if (color.startsWith('rgba')) {
             const values = color.match(/[\d.]+/g);
@@ -701,7 +703,7 @@ export const toolManager = {
                 const g = parseInt(values[1]);
                 const b = parseInt(values[2]);
                 const a = parseFloat(values[3]);
-                
+
                 // 转换为十六进制，不包含 # 符号
                 const hex = ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
                 return {
@@ -718,17 +720,17 @@ export const toolManager = {
     },
     getPixelValue: async (e, isPixelToolActive, pixelValues) => {
         if (!isPixelToolActive) return;
-        
+
         try {
             const response = await fetch(API_ROUTES.MAP.GET_PIXEL_VALUE, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    lat: e.latlng.lat, 
-                    lng: e.latlng.lng 
+                body: JSON.stringify({
+                    lat: e.latlng.lat,
+                    lng: e.latlng.lng
                 })
             });
-            
+
             const data = await response.json();
             if (data.success) {
                 pixelValues.value = data.pixel_values;
@@ -742,7 +744,7 @@ export const toolManager = {
     },
     togglePixelTool: (isPixelToolActive, map, pixelValues) => {
         isPixelToolActive.value = !isPixelToolActive.value;
-    
+
         if (isPixelToolActive.value) {
             map.value.getContainer().style.cursor = 'crosshair';
             // 添加点击事件监听器，传入所需参数
