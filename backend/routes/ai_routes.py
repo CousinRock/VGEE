@@ -33,10 +33,9 @@ def segment_image():
             bounds[2][0],  # max_x
             bounds[2][1]   # max_y
         ]
-        print('ai_routes-segment_image-image_bounds',image_bounds)
 
-        # 获取缩略图 URL
-        dimensions = '1024x1024'  # 动态调整图像尺寸参数
+        # 获取缩略图URL
+        dimensions = '1024x1024'
         url = image.getThumbURL({
             'region': image.geometry(),
             'min': layer_min,
@@ -45,28 +44,10 @@ def segment_image():
         })
 
         print(f"Generated URL: {url}")
-        result = segment_img(url, image_bounds, dimensions)
+        coordinates = segment_img(url, image_bounds, dimensions)
         
-        if result is None:
+        if coordinates is None:
             raise ValueError("Segmentation failed")
-            
-        # 设置样式参数
-        style_params = {
-            'color': 'ff0000',  # 红色
-            'width': 2,
-            'opacity': 1,
-            'fillOpacity': 0.5
-        }
-        
-        # 获取瓦片URL
-        map_id = result.getMapId(style_params)
-        
-        # 获取所有特征的坐标
-        features = result.getInfo()['features']
-        coordinates = []
-        for feature in features:
-            coords = feature['geometry']['coordinates'][0]  # 获取每个多边形的外环坐标
-            coordinates.append(coords)
 
         # 返回分割结果
         return jsonify({
@@ -77,9 +58,13 @@ def segment_image():
                 'name': 'SAM预测结果',
                 'type': 'vector',
                 'geometryType': 'Polygon',
-                'tileUrl': map_id['tile_fetcher'].url_format,
-                'visParams': style_params,
-                'coordinates': coordinates  # 添加坐标数据
+                'coordinates': coordinates,  # 直接返回坐标数组
+                'visParams': {
+                    'color': '#ff0000',
+                    'width': 2,
+                    'opacity': 1,
+                    'fillOpacity': 0.5
+                }
             }]
         }), 200
 

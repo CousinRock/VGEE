@@ -251,7 +251,6 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
                 console.log('Tool.js - processLayerSelect - layer', layer)
                 requestData = {
                     layer_ids: selectedLayerName,
-                    url: layer.tileUrl,
                     min: layer.visParams.min,
                     max: layer.visParams.max
                 }

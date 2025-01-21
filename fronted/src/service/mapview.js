@@ -678,8 +678,7 @@ export const toolManager = {
             background: `linear-gradient(to right, ${colors.join(',')})`
         }
     },
-    getSliderStep: (satelliteType) => {
-        if (!satelliteType) return 0.1;
+    getSliderStep: () => {
         return 0.001;
     },
     formatSliderValue: (value) => {

@@ -267,15 +267,15 @@
                 </div>
                 <div class="style-item">
                     <span>边框宽度</span>
-                    <el-slider v-model="vectorStyle.weight" :min="1" :max="5" :step="0.5" />
+                    <el-slider v-model="vectorStyle.weight" :min="0" :max="10" :step="0.01" />
                 </div>
                 <div class="style-item">
                     <span>边框透明度</span>
-                    <el-slider v-model="vectorStyle.opacity" :min="0" :max="1" :step="0.1" />
+                    <el-slider v-model="vectorStyle.opacity" :min="0" :max="1" :step="0.01" />
                 </div>
                 <div class="style-item">
                     <span>填充透明度</span>
-                    <el-slider v-model="vectorStyle.fillOpacity" :min="0" :max="1" :step="0.1" />
+                    <el-slider v-model="vectorStyle.fillOpacity" :min="0" :max="1" :step="0.01" />
                 </div>
             </div>
             <template #footer>
