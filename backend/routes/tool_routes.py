@@ -101,6 +101,7 @@ def cloud_removal():
         data = request.json
         layer_ids = data.get('layer_ids')
         vis_params = data.get('vis_params', [])
+        print('Tool_routes.py - cloud_removal-layer_ids:', layer_ids)
         
         PreprocessingTool.validate_inputs(layer_ids, datasets)
         selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
@@ -403,10 +404,12 @@ def raster_calculator():
         }
     try:
         data = request.json
+        print('Tool_routes.py - raster_calculator-data:',data)
         layer_ids = data.get('layer_ids')
-        params = data.get('expression', {})
-        expression = params.get('expression')
-        calc_mode = params.get('mode', 'single')
+        # params = data.get('expression', {})
+        expression = data.get('expression')
+        calc_mode = data.get('mode', 'single')
+        
         
         if not layer_ids or not expression:
             raise ValueError('Missing required parameters')

@@ -1,7 +1,7 @@
 <template>
     <div class="mac-lea-classify">
         <h4>分类设置</h4>
-        
+
         <!-- K-means 分类设置 -->
         <div v-if="currentTool === 'kmeans'">
             <h5>K-means 分类设置</h5>
@@ -63,18 +63,11 @@
                 </div>
                 <div class="option-item">
                     <label>训练集比例：</label>
-                    <el-slider 
-                        v-model="svmParams.trainRatio" 
-                        :min="0.5" 
-                        :max="0.9" 
-                        :step="0.1" 
-                        show-input 
-                        :marks="{
-                            0.5: '50%',
-                            0.7: '70%',
-                            0.9: '90%'
-                        }" 
-                    />
+                    <el-slider v-model="svmParams.trainRatio" :min="0.5" :max="0.9" :step="0.1" show-input :marks="{
+                        0.5: '50%',
+                        0.7: '70%',
+                        0.9: '90%'
+                    }" />
                 </div>
             </div>
         </div>
@@ -118,20 +111,24 @@ const props = defineProps({
 .mac-lea-classify {
     padding: 10px;
 }
+
 .layer-option-item {
     margin-bottom: 20px;
     padding: 15px;
     background-color: #f5f7fa;
     border-radius: 4px;
 }
+
 .layer-name {
     font-weight: bold;
     margin-bottom: 10px;
     color: #409EFF;
 }
+
 .option-item {
     margin-bottom: 10px;
 }
+
 .option-item label {
     display: block;
     margin-bottom: 8px;

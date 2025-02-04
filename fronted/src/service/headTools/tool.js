@@ -1,6 +1,7 @@
 import { ElMessage } from 'element-plus'
 import L from 'leaflet'
 import { API_ROUTES } from '../../api/routes'
+import { TOOLS_CONFIG } from '../../config/tools-config'
 
 // 获取可用图层的通用方法
 export const getAvailableLayers = async () => {
@@ -170,97 +171,26 @@ export const updateMapLayer = async (layerResult, mapView) => {
     }
 }
 
-// 处理图层选择
-export const processLayerSelect = async (selectedLayerName, currentTool, mapView, params, isProcessing) => {
-    if (selectedLayerName.length === 0) {
-        ElMessage.warning('请选择至少一个图层')
-        return false
+// 统一的工具处理函数
+export const processLayerSelect = async (selectedLayers, currentTool, mapView, params, isProcessing) => {
+    const toolConfig = TOOLS_CONFIG.getToolById(currentTool.id)
+    if (!toolConfig) {
+        throw new Error('未知的工具类型')
     }
 
     try {
         isProcessing.value = true
-        let endpoint = ''
-        let requestData = {}
-        // console.log('Tool.js - processLayerSelect - selectedLayerName', selectedLayerName)
-        switch (currentTool.id) {
-            case 'cloud-removal':
-                endpoint = API_ROUTES.TOOLS.CLOUD_REMOVAL
-                requestData = createRequestData(selectedLayerName, mapView.layers)
-                break
-            case 'kmeans':
-                endpoint = API_ROUTES.TOOLS.KMEANS_CLUSTERING
-                requestData = {
-                    ...createRequestData(selectedLayerName, mapView.layers),
-                    cluster_counts: params
-                }
-                break
-            case 'random-forest':
-                endpoint = API_ROUTES.TOOLS.RANDOM_FOREST
-                requestData = {
-                    ...createRequestData(selectedLayerName, mapView.layers),
-                    rf_params: params
-                }
-                break
-            case 'svm':
-                endpoint = API_ROUTES.TOOLS.SVM
-                requestData = {
-                    ...createRequestData(selectedLayerName, mapView.layers),
-                    svm_params: params
-                }
-                console.log('Tool.js - processLayerSelect - requestData', requestData)
-                break
-            case 'image-filling':
-                endpoint = API_ROUTES.TOOLS.IMAGE_FILLING
-                requestData = createRequestData(selectedLayerName, mapView.layers)
-                break
-            case 'ndvi':
-            case 'ndwi':
-            case 'ndbi':
-            case 'evi':
-            case 'savi':
-            case 'mndwi':
-            case 'bsi':
-                endpoint = API_ROUTES.TOOLS.CALCULATE_INDEX
-                requestData = {
-                    ...createRequestData(selectedLayerName, mapView.layers),
-                    index_type: currentTool.id
-                }
-                break
-            case 'histogram-equalization':
-                endpoint = API_ROUTES.TOOLS.HISTOGRAM_EQUALIZATION
-                requestData = createRequestData(selectedLayerName, mapView.layers)
-                break
-            case 'raster-calculator':
-                console.log('Tool.js - processLayerSelect - layer', mapView.layers.find(l => l.id === selectedLayerName[0].id))
-                endpoint = API_ROUTES.TOOLS.RASTER_CALCULATOR
-                requestData = {
-                    ...createRequestData(selectedLayerName, mapView.layers),
-                    expression: params
-                }
-                break
-            case 'image-bands-rename':
-                endpoint = API_ROUTES.TOOLS.RENAME_BANDS
-                requestData = {
-                    ...createRequestData(selectedLayerName, mapView.layers),
-                    bands: params  // 波段映射对象
-                }
-                break
-            case 'samgeo-segment':
-                endpoint = API_ROUTES.AI.SEGMENT
-                const layer = mapView.layers.find(l => l.id === selectedLayerName[0])
-                console.log('Tool.js - processLayerSelect - layer', layer)
-                requestData = {
-                    layer_ids: selectedLayerName,
-                    min: layer.visParams.min,
-                    max: layer.visParams.max
-                }
-                break
 
-            default:
-                throw new Error('未知的工具类型')
+        // 验证参数
+        if (toolConfig.validate) {
+            toolConfig.validate(params)
         }
 
-        const response = await fetch(endpoint, {
+        // 构建请求数据
+        const requestData = toolConfig.processParams(selectedLayers, mapView, params)
+
+        // 发送请求
+        const response = await fetch(toolConfig.endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -269,22 +199,25 @@ export const processLayerSelect = async (selectedLayerName, currentTool, mapView
         })
 
         const data = await response.json()
-        console.log('Tool.js - processLayerSelect - data', data)
 
         if (!data.success) {
             throw new Error(data.message || '处理失败')
         }
-        // 更新地图图层
-        for (const result of data.results) {
 
-            await updateMapLayer(result, mapView)
+        // 处理结果
+        if (toolConfig.processResult) {
+            await toolConfig.processResult(data, mapView)
+        } else {
+            // 默认处理逻辑
+            for (const result of data.results) {
+                await updateMapLayer(result, mapView)
+            }
         }
 
         ElMessage.success(data.message || '处理完成')
         return true
-
     } catch (error) {
-        console.error('Error processing layers:', error)
+        console.error('Error processing tool:', error)
         ElMessage.error(error.message || '处理失败')
         return false
     } finally {
@@ -313,4 +246,3 @@ export const getCommonBands = (layerBands) => {
     console.log('共同波段:', commonBands);
     return commonBands;
 }
-

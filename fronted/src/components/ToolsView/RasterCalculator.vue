@@ -87,8 +87,8 @@
         <!-- 计算表达式输入框 -->
         <div class="expression-input">
             <h5>计算表达式:</h5>
-            <el-input v-model="calculatorExpression" type="textarea" :rows="4"
-                placeholder="点击波段和运算符按钮生成表达式，可手动输入数字" @input="emitExpression" />
+            <el-input v-model="calculatorExpression" type="textarea" :rows="4" placeholder="点击波段和运算符按钮生成表达式，可手动输入数字"
+                @input="emitExpression" />
             <div class="expression-actions">
                 <el-button size="small" @click="clearExpression">清除</el-button>
                 <el-button size="small" @click="backspace">回退</el-button>
@@ -117,7 +117,15 @@ const props = defineProps({
 
 })
 
-const emit = defineEmits(['update-expression','update-calcumode']) // 定义事件
+// // 定义 props
+// const props = defineProps({
+//     mapView: {
+//         type: Object,
+//         required: true
+//     }
+// })
+
+const emit = defineEmits(['update-expression', 'update-calcumode']) // 定义事件
 
 const calculatorMode = ref('single') // 计算模式
 const calculatorExpression = ref('') // 计算表达式
@@ -164,13 +172,13 @@ const insertFunction = (func) => {
 // 修改波段点击处理方法
 const handleBandClick = (layerId, band) => {
     const layerName = props.availableLayers.find(l => l.id === layerId)?.name || layerId
-    console.log('RasterCalculator.vue - handleBandClick - layerName:',layerName)
-    console.log('RasterCalculator.vue - handleBandClick - calculatorMode:',calculatorMode.value)
+    console.log('RasterCalculator.vue - handleBandClick - layerName:', layerName)
+    console.log('RasterCalculator.vue - handleBandClick - calculatorMode:', calculatorMode.value)
     if (calculatorMode.value === 'multi') {
         // 多图层模式：使用图层名.波段的格式
         calculatorExpression.value += `${layerName}.${band}`
     } else if (calculatorMode.value === 'all_bands') {
-        calculatorExpression.value += "'"+ band +"'"
+        calculatorExpression.value += "'" + band + "'"
     } else {
         // 单图层模式：直接使用波段名
         calculatorExpression.value += `${band}`

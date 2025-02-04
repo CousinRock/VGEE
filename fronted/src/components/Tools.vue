@@ -18,16 +18,9 @@
                             <i :class="tool.icon"></i>
                             <span>{{ tool.label }}</span>
                             <!-- 为 search-data-id 添加输入框，只在激活时显示 -->
-                            <div v-if="tool.id === 'search-data-id' && activeSearchId" 
-                                class="id-search" 
-                                @click.stop
-                            >
-                                <el-input 
-                                    v-model="customDatasetId"
-                                    placeholder="输入数据集ID"
-                                    size="small"
-                                    @keyup.enter="handleCustomIdSearch"
-                                >
+                            <div v-if="tool.id === 'search-data-id' && activeSearchId" class="id-search" @click.stop>
+                                <el-input v-model="customDatasetId" placeholder="输入数据集ID" size="small"
+                                    @keyup.enter="handleCustomIdSearch">
                                     <template #append>
                                         <el-button @click="handleCustomIdSearch">搜索</el-button>
                                     </template>
@@ -42,8 +35,9 @@
     </div>
 
     <!-- 修改图层选择对话框 -->
-    <el-dialog v-model="showLayerSelect" :title="getDialogTitle"
-        :width="['kmeans', 'raster-calculator', 'image-bands-rename'].includes(currentTool?.id) ? '800px' : '400px'" width="800px">
+    <el-dialog v-model="showLayerSelect" :title="'选择需要处理的图层'"
+        :width="['kmeans', 'raster-calculator', 'image-bands-rename'].includes(currentTool?.id) ? '800px' : '400px'"
+        width="800px">
         <div class="layer-select-content"
             :class="{ 'with-settings': ['kmeans', 'raster-calculator', 'image-bands-rename'].includes(currentTool?.id) }">
             <div class="layer-select-left">
@@ -62,50 +56,48 @@
             </div>
 
             <!-- 右侧分类设置区域 -->
-            <div v-if="(currentTool?.id === 'kmeans' || currentTool?.id === 'random-forest' || 
-            currentTool?.id === 'raster-calculator' || currentTool?.id === 'svm' || currentTool?.id === 'image-bands-rename') && selectedLayerName.length > 0"
+            <div v-if="(currentTool?.id === TOOL_IDS.CLASSIFICATION.KMEANS
+                || currentTool?.id === TOOL_IDS.CLASSIFICATION.RANDOM_FOREST
+                || currentTool?.id === TOOL_IDS.CLASSIFICATION.SVM
+                || currentTool?.id === TOOL_IDS.RASTER_OPERATION.CALCULATOR
+                || currentTool?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME) && selectedLayerName.length > 0"
                 class="layer-select-right">
-                
+
+
+
                 <!-- K-means 设置 -->
-                <div v-if="currentTool?.id === 'kmeans'">
-                    <MacLeaClassify 
-                        :selectedLayerName="selectedLayerName" 
-                        :availableLayers="availableLayers" 
-                        :clusterCounts="clusterCounts" 
-                        :currentTool="currentTool.id"
-                    />
+                <div v-if="currentTool?.id === TOOL_IDS.CLASSIFICATION.KMEANS">
+                    <MacLeaClassify :selectedLayerName="selectedLayerName" :availableLayers="availableLayers"
+                        :clusterCounts="clusterCounts" :currentTool="currentTool.id" />
                 </div>
 
+
                 <!-- 随机森林设置 -->
-                <div v-if="currentTool?.id === 'random-forest'||currentTool?.id === 'svm'">
-                    <MacLeaClassify 
-                        :selectedLayerName="selectedLayerName" 
-                        :availableLayers="availableLayers" 
-                        :clusterCounts="clusterCounts" 
-                        :rfParams="rfParams" 
-                        :svmParams="svmParams"
-                        :currentTool="currentTool.id"
-                    />
+                <div v-if="currentTool?.id === TOOL_IDS.CLASSIFICATION.RANDOM_FOREST
+                    || currentTool?.id === TOOL_IDS.CLASSIFICATION.SVM">
+                    <MacLeaClassify :selectedLayerName="selectedLayerName" :availableLayers="availableLayers"
+                        :clusterCounts="clusterCounts" :rfParams="rfParams" :svmParams="svmParams"
+                        :currentTool="currentTool.id" />
+
                 </div>
 
                 <!-- 栅格计算器设置 -->
-                <div v-if="currentTool?.id === 'raster-calculator'">
-                    <RasterCalculator 
-                        :selectedLayerName="selectedLayerName" 
-                        :availableLayers="availableLayers" 
-                        :layerBands="layerBands" 
-                        @update-expression="calculatorExpression = $event"
-                        @update-calcumode="calculatorMode = $event"
-                    />
+                <div v-if="currentTool?.id === TOOL_IDS.RASTER_OPERATION.CALCULATOR">
+                    <RasterCalculator :selectedLayerName="selectedLayerName" :availableLayers="availableLayers"
+                        :layerBands="layerBands" @update-expression="calculatorExpression = $event"
+                        @update-calcumode="calculatorMode = $event" />
+
                 </div>
+                <!-- <div v-if="currentTool?.id === TOOL_IDS.RASTER_OPERATION.CALCULATOR">
+                    <RasterCalculator ref="rasterCalculatorRef" :mapView="mapView" />
+                </div> -->
 
                 <!-- 重命名波段 -->
-                <div v-if="currentTool?.id === 'image-bands-rename'">
-                    <RenameBands 
-                        :availableBands="ToolService.getCommonBands(layerBands)" 
-                        @update:bands="bands = $event"
-                    />
+                <div v-if="currentTool?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME">
+                    <RenameBands :availableBands="ToolService.getCommonBands(layerBands)"
+                        @update:bands="bands = $event" />
                 </div>
+
             </div>
         </div>
 
@@ -120,7 +112,8 @@
     </el-dialog>
 
     <!-- 搜索数据 -->
-    <SearchResults v-if="showSearchResults" :datasets="searchResults" @select="onDatasetSelect" @close="showSearchResults = false" />
+    <SearchResults v-if="showSearchResults" :datasets="searchResults" @select="onDatasetSelect"
+        @close="showSearchResults = false" />
     <!-- 上传数据 -->
     <UploadData ref="uploadDataRef" :mapView="mapView" />
 </template>
@@ -128,7 +121,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { menuItems } from '../config/tools-config'
+import { TOOLS_CONFIG, TOOL_IDS } from '../config/tools-config'
 
 //自定义工具
 import * as ToolService from '../service/headTools/tool'// 导入工具服务
@@ -183,9 +176,33 @@ const activeSearchId = ref(false)
 //上传数据
 const uploadDataRef = ref(null)
 
+const rasterCalculatorRef = ref(null)
+
 // 添加 bands 状态变量
 const bands = ref({})  // 用于存储波段映射信息
 
+// 添加 toolParams 计算属性
+const toolParams = computed(() => {
+    if (!currentTool.value) return null
+
+    switch (currentTool.value.id) {
+        case TOOL_IDS.CLASSIFICATION.KMEANS:
+            return clusterCounts.value
+        case TOOL_IDS.CLASSIFICATION.RANDOM_FOREST:
+            return rfParams.value
+        case TOOL_IDS.CLASSIFICATION.SVM:
+            return svmParams.value
+        case TOOL_IDS.RASTER_OPERATION.CALCULATOR:
+            return {
+                expression: calculatorExpression.value,
+                mode: calculatorMode.value
+            }
+        case TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME:
+            return bands.value
+        default:
+            return null
+    }
+})
 
 //////////////状态变量///////////////
 
@@ -215,52 +232,51 @@ const handleSubMenuClick = (item) => {
     }
 }
 
-// 工具处理方法
-const handleToolClick = async (tool) => {
+// 在 handleToolClick 之前添加 handleSpecialTool 方法
+const handleSpecialTool = async (tool) => {
     try {
-        // 处理其他工具...
         switch (tool.id) {
-            case 'cloud-removal':
-            case 'image-filling':
-            case 'kmeans':
-            // 添加所有指数计算的处理
-            case 'ndvi':
-            case 'ndwi':
-            case 'ndbi':
-            case 'evi':
-            case 'savi':
-            case 'mndwi':
-            case 'bsi':
-            case 'histogram-equalization':
-            case 'random-forest':
-            case 'svm':
-            case 'raster-calculator':
-            case 'image-bands-rename':
-            case 'samgeo-segment':
-                console.log('Tools.vue - handleToolClick - tool', tool)
-                await commonMethod(tool)
-                break
-            case 'upload-vector-assets':
+            case TOOL_IDS.UPLOAD.VECTOR:
                 uploadDataRef.value.showAssetsDialog = true
                 await uploadDataRef.value.loadAssets()
-                break              
-            // 添加搜索数据的处理逻辑
-            case 'search-data-landsat':
-            case 'search-data-sentinel':
-            case 'search-data-modis':
-            case 'search-data-viirs':
-            case 'search-data-dem':
+                break
+            case TOOL_IDS.SEARCH.LANDSAT:
+            case TOOL_IDS.SEARCH.SENTINEL:
+            case TOOL_IDS.SEARCH.MODIS:
+            case TOOL_IDS.SEARCH.VIIRS:
+            case TOOL_IDS.SEARCH.DEM:
                 const datasetType = tool.label
                 const datasets = await SearchDataService.searchData(datasetType)
                 searchResults.value = datasets
-                console.log('Tools.vue - handleToolClick - searchResults', searchResults.value)
                 showSearchResults.value = true
                 break
-            case 'search-data-id':
-                activeSearchId.value = !activeSearchId.value // 切换输入框的显示状态
+            case TOOL_IDS.SEARCH.ID:
+                activeSearchId.value = !activeSearchId.value
                 break
             default:
                 ElMessage.warning('该功能尚未实现')
+        }
+    } catch (error) {
+        console.error('Error handling special tool:', error)
+        ElMessage.error('工具执行失败')
+    }
+}
+
+// 工具处理方法
+const handleToolClick = async (tool) => {
+    const toolConfig = TOOLS_CONFIG.getToolById(tool.id)
+    console.log('Tools.vue-handleToolClick-toolConfig', toolConfig)
+    if (!toolConfig) {
+        ElMessage.warning('该功能尚未实现')
+        return
+    }
+    console.log('Tools.vue-handleToolClick-tool', tool)
+    try {
+        if (toolConfig.requireLayers) {
+            await commonMethod(tool)
+        } else {
+            // 处理特殊工具（搜索、上传等）
+            await handleSpecialTool(tool)
         }
     } catch (error) {
         console.error('Error handling tool click:', error)
@@ -279,14 +295,6 @@ const commonMethod = async (tool) => {
     showLayerSelect.value = true
 }
 
-// 添加对话框标题计算属性
-const getDialogTitle = computed(() => {
-    if (currentTool.value?.id === 'kmeans') {
-        return '选择需要分类的图层'
-    }
-    return '选择需要处理的图'
-})
-
 // 图层选择处理
 const handleLayerSelect = async () => {
     if (!selectedLayerName.value.length) {
@@ -295,76 +303,13 @@ const handleLayerSelect = async () => {
     }
 
     try {
-        let result
-        if (currentTool.value.id === 'raster-calculator') {
-            if (!calculatorExpression.value) {
-                ElMessage.warning('请输入计算表达式')
-                return
-            }
-            console.log('Tools.vue - handleLayerSelect - calculatorMode:', calculatorMode.value)
-            // 添加计算模式参数
-            result = await ToolService.processLayerSelect(
-                selectedLayerName.value,
-                currentTool.value,
-                props.mapView,
-                {
-                    expression: calculatorExpression.value,
-                    mode: calculatorMode.value
-                },
-                isProcessing
-            )
-        } else if (currentTool.value.id === 'kmeans') {
-            // kmeans 处理逻辑
-            result = await ToolService.processLayerSelect(
-                selectedLayerName.value,
-                currentTool.value,
-                props.mapView,
-                clusterCounts.value,
-                isProcessing
-            )
-        } else if (currentTool.value.id === 'random-forest') {
-            // 随机森林处理逻辑
-            result = await ToolService.processLayerSelect(
-                selectedLayerName.value,
-                currentTool.value,
-                props.mapView,
-                rfParams.value,
-                isProcessing
-            )
-            console.log('Tools.vue - handleLayerSelect - result', result)
-        } 
-        else if (currentTool.value.id === 'svm') {
-            // 支持向量机处理逻辑
-            result = await ToolService.processLayerSelect(
-                selectedLayerName.value,
-                currentTool.value,
-                props.mapView,
-                svmParams.value,
-                isProcessing
-            )
-        }
-        else if (currentTool.value.id === 'image-bands-rename') {
-            // 重命名波段处理逻辑
-            console.log('Tools.vue - handleLayerSelect - bands:', bands.value)
-            result = await ToolService.processLayerSelect(
-                selectedLayerName.value,
-                currentTool.value,
-                props.mapView,
-                bands.value,  // 传递波段映射信息
-                isProcessing
-            )
-        } 
-        else {
-            // 其他工具处理逻辑
-            result = await ToolService.processLayerSelect(
-                selectedLayerName.value,
-                currentTool.value,
-                props.mapView,
-                null,       // 如果工具不需要额外参数，传入 null
-                isProcessing  // 为所有工具都传入 isProcessing
-            )
-        }
-
+        const result = await ToolService.processLayerSelect(
+            selectedLayerName.value,
+            currentTool.value,
+            props.mapView,
+            toolParams.value,  // 使用计算属性
+            isProcessing
+        )
 
         if (result) {
             showLayerSelect.value = false
@@ -399,29 +344,13 @@ watch(showLayerSelect, (newVal) => {
     }
 })
 
-// 监听选中图层的变化，初始化分类数量
-watch(selectedLayerName, (newVal) => {
-    if (currentTool.value?.id === 'kmeans') {
-        // 为新选中的图层设置默认值
-        newVal.forEach(layerId => {
-            if (!clusterCounts.value[layerId]) {
-                clusterCounts.value[layerId] = 5  // 默认5类
-            }
-        })
-        // 清理未选中的图层
-        Object.keys(clusterCounts.value).forEach(layerId => {
-            if (!newVal.includes(layerId)) {
-                delete clusterCounts.value[layerId]
-            }
-        })
-    }
-})
-
 // 监听选中图层的变化，初始化波段信息
 watch(selectedLayerName, async (newVal) => {
-    if (currentTool.value?.id === 'raster-calculator' || currentTool.value?.id === 'image-bands-rename') {
+    if (currentTool.value?.id === TOOL_IDS.RASTER_OPERATION.CALCULATOR
+        || currentTool.value?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME) {
         for (const layerId of newVal) {
             if (!layerBands.value[layerId]) {
+
                 layerBands.value[layerId] = ToolService.getLayerBands(props.mapView, layerId)
                 console.log('Tools.vue - watch - layerBands', layerBands.value)
             }
@@ -453,6 +382,12 @@ const onDatasetSelect = (dataset) => {
 const handleCustomIdSearch = () => {
     SearchDataService.handleIdSearch(customDatasetId.value, searchResults, showSearchResults)
 }
+
+// 替换 menuItems 的使用
+const menuItems = computed(() => TOOLS_CONFIG.getMenuItems())
+
+// 替换工具配置的获取方式
+const toolConfig = computed(() => currentTool.value ? TOOLS_CONFIG.getToolById(currentTool.value.id) : null)
 </script>
 
 <style src="../styles/tools.css"></style>
