@@ -43,12 +43,14 @@
             <div class="layer-select-left">
                 <!-- 添加全选复选框 -->
                 <div class="select-all-option">
-                    <el-checkbox v-model="selectAll" @change="handleSelectAllChange" :indeterminate="isIndeterminate">
+                    <el-checkbox v-model="selectAll" @change="handleSelectAllChange" :indeterminate="isIndeterminate"
+                        :disabled="!availableLayers.length">
                         全选
                     </el-checkbox>
                 </div>
 
-                <el-checkbox-group v-model="selectedLayerName" @change="handleCheckedLayersChange">
+                <el-checkbox-group v-model="selectedLayerName" @change="handleCheckedLayersChange"
+                    :disabled="!availableLayers.length">
                     <div v-for="layer in availableLayers" :key="layer.id" class="layer-option">
                         <el-checkbox :label="layer.id">{{ layer.name }}</el-checkbox>
                     </div>
@@ -63,39 +65,29 @@
                 || currentTool?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME) && selectedLayerName.length > 0"
                 class="layer-select-right">
 
-
-
                 <!-- K-means 设置 -->
                 <div v-if="currentTool?.id === TOOL_IDS.CLASSIFICATION.KMEANS">
-                    <MacLeaClassify :selectedLayerName="selectedLayerName" :availableLayers="availableLayers"
-                        :clusterCounts="clusterCounts" :currentTool="currentTool.id" />
+                    <MacLeaClassify ref="macLeaClassifyRef" :selectedLayerName="selectedLayerName"
+                        :availableLayers="availableLayers" :currentTool="currentTool.id" />
                 </div>
 
-
-                <!-- 随机森林设置 -->
+                <!-- 随机森林、svm设置 -->
                 <div v-if="currentTool?.id === TOOL_IDS.CLASSIFICATION.RANDOM_FOREST
                     || currentTool?.id === TOOL_IDS.CLASSIFICATION.SVM">
-                    <MacLeaClassify :selectedLayerName="selectedLayerName" :availableLayers="availableLayers"
-                        :clusterCounts="clusterCounts" :rfParams="rfParams" :svmParams="svmParams"
-                        :currentTool="currentTool.id" />
-
+                    <MacLeaClassify ref="macLeaClassifyRef" :selectedLayerName="selectedLayerName"
+                        :availableLayers="availableLayers" :currentTool="currentTool.id" />
                 </div>
 
                 <!-- 栅格计算器设置 -->
                 <div v-if="currentTool?.id === TOOL_IDS.RASTER_OPERATION.CALCULATOR">
-                    <RasterCalculator :selectedLayerName="selectedLayerName" :availableLayers="availableLayers"
-                        :layerBands="layerBands" @update-expression="calculatorExpression = $event"
-                        @update-calcumode="calculatorMode = $event" />
-
+                    <RasterCalculator ref="rasterCalculatorRef" :selectedLayerName="selectedLayerName"
+                        :availableLayers="availableLayers" :layerBands="layerBands" />
                 </div>
-                <!-- <div v-if="currentTool?.id === TOOL_IDS.RASTER_OPERATION.CALCULATOR">
-                    <RasterCalculator ref="rasterCalculatorRef" :mapView="mapView" />
-                </div> -->
 
                 <!-- 重命名波段 -->
                 <div v-if="currentTool?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME">
-                    <RenameBands :availableBands="ToolService.getCommonBands(layerBands)"
-                        @update:bands="bands = $event" />
+                    <RenameBands ref="renameBandsRef" :availableBands="ToolService.getCommonBands(layerBands)"
+                        :layerBands="layerBands" />
                 </div>
 
             </div>
@@ -155,16 +147,7 @@ const selectedLayerName = ref([])
 const currentTool = ref(null)
 const selectAll = ref(false)
 const isIndeterminate = ref(false)
-
-//机器学习分类
-const clusterCounts = ref({})  // 用于存储每个图层的分类数量
-const rfParams = ref({})  // 用于存储随机森林参数
-const svmParams = ref({});
-
-//栅格计算器
-const calculatorExpression = ref('')
 const layerBands = ref({})  // 存储每个图层的波段信息
-const calculatorMode = ref('single')
 
 //搜索数据
 const showSearchResults = ref(false)
@@ -175,11 +158,12 @@ const activeSearchId = ref(false)
 
 //上传数据
 const uploadDataRef = ref(null)
-
+//栅格计算器
 const rasterCalculatorRef = ref(null)
-
-// 添加 bands 状态变量
-const bands = ref({})  // 用于存储波段映射信息
+//机器学习
+const macLeaClassifyRef = ref(null)
+//重命名波段
+const renameBandsRef = ref(null)
 
 // 添加 toolParams 计算属性
 const toolParams = computed(() => {
@@ -187,18 +171,19 @@ const toolParams = computed(() => {
 
     switch (currentTool.value.id) {
         case TOOL_IDS.CLASSIFICATION.KMEANS:
-            return clusterCounts.value
+            return macLeaClassifyRef.value?.classifyParams?.clusterCounts || {}
         case TOOL_IDS.CLASSIFICATION.RANDOM_FOREST:
-            return rfParams.value
+            return macLeaClassifyRef.value?.classifyParams?.rfParams || {}
         case TOOL_IDS.CLASSIFICATION.SVM:
-            return svmParams.value
+            return macLeaClassifyRef.value?.classifyParams?.svmParams || {}
         case TOOL_IDS.RASTER_OPERATION.CALCULATOR:
+            if (!rasterCalculatorRef.value?.calculatorParams) return {}
             return {
-                expression: calculatorExpression.value,
-                mode: calculatorMode.value
+                expression: rasterCalculatorRef.value.calculatorParams.expression || '',
+                mode: rasterCalculatorRef.value.calculatorParams.mode || 'single'
             }
         case TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME:
-            return bands.value
+            return renameBandsRef.value?.renameBandsParams?.bands || []
         default:
             return null
     }
@@ -289,7 +274,11 @@ const commonMethod = async (tool) => {
     const layers = await ToolService.getAvailableLayers()
     if (!layers) return
 
-    selectedLayerName.value = []  // 清空之前的选择
+    // 重置选择状态
+    selectedLayerName.value = []
+    selectAll.value = false
+    isIndeterminate.value = false
+
     availableLayers.value = layers
     currentTool.value = tool
     showLayerSelect.value = true
@@ -322,25 +311,35 @@ const handleLayerSelect = async () => {
 
 // 处理全选变化
 const handleSelectAllChange = (val) => {
-    selectedLayerName.value = val ? availableLayers.value.map(layer => layer.id) : []
+    // 添加判断，确保有可用图层时才能全选
+    if (val && availableLayers.value.length > 0) {
+        selectedLayerName.value = availableLayers.value.map(layer => layer.id)
+    } else {
+        selectedLayerName.value = []
+    }
     isIndeterminate.value = false
 }
 
 // 处理选中图层变化
 const handleCheckedLayersChange = (value) => {
-    const checkedCount = value.length
-    selectAll.value = checkedCount === availableLayers.value.length
-    isIndeterminate.value = checkedCount > 0 && checkedCount < availableLayers.value.length
+    // 只有在有可用图层时才更新全选状态
+    if (availableLayers.value.length > 0) {
+        const checkedCount = value.length
+        selectAll.value = checkedCount === availableLayers.value.length
+        isIndeterminate.value = checkedCount > 0 && checkedCount < availableLayers.value.length
+    } else {
+        selectAll.value = false
+        isIndeterminate.value = false
+    }
 }
 
 // 在显示对话框时重置状态
 watch(showLayerSelect, (newVal) => {
     if (newVal) {
+        // 重置选择状态
         selectAll.value = false
         isIndeterminate.value = false
         selectedLayerName.value = []
-        // 重置分类数量
-        clusterCounts.value = {}
     }
 })
 

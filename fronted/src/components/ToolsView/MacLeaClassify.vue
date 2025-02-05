@@ -11,12 +11,13 @@
                 </div>
                 <div class="option-item">
                     <label>分类数量：</label>
-                    <el-slider v-model="clusterCounts[layerId]" :min="2" :max="20" :step="1" show-input :marks="{
-                        2: '2',
-                        5: '5',
-                        10: '10',
-                        20: '20',
-                    }" />
+                    <el-slider v-model="classifyParams.clusterCounts[layerId]" :min="2" :max="20" :step="1" show-input
+                        :marks="{
+                            2: '2',
+                            5: '5',
+                            10: '10',
+                            20: '20',
+                        }" />
                 </div>
             </div>
         </div>
@@ -30,24 +31,26 @@
                 </div>
                 <div class="option-item">
                     <label>决策树数量：</label>
-                    <el-slider v-model="rfParams.numberOfTrees" :min="10" :max="100" :step="10" show-input :marks="{
-                        10: '10',
-                        50: '50',
-                        100: '100'
-                    }" />
+                    <el-slider v-model="classifyParams.rfParams.numberOfTrees" :min="10" :max="100" :step="10"
+                        show-input :marks="{
+                            10: '10',
+                            50: '50',
+                            100: '100'
+                        }" />
                 </div>
                 <div class="option-item">
                     <label>训练集比例：</label>
-                    <el-slider v-model="rfParams.trainRatio" :min="0.5" :max="0.9" :step="0.1" show-input :marks="{
-                        0.5: '50%',
-                        0.7: '70%',
-                        0.9: '90%'
-                    }" />
+                    <el-slider v-model="classifyParams.rfParams.trainRatio" :min="0.5" :max="0.9" :step="0.1" show-input
+                        :marks="{
+                            0.5: '50%',
+                            0.7: '70%',
+                            0.9: '90%'
+                        }" />
                 </div>
             </div>
         </div>
 
-        <!-- 添加 SVM 分类设置 -->
+        <!-- SVM 分类设置 -->
         <div v-if="currentTool === 'svm'">
             <h5>支持向量机设置</h5>
             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
@@ -56,18 +59,19 @@
                 </div>
                 <div class="option-item">
                     <label>核函数类型：</label>
-                    <el-select v-model="svmParams.kernel" class="kernel-select">
+                    <el-select v-model="classifyParams.svmParams.kernel" class="kernel-select">
                         <el-option label="RBF (径向基函数)" value="RBF" />
                         <el-option label="Linear (线性核)" value="LINEAR" />
                     </el-select>
                 </div>
                 <div class="option-item">
                     <label>训练集比例：</label>
-                    <el-slider v-model="svmParams.trainRatio" :min="0.5" :max="0.9" :step="0.1" show-input :marks="{
-                        0.5: '50%',
-                        0.7: '70%',
-                        0.9: '90%'
-                    }" />
+                    <el-slider v-model="classifyParams.svmParams.trainRatio" :min="0.5" :max="0.9" :step="0.1"
+                        show-input :marks="{
+                            0.5: '50%',
+                            0.7: '70%',
+                            0.9: '90%'
+                        }" />
                 </div>
             </div>
         </div>
@@ -75,7 +79,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 const props = defineProps({
     selectedLayerName: {
@@ -86,24 +90,35 @@ const props = defineProps({
         type: Array,
         required: true
     },
-    clusterCounts: {
-        type: Object,
-        required: true
-    },
     currentTool: {
         type: String,
         required: true
-    },
-    rfParams: {
-        type: Object,
-        required: true
-    },
-    // 添加 SVM 参数
-    svmParams: {
-        type: Object,
-        required: true
     }
 });
+
+// 统一管理分类参数
+const classifyParams = ref({
+    clusterCounts: {},  // K-means的分类数量
+    rfParams: {         // 随机森林参数
+        numberOfTrees: 50,
+        trainRatio: 0.7
+    },
+    svmParams: {        // SVM参数
+        kernel: 'RBF',
+        trainRatio: 0.7
+    }
+});
+
+// 监听参数变化
+watch(classifyParams, (newVal) => {
+    console.log('MacLeaClassify.vue - watch - classifyParams:', newVal)
+}, { deep: true });
+
+// 暴露方法和状态给父组件
+defineExpose({
+    classifyParams
+})
+
 </script>
 
 <style scoped>
