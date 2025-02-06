@@ -35,11 +35,16 @@
     </div>
 
     <!-- 修改图层选择对话框 -->
-    <el-dialog v-model="showLayerSelect" :title="'选择需要处理的图层'"
-        :width="['kmeans', 'raster-calculator', 'image-bands-rename'].includes(currentTool?.id) ? '800px' : '400px'"
-        width="800px">
-        <div class="layer-select-content"
-            :class="{ 'with-settings': ['kmeans', 'raster-calculator', 'image-bands-rename'].includes(currentTool?.id) }">
+    <el-dialog v-model="showLayerSelect" :title="'选择需要处理的图层'" :width="[TOOL_IDS.CLASSIFICATION.KMEANS,
+    TOOL_IDS.RASTER_OPERATION.CALCULATOR,
+    TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME,
+    TOOL_IDS.AI.LANGSAM].includes(currentTool?.id) ? '800px' : '400px'" width="800px">
+        <div class="layer-select-content" :class="{
+            'with-settings': [TOOL_IDS.CLASSIFICATION.KMEANS,
+            TOOL_IDS.RASTER_OPERATION.CALCULATOR,
+            TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME,
+            TOOL_IDS.AI.LANGSAM].includes(currentTool?.id)
+        }">
             <div class="layer-select-left">
                 <!-- 添加全选复选框 -->
                 <div class="select-all-option">
@@ -62,7 +67,8 @@
                 || currentTool?.id === TOOL_IDS.CLASSIFICATION.RANDOM_FOREST
                 || currentTool?.id === TOOL_IDS.CLASSIFICATION.SVM
                 || currentTool?.id === TOOL_IDS.RASTER_OPERATION.CALCULATOR
-                || currentTool?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME) && selectedLayerName.length > 0"
+                || currentTool?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME
+                || currentTool?.id === TOOL_IDS.AI.LANGSAM) && selectedLayerName.length > 0"
                 class="layer-select-right">
 
                 <!-- K-means 设置 -->
@@ -88,6 +94,12 @@
                 <div v-if="currentTool?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME">
                     <RenameBands ref="renameBandsRef" :availableBands="ToolService.getCommonBands(layerBands)"
                         :layerBands="layerBands" />
+                </div>
+
+                <!-- AI 工具设置 -->
+                <div v-if="currentTool?.id === TOOL_IDS.AI.LANGSAM">
+                    <AiTools ref="aiToolsRef" :selectedLayerName="selectedLayerName" :availableLayers="availableLayers"
+                        :currentTool="currentTool.id" />
                 </div>
 
             </div>
@@ -124,6 +136,7 @@ import RasterCalculator from './ToolsView/RasterCalculator.vue'
 import MacLeaClassify from './ToolsView/MacLeaClassify.vue'
 import UploadData from './ToolsView/UploadData.vue'
 import RenameBands from './ToolsView/RenameBands.vue'
+import AiTools from './ToolsView/AiTools.vue'
 
 const props = defineProps({
     mapView: {
@@ -156,6 +169,8 @@ const rasterCalculatorRef = ref(null)
 const macLeaClassifyRef = ref(null)
 //重命名波段
 const renameBandsRef = ref(null)
+// AI 工具
+const aiToolsRef = ref(null)
 
 // 添加 toolParams 计算属性
 const toolParams = computed(() => {
@@ -176,6 +191,8 @@ const toolParams = computed(() => {
             }
         case TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME:
             return renameBandsRef.value?.renameBandsParams?.bands || []
+        case TOOL_IDS.AI.LANGSAM:
+            return aiToolsRef.value?.aiParams?.langSam || {}
         default:
             return null
     }
@@ -366,9 +383,6 @@ defineExpose({
 
 // 替换 menuItems 的使用
 const menuItems = computed(() => TOOLS_CONFIG.getMenuItems())
-
-// 替换工具配置的获取方式
-const toolConfig = computed(() => currentTool.value ? TOOLS_CONFIG.getToolById(currentTool.value.id) : null)
 </script>
 
 <style src="../styles/tools.css"></style>

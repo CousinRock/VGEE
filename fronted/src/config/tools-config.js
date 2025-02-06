@@ -48,11 +48,10 @@ export const TOOL_IDS = {
         CALCULATOR: 'raster-calculator'
     },
 
-    // AI工具菜单
-    AI_TOOLS: 'ai-tools',
-    SAMGEO: {
-        ROOT: 'samgeo',
-        SEGMENT: 'samgeo-segment'
+    // // AI工具菜单
+    AI: {
+        ROOT: 'ai-tools',
+        LANGSAM: 'ai-tools-langsam'
     },
 
     // 帮助菜单
@@ -61,7 +60,7 @@ export const TOOL_IDS = {
         ABOUT: 'about',
         DOCS: 'docs',
         TUTORIAL: 'tutorial'
-    }
+    },
 }
 
 // 然后导出配置对象
@@ -540,32 +539,35 @@ export const TOOLS_CONFIG = {
         }
     },
     aiTools: {
-        id: TOOL_IDS.AI_TOOLS,
+        id: TOOL_IDS.AI.ROOT,
         label: 'AI工具',
+        icon: 'fas fa-robot',
         children: {
-            samgeo: {
-                id: TOOL_IDS.SAMGEO.ROOT,
-                label: 'samgeo',
+            langsam: {
+                id: TOOL_IDS.AI.ROOT,
+                label: 'LangSAM',
                 children: {
                     segment: {
-                        id: TOOL_IDS.SAMGEO.SEGMENT,
-                        label: 'segment',
+                        id: TOOL_IDS.AI.LANGSAM,
+                        label: 'langsam',
                         icon: 'fas fa-brain',
                         requireLayers: true,
                         endpoint: API_ROUTES.AI.SEGMENT,
                         dialogTitle: '选择需要分割的图层',
                         description: '使用SAM模型进行地理空间分割',
-                        processParams: (selectedLayers, mapView) => {
+
+                        processParams: (selectedLayers, mapView, params) => {
                             const layer = mapView.layers.find(l => l.id === selectedLayers[0])
                             return {
                                 layer_ids: selectedLayers,
                                 min: layer.visParams.min,
-                                max: layer.visParams.max
+                                max: layer.visParams.max,
+                                params: params
                             }
                         }
                     }
                 }
-            }
+            },
         }
     },
     help: {

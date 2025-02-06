@@ -16,6 +16,7 @@ def segment_image():
         layer_ids = data.get('layer_ids', [])
         layer_min = data.get('min', 0)
         layer_max = data.get('max', 255)
+        params = data.get('params', {})
         if not layer_ids:
             raise ValueError("No layer ID provided")
             
@@ -44,7 +45,7 @@ def segment_image():
         })
 
         print(f"Generated URL: {url}")
-        coordinates = segment_img(url, image_bounds, dimensions)
+        coordinates = segment_img(url, image_bounds, params, dimensions)
         
         if coordinates is None:
             raise ValueError("Segmentation failed")
@@ -61,7 +62,7 @@ def segment_image():
                 'coordinates': coordinates,  # 直接返回坐标数组
                 'visParams': {
                     'color': '#ff0000',
-                    'width': 2,
+                    'weight': 2,
                     'opacity': 1,
                     'fillOpacity': 0.5
                 }

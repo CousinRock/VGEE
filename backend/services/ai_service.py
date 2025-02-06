@@ -13,15 +13,15 @@ def cleanup_temp_files():
             except Exception as e:
                 print(f"Error removing temp file {filename}: {str(e)}")
 
-def segment_img(url, image_bounds, dimensions='1024x1024'):
+def segment_img(url, image_bounds, params, dimensions='1024x1024'):
     try:
         # 使用单例模型实例
         sam = LangSAM()
-        
+
         # 设置分割参数
-        text_prompt = "house"
-        box_threshold = 0.24
-        text_threshold = 0.24
+        text_prompt = params.get('textPrompt', "house")
+        threshold = params.get('threshold', 0.24)
+        print(f"text_prompt: {text_prompt}, threshold: {threshold}")
         
         # 从 dimensions 提取图像宽高
         try:
@@ -30,7 +30,7 @@ def segment_img(url, image_bounds, dimensions='1024x1024'):
             img_width, img_height = 1024, 1024  # 默认值
 
         # 执行分割
-        sam.predict(url, text_prompt, box_threshold=box_threshold, text_threshold=text_threshold)
+        sam.predict(url, text_prompt, box_threshold=threshold, text_threshold=threshold)
         
         # 将边界框转换为地理坐标
         coordinates = []

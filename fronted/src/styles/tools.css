@@ -297,19 +297,23 @@
 .mac-lea-classify {
     padding: 10px;
 }
+
 .layer-option-item {
     margin-bottom: 20px;
     padding: 15px;
     background-color: #f5f7fa;
 }
+
 .layer-name {
     font-weight: bold;
     margin-bottom: 10px;
     color: #409EFF;
 }
+
 .option-item {
     margin-bottom: 10px;
 }
+
 .option-item label {
     display: block;
     margin-bottom: 8px;
