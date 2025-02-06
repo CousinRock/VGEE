@@ -13,12 +13,17 @@ def cleanup_temp_files():
             except Exception as e:
                 print(f"Error removing temp file {filename}: {str(e)}")
 
+
 def segment_img(url, image_bounds, params, dimensions='1024x1024'):
+    '''
+    语义分割图像
+    '''
     try:
         # 使用单例模型实例
         sam = LangSAM()
 
-        # 设置分割参数
+
+        # 从参数中获取文本提示和阈值
         text_prompt = params.get('textPrompt', "house")
         threshold = params.get('threshold', 0.24)
         print(f"text_prompt: {text_prompt}, threshold: {threshold}")

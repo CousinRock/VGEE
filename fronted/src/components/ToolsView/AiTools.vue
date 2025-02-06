@@ -11,16 +11,18 @@
 
                 <div class="option-item">
                     <label>文本提示：</label>
-                    <el-input v-model="aiParams.langSam.textPrompt" placeholder="输入要识别的目标，如：house, tree, water..." />
+                    <el-input v-model="aiParams.langSam[layerId].textPrompt"
+                        placeholder="输入要识别的目标，如：house, tree, water..." />
                 </div>
 
                 <div class="option-item">
                     <label>置信度阈值：</label>
-                    <el-slider v-model="aiParams.langSam.threshold" :min="0" :max="1" :step="0.01" show-input :marks="{
-                        0.2: '0.2',
-                        0.5: '0.5',
-                        0.8: '0.8'
-                    }" />
+                    <el-slider v-model="aiParams.langSam[layerId].threshold" :min="0" :max="1" :step="0.01" show-input
+                        :marks="{
+                            0.2: '0.2',
+                            0.5: '0.5',
+                            0.8: '0.8'
+                        }" />
                 </div>
             </div>
         </div>
@@ -48,12 +50,28 @@ const props = defineProps({
 
 // 统一管理AI工具参数
 const aiParams = ref({
-    langSam: {
-        textPrompt: 'house',
-        threshold: 0.24
-    }
-    // 其他AI工具的参数可以在这里添加
+    langSam: {}
 })
+
+// 监听选中图层变化，初始化参数
+watch(() => props.selectedLayerName, (newVal) => {
+    // 为每个新选中的图层初始化参数
+    newVal.forEach(layerId => {
+        if (!aiParams.value.langSam[layerId]) {
+            aiParams.value.langSam[layerId] = {
+                textPrompt: 'house',
+                threshold: 0.24
+            }
+        }
+    })
+
+    // 清理未选中图层的参数
+    Object.keys(aiParams.value.langSam).forEach(layerId => {
+        if (!newVal.includes(layerId)) {
+            delete aiParams.value.langSam[layerId]
+        }
+    })
+}, { immediate: true })
 
 // 监听参数变化
 watch(aiParams, (newVal) => {

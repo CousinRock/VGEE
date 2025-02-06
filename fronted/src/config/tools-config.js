@@ -557,12 +557,22 @@ export const TOOLS_CONFIG = {
                         description: '使用SAM模型进行地理空间分割',
 
                         processParams: (selectedLayers, mapView, params) => {
-                            const layer = mapView.layers.find(l => l.id === selectedLayers[0])
+                            // 获取所有选中图层的显示参数
+                            const layerVisParams = selectedLayers.reduce((acc, layerId) => {
+                                const layer = mapView.layers.find(l => l.id === layerId)
+                                if (layer) {
+                                    acc[layerId] = {
+                                        min: layer.visParams.min,
+                                        max: layer.visParams.max
+                                    }
+                                }
+                                return acc
+                            }, {})
+
                             return {
                                 layer_ids: selectedLayers,
-                                min: layer.visParams.min,
-                                max: layer.visParams.max,
-                                params: params
+                                visParams: layerVisParams,  // 每个图层的显示参数
+                                params: params  // AI工具的参数
                             }
                         }
                     }

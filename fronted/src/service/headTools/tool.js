@@ -188,6 +188,8 @@ export const processLayerSelect = async (selectedLayers, currentTool, mapView, p
 
         // 构建请求数据
         const requestData = toolConfig.processParams(selectedLayers, mapView, params)
+        console.log('requestData', requestData);
+
 
         // 发送请求
         const response = await fetch(toolConfig.endpoint, {
