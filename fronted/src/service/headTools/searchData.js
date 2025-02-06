@@ -27,26 +27,25 @@ export const searchData = async (datasetType) => {
 }
 
 // 处理数据集选择
-export const handleDatasetSelect = (dataset, selectedDataset) => {
-    selectedDataset.value = dataset
-    console.log('searchData.js - handleDatasetSelect - dataset:', dataset)
-    eventBus.emit('dataset-selected', dataset)
-    // showSearchResults.value = false
+export const handleDatasetSelect = async (dataset) => {
+    try {
+        // 发送事件通知
+        eventBus.emit('dataset-selected', dataset)
+        return dataset
+    } catch (error) {
+        console.error('Error handling dataset select:', error)
+        throw error
+    }
 }
 
-// ID搜索处理
-export const handleIdSearch = async (customDatasetId, searchResults, showSearchResults) => {
-    if (!customDatasetId || !customDatasetId.trim()) {
-        ElMessage.warning('请输入数据集 ID')
-        return
-    }
-    
+// 处理ID搜索
+export const handleIdSearch = async (datasetId) => {
     try {
-        const datasets = await searchData(customDatasetId.trim())
-        searchResults.value = datasets
-        showSearchResults.value = true
+        const datasets = await searchData(datasetId)
+        return datasets
     } catch (error) {
         console.error('Error searching dataset:', error)
         ElMessage.error('搜索失败')
     }
+
 }

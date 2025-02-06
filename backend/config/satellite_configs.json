@@ -6,6 +6,6 @@
         "LANDSAT/LC09/C02/T1_TOA",
         "COPERNICUS/S2_HARMONIZED",
         "USDA/NAIP/DOQQ",
-        "COPERNICUS/S2_CLOUD_PROBABILITY"
+        "AHN/AHN2_05M_INT"
     ]
 }

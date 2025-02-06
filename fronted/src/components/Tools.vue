@@ -104,8 +104,7 @@
     </el-dialog>
 
     <!-- 搜索数据 -->
-    <SearchResults v-if="showSearchResults" :datasets="searchResults" @select="onDatasetSelect"
-        @close="showSearchResults = false" />
+    <SearchResults ref="searchResultsRef" />
     <!-- 上传数据 -->
     <UploadData ref="uploadDataRef" :mapView="mapView" />
 </template>
@@ -133,8 +132,6 @@ const props = defineProps({
     }
 })
 
-// 定义 emit 事件
-const emit = defineEmits(['dataset-selected'])
 
 //////////////状态变量///////////////
 const activeMenu = ref('')
@@ -150,12 +147,7 @@ const isIndeterminate = ref(false)
 const layerBands = ref({})  // 存储每个图层的波段信息
 
 //搜索数据
-const showSearchResults = ref(false)
-const searchResults = ref([])
-const selectedDataset = ref(null)
-const customDatasetId = ref('')
-const activeSearchId = ref(false)
-
+const searchResultsRef = ref(null)
 //上传数据
 const uploadDataRef = ref(null)
 //栅格计算器
@@ -217,7 +209,7 @@ const handleSubMenuClick = (item) => {
     }
 }
 
-// 在 handleToolClick 之前添加 handleSpecialTool 方法
+// 修改特殊工具处理方法
 const handleSpecialTool = async (tool) => {
     try {
         switch (tool.id) {
@@ -232,11 +224,11 @@ const handleSpecialTool = async (tool) => {
             case TOOL_IDS.SEARCH.DEM:
                 const datasetType = tool.label
                 const datasets = await SearchDataService.searchData(datasetType)
-                searchResults.value = datasets
-                showSearchResults.value = true
+                // 组件一直存在，可以直接调用方法
+                searchResultsRef.value.updateSearchResults(datasets)
                 break
             case TOOL_IDS.SEARCH.ID:
-                activeSearchId.value = !activeSearchId.value
+                searchResultsRef.value.toggleIdSearch()
                 break
             default:
                 ElMessage.warning('该功能尚未实现')
@@ -371,16 +363,6 @@ defineExpose({
         activeSubMenu.value = ''
     }
 })
-
-// 处理数据集选择
-const onDatasetSelect = (dataset) => {
-    SearchDataService.handleDatasetSelect(dataset, selectedDataset)
-}
-
-// 添加处理ID搜索的方法
-const handleCustomIdSearch = () => {
-    SearchDataService.handleIdSearch(customDatasetId.value, searchResults, showSearchResults)
-}
 
 // 替换 menuItems 的使用
 const menuItems = computed(() => TOOLS_CONFIG.getMenuItems())
