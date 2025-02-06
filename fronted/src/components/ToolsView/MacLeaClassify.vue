@@ -3,7 +3,7 @@
         <h4>分类设置</h4>
 
         <!-- K-means 分类设置 -->
-        <div v-if="currentTool === 'kmeans'">
+        <div v-if="currentTool === TOOL_IDS.CLASSIFICATION.KMEANS">
             <h5>K-means 分类设置</h5>
             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
                 <div class="layer-name">
@@ -23,10 +23,11 @@
         </div>
 
         <!-- 随机森林分类设置 -->
-        <div v-if="currentTool === 'random-forest'">
+        <div v-if="currentTool === TOOL_IDS.CLASSIFICATION.RANDOM_FOREST">
             <h5>随机森林设置</h5>
             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
                 <div class="layer-name">
+
                     {{ availableLayers.find(l => l.id === layerId)?.name }}
                 </div>
                 <div class="option-item">
@@ -51,7 +52,7 @@
         </div>
 
         <!-- SVM 分类设置 -->
-        <div v-if="currentTool === 'svm'">
+        <div v-if="currentTool === TOOL_IDS.CLASSIFICATION.SVM">
             <h5>支持向量机设置</h5>
             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
                 <div class="layer-name">
@@ -80,6 +81,7 @@
 
 <script setup>
 import { ref, watch } from 'vue';
+import { TOOL_IDS } from '../../config/tools-config'
 
 const props = defineProps({
     selectedLayerName: {
