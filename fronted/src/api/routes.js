@@ -23,7 +23,7 @@ export const API_ROUTES = {
         GET_LAYER_INFO: `${BASE_URL}/layer-info`,
         UPDATE_VIS_PARAMS: `${BASE_URL}/update-vis-params`,
         GET_PROPERTIES: `${BASE_URL}/get-properties`
-        
+
     },
 
     // 搜索相关
@@ -53,6 +53,8 @@ export const API_ROUTES = {
         RENAME_BANDS: `${BASE_URL}/tools/rename-bands`
     },
     AI: {
-        SEGMENT: `${BASE_URL}/ai/segment`
+        TEXT_SEGMENT: `${BASE_URL}/ai/text_segment`,
+        POINT_SEGMENT: `${BASE_URL}/ai/point_segment`
     }
+
 } 

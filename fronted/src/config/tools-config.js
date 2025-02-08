@@ -49,9 +49,11 @@ export const TOOL_IDS = {
     },
 
     // // AI工具菜单
+    AI_TOOLS: 'ai-tools',
     AI: {
-        ROOT: 'ai-tools',
-        LANGSAM: 'ai-tools-langsam'
+        SEGMENT_ROOT: 'segment',
+        TEXT_SEGMENT: 'text_prompt',
+        POINT_SEGMENT: 'point_prompt'
     },
 
     // 帮助菜单
@@ -539,24 +541,55 @@ export const TOOLS_CONFIG = {
         }
     },
     aiTools: {
-        id: TOOL_IDS.AI.ROOT,
+        id: TOOL_IDS.AI_TOOLS,
         label: 'AI工具',
         icon: 'fas fa-robot',
         children: {
-            langsam: {
-                id: TOOL_IDS.AI.ROOT,
-                label: 'LangSAM',
+            Segment: {
+                id: TOOL_IDS.AI.SEGMENT_ROOT,
+                label: 'Segment',
                 children: {
-                    segment: {
-                        id: TOOL_IDS.AI.LANGSAM,
-                        label: 'langsam',
+                    textSegment: {
+                        id: TOOL_IDS.AI.TEXT_SEGMENT,
+                        label: 'text prompt segment',
                         icon: 'fas fa-brain',
                         requireLayers: true,
-                        endpoint: API_ROUTES.AI.SEGMENT,
+                        endpoint: API_ROUTES.AI.TEXT_SEGMENT,
                         dialogTitle: '选择需要分割的图层',
                         description: '使用SAM模型进行地理空间分割',
 
+
                         processParams: (selectedLayers, mapView, params) => {
+                            // 获取所有选中图层的显示参数
+                            const layerVisParams = selectedLayers.reduce((acc, layerId) => {
+                                const layer = mapView.layers.find(l => l.id === layerId)
+                                console.log('layer', layer);
+
+                                if (layer) {
+                                    acc[layerId] = {
+                                        min: layer.visParams.min,
+                                        max: layer.visParams.max
+                                    }
+                                }
+                                return acc
+                            }, {})
+
+                            return {
+                                layer_ids: selectedLayers,
+                                visParams: layerVisParams,  // 每个图层的显示参数
+                                params: params  // AI工具的参数
+                            }
+                        }
+                    },
+                    pointSegment: {
+                        id: TOOL_IDS.AI.POINT_SEGMENT,
+                        label: 'point prompt segment',
+                        icon: 'fas fa-map-marker-alt',
+                        requireLayers: true,
+                        endpoint: API_ROUTES.AI.POINT_SEGMENT,
+                        dialogTitle: '选择需要分割的图层',
+                        description: '使用点提示进行地理空间分割',
+                        processParams: (selectedLayers, mapView) => {
                             // 获取所有选中图层的显示参数
                             const layerVisParams = selectedLayers.reduce((acc, layerId) => {
                                 const layer = mapView.layers.find(l => l.id === layerId)
@@ -572,7 +605,6 @@ export const TOOLS_CONFIG = {
                             return {
                                 layer_ids: selectedLayers,
                                 visParams: layerVisParams,  // 每个图层的显示参数
-                                params: params  // AI工具的参数
                             }
                         }
                     }
