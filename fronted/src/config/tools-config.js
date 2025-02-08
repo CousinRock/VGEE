@@ -215,7 +215,6 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-cloud-sun',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CLOUD_REMOVAL,
-                        dialogTitle: '选择需要处理的图层',
                         description: '去除影像中的云层',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
@@ -233,7 +232,6 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-fill-drip',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.IMAGE_FILLING,
-                        dialogTitle: '选择需要处理的图层',
                         description: '填补影像中的缺失数据',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
@@ -252,7 +250,6 @@ export const TOOLS_CONFIG = {
                         component: 'RenameBands',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.RENAME_BANDS,
-                        dialogTitle: '选择需要重命名的图层',
                         description: '重命名影像波段',
                         processParams: (selectedLayers, mapView, params) => ({
                             layer_ids: selectedLayers,
@@ -271,7 +268,6 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-chart-line',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.HISTOGRAM_EQUALIZATION,
-                        dialogTitle: '选择需要处理的图层',
                         description: '对影像进行直方图均衡化处理',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
@@ -295,7 +291,6 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-leaf',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        dialogTitle: '选择需要计算NDVI的图层',
                         description: '归一化植被指数，用于评估植被覆盖和生长状况',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
@@ -314,7 +309,6 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-seedling',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        dialogTitle: '选择需要计算EVI的图层',
                         description: '增强型植被指数',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
@@ -333,7 +327,6 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-mountain',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        dialogTitle: '选择需要计算SAVI的图层',
                         description: '土壤调节植被指数，考虑了土壤背景的影响',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
@@ -352,7 +345,6 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-water',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        dialogTitle: '选择需要计算NDWI的图层',
                         description: '归一化水体指数，用于提取水体信息',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
@@ -371,7 +363,6 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-tint',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        dialogTitle: '选择需要计算MNDWI的图层',
                         description: '改进的归一化水体指数，更好地区分水体和建筑物',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
@@ -390,7 +381,6 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-building',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        dialogTitle: '选择需要计算NDBI的图层',
                         description: '归一化建筑指数，用于提取建筑区域',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
@@ -409,7 +399,6 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-globe',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        dialogTitle: '选择需要计算BSI的图层',
                         description: '裸土指数，用于识别裸露土壤区域',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
@@ -435,7 +424,6 @@ export const TOOLS_CONFIG = {
                         component: 'MacLeaClassify',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.KMEANS_CLUSTERING,
-                        dialogTitle: '选择需要分类的图层',
                         description: '使用K-means算法进行无监督分类',
                         defaultParams: {
                             clusterCount: 5
@@ -458,7 +446,6 @@ export const TOOLS_CONFIG = {
                         component: 'MacLeaClassify',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.RANDOM_FOREST,
-                        dialogTitle: '选择需要分类的图层',
                         description: '使用随机森林算法进行监督分类',
                         defaultParams: {
                             numberOfTrees: 50,
@@ -482,7 +469,6 @@ export const TOOLS_CONFIG = {
                         component: 'MacLeaClassify',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.SVM,
-                        dialogTitle: '选择需要分类的图层',
                         description: '使用支持向量机算法进行监督分类',
                         defaultParams: {
                             kernel: 'RBF',
@@ -512,7 +498,6 @@ export const TOOLS_CONFIG = {
                         component: 'RasterCalculator',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.RASTER_CALCULATOR,
-                        dialogTitle: '选择需要计算的图层',
                         description: '进行栅格代数运算',
                         defaultParams: {
                             calculatorMode: 'single',
@@ -555,9 +540,7 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-brain',
                         requireLayers: true,
                         endpoint: API_ROUTES.AI.TEXT_SEGMENT,
-                        dialogTitle: '选择需要分割的图层',
                         description: '使用SAM模型进行地理空间分割',
-
 
                         processParams: (selectedLayers, mapView, params) => {
                             // 获取所有选中图层的显示参数
@@ -587,7 +570,6 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-map-marker-alt',
                         requireLayers: true,
                         endpoint: API_ROUTES.AI.POINT_SEGMENT,
-                        dialogTitle: '选择需要分割的图层',
                         description: '使用点提示进行地理空间分割',
                         processParams: (selectedLayers, mapView) => {
                             // 获取所有选中图层的显示参数

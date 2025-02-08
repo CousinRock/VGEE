@@ -202,7 +202,6 @@ def compute_band_stats():
                 'message': '未找到指定图层'
             }), 404
             
-
         
         # 计算统计值
         stats = map_service.compute_image_stats(dataset, bands, dataset.geometry())

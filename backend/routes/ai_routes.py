@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from services.sample_service import get_all_samples
 
 ai_bp = Blueprint('ai', __name__)
+maxthread_num = 4
 
 @ai_bp.route('/text_segment', methods=['POST'])
 def text_segment():
@@ -28,7 +29,7 @@ def text_segment():
         results = []
         
         # 使用线程池并行处理图层
-        with ThreadPoolExecutor(max_workers=min(len(layer_ids), 4)) as executor:
+        with ThreadPoolExecutor(max_workers=min(len(layer_ids), maxthread_num)) as executor:
             future_to_layer = {
                 executor.submit(
                     text_single_layer, 
@@ -84,7 +85,7 @@ def point_segment():
         results = []
         
         # 使用线程池并行处理图层
-        with ThreadPoolExecutor(max_workers=min(len(layer_ids), 4)) as executor:
+        with ThreadPoolExecutor(max_workers=min(len(layer_ids), maxthread_num)) as executor:
             future_to_layer = {
                 executor.submit(
                     point_single_layer, 
