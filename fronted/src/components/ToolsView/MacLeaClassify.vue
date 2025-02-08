@@ -27,22 +27,25 @@
             <h5>随机森林设置</h5>
             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
                 <div class="layer-name">
-
                     {{ availableLayers.find(l => l.id === layerId)?.name }}
                 </div>
                 <div class="option-item">
                     <label>决策树数量：</label>
-                    <el-slider v-model="classifyParams.rfParams.numberOfTrees" :min="10" :max="100" :step="10"
+                    <el-slider v-model="classifyParams.rfParams[layerId].numberOfTrees" :min="10" :max="200" :step="1"
                         show-input :marks="{
                             10: '10',
                             50: '50',
-                            100: '100'
+                            100: '100',
+                            150: '150',
+                            200: '200'
                         }" />
                 </div>
                 <div class="option-item">
+
+
                     <label>训练集比例：</label>
-                    <el-slider v-model="classifyParams.rfParams.trainRatio" :min="0.5" :max="0.9" :step="0.1" show-input
-                        :marks="{
+                    <el-slider v-model="classifyParams.rfParams[layerId].trainRatio" :min="0.1" :max="0.9" :step="0.1"
+                        show-input :marks="{
                             0.5: '50%',
                             0.7: '70%',
                             0.9: '90%'
@@ -60,14 +63,15 @@
                 </div>
                 <div class="option-item">
                     <label>核函数类型：</label>
-                    <el-select v-model="classifyParams.svmParams.kernel" class="kernel-select">
-                        <el-option label="RBF (径向基函数)" value="RBF" />
-                        <el-option label="Linear (线性核)" value="LINEAR" />
+                    <el-select v-model="classifyParams.svmParams[layerId].kernel" size="small">
+                        <el-option label="RBF" value="RBF" />
+                        <el-option label="Linear" value="Linear" />
+                        <el-option label="Poly" value="Poly" />
                     </el-select>
                 </div>
                 <div class="option-item">
                     <label>训练集比例：</label>
-                    <el-slider v-model="classifyParams.svmParams.trainRatio" :min="0.5" :max="0.9" :step="0.1"
+                    <el-slider v-model="classifyParams.svmParams[layerId].trainRatio" :min="0.1" :max="0.9" :step="0.1"
                         show-input :marks="{
                             0.5: '50%',
                             0.7: '70%',
@@ -101,15 +105,28 @@ const props = defineProps({
 // 统一管理分类参数
 const classifyParams = ref({
     clusterCounts: {},  // K-means的分类数量
-    rfParams: {         // 随机森林参数
-        numberOfTrees: 50,
-        trainRatio: 0.7
-    },
-    svmParams: {        // SVM参数
-        kernel: 'RBF',
-        trainRatio: 0.7
-    }
+    rfParams: {},       // 随机森林参数，改为对象形式
+    svmParams: {}       // SVM参数，改为对象形式
 });
+
+// 监听选中图层变化，初始化参数
+watch(() => props.selectedLayerName, (newLayers) => {
+    // 初始化每个图层的随机森林参数
+    newLayers.forEach(layerId => {
+        if (!classifyParams.value.rfParams[layerId]) {
+            classifyParams.value.rfParams[layerId] = {
+                numberOfTrees: 50,
+                trainRatio: 0.7
+            }
+        }
+        if (!classifyParams.value.svmParams[layerId]) {
+            classifyParams.value.svmParams[layerId] = {
+                kernel: 'RBF',
+                trainRatio: 0.7
+            }
+        }
+    })
+}, { immediate: true })
 
 // 监听参数变化
 watch(classifyParams, (newVal) => {

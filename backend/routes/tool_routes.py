@@ -349,10 +349,7 @@ def random_forest():
     try:
         data = request.json
         layer_ids = data.get('layer_ids')
-        rf_params = data.get('rf_params', {})
-        
-        num_trees = rf_params.get('numberOfTrees', 50)
-        train_ratio = rf_params.get('trainRatio', 0.7)
+        rf_params = data.get('rf_params', {})  # 现在是一个字典，key是layer_id
         
         samples = get_all_samples()
         if not samples:
@@ -364,9 +361,16 @@ def random_forest():
         def process_layer(args):
             i, layer_id = args
             try:
+                # 获取该图层的特定参数
+                layer_params = rf_params.get(layer_id, {})
+                num_trees = layer_params.get('numberOfTrees', 50)
+                train_ratio = layer_params.get('trainRatio', 0.7)
+                
                 image = ee.Image(images_list.get(i))
                 classified = ClassificationTool.random_forest_classification(
-                    image, samples, num_trees=num_trees, train_ratio=train_ratio
+                    image, samples,
+                    num_trees=num_trees,
+                    train_ratio=train_ratio
                 )
 
                 original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
@@ -603,10 +607,8 @@ def svm_classification():
     try:
         data = request.json
         layer_ids = data.get('layer_ids')
-        svm_params = data.get('svm_params', {})
-        
-        kernel = svm_params.get('kernel', 'RBF')
-        train_ratio = svm_params.get('trainRatio', 0.7)
+        svm_params = data.get('svm_params', {})  # 现在是一个字典，key是layer_id
+        print('Tool_routes.py - svm_classification-svm_params:', svm_params)
         
         samples = get_all_samples()
         if not samples:
@@ -618,6 +620,11 @@ def svm_classification():
         def process_layer(args):
             i, layer_id = args
             try:
+                # 获取该图层的特定参数
+                layer_params = svm_params.get(layer_id, {})
+                kernel = layer_params.get('kernel', 'RBF')
+                train_ratio = layer_params.get('trainRatio', 0.7)
+                
                 image = ee.Image(images_list.get(i))
                 classified = ClassificationTool.svm_classification(
                     image, samples,
