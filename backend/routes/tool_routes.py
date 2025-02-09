@@ -4,6 +4,7 @@ from services.sample_service import get_all_samples
 from tools.preprocessing import PreprocessingTool
 from tools.classification import ClassificationTool 
 from tools.calculateIndex import IndexTool
+from tools.parallel_processor import ParallelProcessor
 import ee
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -133,29 +134,24 @@ def calculate_index():
         selected_images = IndexTool.get_image_collection(layer_ids, datasets)
         images_list = selected_images.toList(len(layer_ids))
         
-        def process_layer(args):
-            i, layer_id = args
+        def process_layer(layer_id, images_list=None, index_type=None):
             try:
+                i = layer_ids.index(layer_id)
                 image = ee.Image(images_list.get(i))
-                # 计算指数并添加为新波段
                 result = IndexTool.calculate_index(image, index_type)
                 return result
             except Exception as e:
                 print(f"Error processing layer {layer_id}: {str(e)}")
                 return None
 
-        # 使用线程池并行处理
-        results = []
-        with ThreadPoolExecutor(max_workers=min(len(layer_ids), maxthread_num)) as executor:
-            future_to_layer = {
-                executor.submit(process_layer, (i, layer_id)): layer_id 
-                for i, layer_id in enumerate(layer_ids)
-            }
-            
-            for future in as_completed(future_to_layer):
-                result = future.result()
-                if result is not None:
-                    results.append(result)
+        # 使用通用的并行处理函数
+        results = ParallelProcessor.process_layers(
+            layer_ids=layer_ids,
+            process_func=process_layer,
+            max_workers=maxthread_num,
+            images_list=images_list,
+            index_type=index_type
+        )
 
         if not results:
             raise ValueError("No successful index calculation results")
@@ -250,20 +246,15 @@ def kmeans_clustering():
         selected_images = ClassificationTool.get_image_collection(layer_ids, datasets)
         images_list = selected_images.toList(len(layer_ids))
         
-        layer_results = []
-        bandInfo = ['cluster']
-
-        # 定义处理单个图层的函数
-        def process_layer(args):
-            i, layer_id = args
+        def process_layer(layer_id, images_list=None, cluster_counts=None):
             try:
+                i = layer_ids.index(layer_id)
                 num_clusters = cluster_counts.get(layer_id, 5)
                 result = ClassificationTool.kmeans_clustering(
                     ee.Image(images_list.get(i)), 
                     num_clusters
                 )
 
-                # 获取原始图层名称和创建新名称
                 original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
                 kmeans_id = f"kmeans_{int(time.time())}-{layer_id}"
                 kmeans_name = f"{original_name} (K-means聚类)"
@@ -277,34 +268,29 @@ def kmeans_clustering():
                     'layer_id': kmeans_id,
                     'name': kmeans_name,
                     'tileUrl': map_id['tile_fetcher'].url_format,
-                    'bandInfo': bandInfo,
+                    'bandInfo': ['cluster'],
                     'visParams': {
-                        'bands': bandInfo,
+                        'bands': ['cluster'],
                         'min': 0,
                         'max': num_clusters - 1
                     },
                     'type': 'Raster'
                 }
 
-                # 保存分类结果
-                save_dataset(kmeans_id, result.select(bandInfo), kmeans_name)
-                
+                save_dataset(kmeans_id, result.select(['cluster']), kmeans_name)
                 return layer_result
             except Exception as e:
                 print(f"Error processing layer {layer_id}: {str(e)}")
                 return None
 
-        # 使用线程池并行处理
-        with ThreadPoolExecutor(max_workers=min(len(layer_ids), maxthread_num)) as executor:
-            future_to_layer = {
-                executor.submit(process_layer, (i, layer_id)): layer_id 
-                for i, layer_id in enumerate(layer_ids)
-            }
-            
-            for future in as_completed(future_to_layer):
-                result = future.result()
-                if result is not None:
-                    layer_results.append(result)
+        # 使用通用的并行处理函数
+        layer_results = ParallelProcessor.process_layers(
+            layer_ids=layer_ids,
+            process_func=process_layer,
+            max_workers=maxthread_num,
+            images_list=images_list,
+            cluster_counts=cluster_counts
+        )
 
         if not layer_results:
             raise ValueError("No successful classification results")
@@ -349,7 +335,7 @@ def random_forest():
     try:
         data = request.json
         layer_ids = data.get('layer_ids')
-        rf_params = data.get('rf_params', {})  # 现在是一个字典，key是layer_id
+        rf_params = data.get('rf_params', {})
         
         samples = get_all_samples()
         if not samples:
@@ -358,9 +344,9 @@ def random_forest():
         selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
         images_list = selected_images.toList(len(layer_ids))
         
-        def process_layer(args):
-            i, layer_id = args
+        def process_layer(layer_id, images_list=None, rf_params=None, samples=None):
             try:
+                i = layer_ids.index(layer_id)
                 # 获取该图层的特定参数
                 layer_params = rf_params.get(layer_id, {})
                 num_trees = layer_params.get('numberOfTrees', 50)
@@ -401,18 +387,16 @@ def random_forest():
                 print(f"Error processing layer {layer_id}: {str(e)}")
                 return None
 
-        layer_results = []
-        with ThreadPoolExecutor(max_workers=min(len(layer_ids), maxthread_num)) as executor:
-            future_to_layer = {
-                executor.submit(process_layer, (i, layer_id)): layer_id 
-                for i, layer_id in enumerate(layer_ids)
-            }
+        # 使用通用的并行处理函数
+        layer_results = ParallelProcessor.process_layers(
+            layer_ids=layer_ids,
+            process_func=process_layer,
+            max_workers=maxthread_num,
+            images_list=images_list,
+            rf_params=rf_params,
+            samples=samples
 
-            
-            for future in as_completed(future_to_layer):
-                result = future.result()
-                if result is not None:
-                    layer_results.append(result)
+        )
 
         if not layer_results:
             raise ValueError("No successful classification results")
@@ -433,17 +417,7 @@ def random_forest():
 @tool_bp.route('/raster-calculator', methods=['POST'])
 def raster_calculator():
     def create_layer_result(layer_id, name, result, vis_params):
-        """创建图层结果对象
-        
-        Args:
-            layer_id (str): 图层ID
-            name (str): 图层名称
-            result (ee.Image): 计算结果影像
-            vis_params (dict): 可视化参数
-            
-        Returns:
-            dict: 包含图层信息的字典
-        """
+        """创建图层结果对象"""
         map_id = result.getMapId(vis_params)
         return {
             'layer_id': layer_id,
@@ -453,102 +427,99 @@ def raster_calculator():
             'visParams': vis_params,
             'type':'Raster'
         }
+
     try:
         data = request.json
         layer_ids = data.get('layer_ids')
         expression = data.get('expression')
-        mode = data.get('mode', 'single')  # 默认为单波段模式
-
+        mode = data.get('mode', 'single')
         layer_results = []
-        
+
         if mode == 'multi':
             # 多图层模式 - 一次性处理所有图层
-            try:
-                result = PreprocessingTool.raster_calculator_multi(layer_ids, expression, datasets, datasetsNames)
-                
-                calc_id = f"calc_multi_{int(time.time())}"
-                calc_name = "多图层计算结果"
-                save_dataset(calc_id, result, calc_name)
-                
-                # 获取波段名称并设置可视化参数
-                band_names = result.bandNames().getInfo()
-                default_bands = band_names[:3] if len(band_names) >= 3 else band_names
-                vis_params = {'bands': default_bands, 'min': 0, 'max': 1, 'gamma': 1.4}
-                
-                layer_results.append(create_layer_result(calc_id, calc_name, result, vis_params))
-            except Exception as e:
-                print(f"Error in multi-layer calculation: {str(e)}")
+            result = PreprocessingTool.raster_calculator_multi(layer_ids, expression, datasets, datasetsNames)
+            
+            calc_id = f"calc_multi_{int(time.time())}"
+            calc_name = "多图层计算结果"
+            save_dataset(calc_id, result, calc_name)
+            
+            band_names = result.bandNames().getInfo()
+            default_bands = band_names[:3] if len(band_names) >= 3 else band_names
+            vis_params = {'bands': default_bands, 'min': 0, 'max': 1, 'gamma': 1.4}
+            
+            layer_results = [create_layer_result(calc_id, calc_name, result, vis_params)]
                 
         elif mode == 'all_bands':
             # 例如: {'x*2': ['B1','B2','B3'], 'x/2': ['B5','B6','B7']}
             # {'x/10000':['B1','B2','B3','B4','B5','B6','B7','B8','B8A','B9','B10','B11','B12']}
-            # 全波段模式 - 并行处理每个图层
             selected_bands = eval(expression)
             print('Tool_routes.py - raster_calculator-selected_bands:', selected_bands)
-            with ThreadPoolExecutor(max_workers=min(len(layer_ids), maxthread_num)) as executor:
-                futures = []
-                for layer_id in layer_ids:
-                    if layer_id not in datasets:
-                        continue
-                    future = executor.submit(
-                        lambda x: PreprocessingTool.raster_calculator_all_bands(
-                            datasets[x], 
-                            expression, 
-                            selected_bands
-                        ), 
-                        layer_id
-                    )
-                    futures.append((future, layer_id))
-                
-                for future, layer_id in futures:
-                    try:
-                        result = future.result()
-                        if result is not None:
-                            calc_id = f"calc_all_{int(time.time())}-{layer_id}"
-                            calc_name = f"{datasetsNames.get(layer_id, f'Layer_{layer_id}')} (全波段计算结果)"
-                            save_dataset(calc_id, result, calc_name)
-                            
-                            band_names = result.bandNames().getInfo()
-                            default_bands = band_names[:3] if len(band_names) >= 3 else band_names
-                            vis_params = {'bands': default_bands, 'min': 0, 'max': 1, 'gamma': 1.4}
-                            
-                            layer_results.append(create_layer_result(calc_id, calc_name, result, vis_params))
-                    except Exception as e:
-                        print(f"Error processing layer {layer_id}: {str(e)}")
-                        continue
-                        
-        else:
-            # 单波段模式 - 并行处理每个图层
-            def process_single_layer(args):
-                layer_id = args
+            
+            def process_layer(layer_id, selected_bands=None):
                 try:
                     if layer_id not in datasets:
-                        raise ValueError(f'Invalid layer ID: {layer_id}')
-                        
-                    result = PreprocessingTool.raster_calculator_single(datasets[layer_id], expression)
+                        return None
                     
-                    # 创建结果图层
+                    # 获取原始图像的副本
+                    image = ee.Image(datasets[layer_id])
+                    result = PreprocessingTool.raster_calculator_all_bands(
+                        image, 
+                        expression,
+                        selected_bands
+                    )
+                    
+                    if result is not None:
+                        calc_id = f"calc_all_{int(time.time())}-{layer_id}"
+                        calc_name = f"{datasetsNames.get(layer_id, f'Layer_{layer_id}')} (全波段计算结果)"
+                        save_dataset(calc_id, result, calc_name)
+                        
+                        band_names = result.bandNames().getInfo()
+                        default_bands = band_names[:3] if len(band_names) >= 3 else band_names
+                        vis_params = {'bands': default_bands, 'min': 0, 'max': 1, 'gamma': 1.4}
+                        
+                        return create_layer_result(calc_id, calc_name, result, vis_params)
+                except Exception as e:
+                    print(f"Error processing layer {layer_id}: {str(e)}")
+                    return None
+
+            # 使用通用的并行处理函数
+            layer_results = ParallelProcessor.process_layers(
+                layer_ids=layer_ids,
+                process_func=process_layer,
+                max_workers=maxthread_num,
+                selected_bands=selected_bands
+            )
+                    
+
+        else:
+            # 单波段模式
+            def process_layer(layer_id, expression=None):
+                try:
+                    if layer_id not in datasets:
+                        return None
+                    
+                    # 获取原始图像的副本    
+                    image = ee.Image(datasets[layer_id])
+                    result = PreprocessingTool.raster_calculator_single(image, expression)
+                    
                     calc_id = f"calc_{int(time.time())}-{layer_id}"
                     calc_name = f"{datasetsNames.get(layer_id, f'Layer_{layer_id}')} (计算结果)"
                     save_dataset(calc_id, result, calc_name)
                     
-                    # 设置可视化参数
                     vis_params = get_vis_params(result)
-                    
                     return create_layer_result(calc_id, calc_name, result, vis_params)
                 except Exception as e:
                     print(f"Error processing layer {layer_id}: {str(e)}")
                     return None
-            with ThreadPoolExecutor(max_workers=min(len(layer_ids), maxthread_num )) as executor:
-                future_to_layer = {
-                    executor.submit(process_single_layer, layer_id): layer_id 
-                    for layer_id in layer_ids
-                }
-                
-                for future in as_completed(future_to_layer):
-                    result = future.result()
-                    if result is not None:
-                        layer_results.append(result)
+
+            # 使用通用的并行处理函数
+            layer_results = ParallelProcessor.process_layers(
+                layer_ids=layer_ids,
+                process_func=process_layer,
+                max_workers=maxthread_num,
+                expression=expression
+
+            )
 
         if not layer_results:
             raise ValueError("No successful calculation results")
@@ -607,8 +578,7 @@ def svm_classification():
     try:
         data = request.json
         layer_ids = data.get('layer_ids')
-        svm_params = data.get('svm_params', {})  # 现在是一个字典，key是layer_id
-        print('Tool_routes.py - svm_classification-svm_params:', svm_params)
+        svm_params = data.get('svm_params', {})
         
         samples = get_all_samples()
         if not samples:
@@ -617,9 +587,9 @@ def svm_classification():
         selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
         images_list = selected_images.toList(len(layer_ids))
         
-        def process_layer(args):
-            i, layer_id = args
+        def process_layer(layer_id, images_list=None, svm_params=None, samples=None):
             try:
+                i = layer_ids.index(layer_id)
                 # 获取该图层的特定参数
                 layer_params = svm_params.get(layer_id, {})
                 kernel = layer_params.get('kernel', 'RBF')
@@ -660,17 +630,15 @@ def svm_classification():
                 print(f"Error processing layer {layer_id}: {str(e)}")
                 return None
 
-        layer_results = []
-        with ThreadPoolExecutor(max_workers=min(len(layer_ids), maxthread_num)) as executor:
-            future_to_layer = {
-                executor.submit(process_layer, (i, layer_id)): layer_id 
-                for i, layer_id in enumerate(layer_ids)
-            }
-            
-            for future in as_completed(future_to_layer):
-                result = future.result()
-                if result is not None:
-                    layer_results.append(result)
+        # 使用通用的并行处理函数
+        layer_results = ParallelProcessor.process_layers(
+            layer_ids=layer_ids,
+            process_func=process_layer,
+            max_workers=maxthread_num,
+            images_list=images_list,
+            svm_params=svm_params,
+            samples=samples
+        )
 
         if not layer_results:
             raise ValueError("No successful classification results")

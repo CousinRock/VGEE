@@ -3,6 +3,7 @@ from services.map_service import get_all_datasets
 from services.ai_service import text_single_layer, point_single_layer
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from services.sample_service import get_all_samples
+from tools.parallel_processor import ParallelProcessor
 
 ai_bp = Blueprint('ai', __name__)
 maxthread_num = 4
@@ -14,10 +15,6 @@ def text_segment():
     '''
     try:
         data = request.json
-
-
-        print('AI_routes.py - text_segment - data:', data)     
-
         layer_ids = data.get('layer_ids', [])
         vis_params = data.get('visParams', {})
         params = data.get('params', {})
@@ -26,26 +23,17 @@ def text_segment():
             raise ValueError("No layer ID provided")
             
         datasets, datasetsNames = get_all_datasets()
-        results = []
         
-        # 使用线程池并行处理图层
-        with ThreadPoolExecutor(max_workers=min(len(layer_ids), maxthread_num)) as executor:
-            future_to_layer = {
-                executor.submit(
-                    text_single_layer, 
-                    layer_id, 
-                    datasets, 
-                    datasetsNames, 
-                    params, 
-                    vis_params
-                ): layer_id for layer_id in layer_ids
-
-            }
-            
-            for future in as_completed(future_to_layer):
-                result = future.result()
-                if result is not None:
-                    results.append(result)
+        # 使用通用的并行处理函数
+        results = ParallelProcessor.process_layers(
+            layer_ids=layer_ids,
+            process_func=text_single_layer,
+            max_workers=maxthread_num,
+            datasets=datasets,
+            datasetsNames=datasetsNames,
+            params=params,
+            vis_params=vis_params
+        )
 
         if not results:
             raise ValueError("No successful segmentation results")
@@ -57,7 +45,7 @@ def text_segment():
         }), 200
 
     except Exception as e:
-        print(f"AI_routes.py - Error in segment_image: {str(e)}")
+        print(f"Error in segment_image: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -71,37 +59,25 @@ def point_segment():
     '''
     try:
         data = request.json
-        print('AI_routes.py - point_segment - data:', data)
-
         layer_ids = data.get('layer_ids', [])
         vis_params = data.get('visParams', {})
         samples = get_all_samples()
-        print('AI_routes.py - point_segment - samples:', samples)
         
         if not layer_ids:
             raise ValueError("No layer ID provided")
             
         datasets, datasetsNames = get_all_datasets()
-        results = []
         
-        # 使用线程池并行处理图层
-        with ThreadPoolExecutor(max_workers=min(len(layer_ids), maxthread_num)) as executor:
-            future_to_layer = {
-                executor.submit(
-                    point_single_layer, 
-                    layer_id, 
-                    datasets, 
-                    datasetsNames, 
-                    samples,
-                    vis_params
-                ): layer_id for layer_id in layer_ids
-            }
-
-            
-            for future in as_completed(future_to_layer):
-                result = future.result()
-                if result is not None:
-                    results.append(result)
+        # 使用通用的并行处理函数
+        results = ParallelProcessor.process_layers(
+            layer_ids=layer_ids,
+            process_func=point_single_layer,
+            max_workers=maxthread_num,
+            datasets=datasets,
+            datasetsNames=datasetsNames,
+            samples=samples,
+            vis_params=vis_params
+        )
 
         if not results:
             raise ValueError("No successful segmentation results")
@@ -113,7 +89,7 @@ def point_segment():
         }), 200
 
     except Exception as e:
-        print(f"AI_routes.py - Error in point_segment: {str(e)}")
+        print(f"Error in point_segment: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
