@@ -1,7 +1,7 @@
 <template>
     <div class="ai-tools">
         <h4>AI 工具</h4>
-        <div v-if="currentTool === TOOL_IDS.AI.TEXT_SEGMENT">
+        <div v-if="currentTool === TOOL_IDS.SEGMENT.TEXT_SEGMENT">
             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
                 <div class="layer-name">
                     {{ availableLayers.find(l => l.id === layerId)?.name }}

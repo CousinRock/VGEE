@@ -38,12 +38,12 @@
     <el-dialog v-model="showLayerSelect" :title="'选择需要处理的图层'" :width="[TOOL_IDS.CLASSIFICATION.KMEANS,
     TOOL_IDS.RASTER_OPERATION.CALCULATOR,
     TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME,
-    TOOL_IDS.AI.TEXT_SEGMENT].includes(currentTool?.id) ? '800px' : '400px'" width="800px">
+    TOOL_IDS.SEGMENT.TEXT_SEGMENT].includes(currentTool?.id) ? '800px' : '400px'" width="800px">
         <div class="layer-select-content" :class="{
             'with-settings': [TOOL_IDS.CLASSIFICATION.KMEANS,
             TOOL_IDS.RASTER_OPERATION.CALCULATOR,
             TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME,
-            TOOL_IDS.AI.TEXT_SEGMENT].includes(currentTool?.id)
+            TOOL_IDS.SEGMENT.TEXT_SEGMENT].includes(currentTool?.id)
         }">
             <div class="layer-select-left">
                 <!-- 添加全选复选框 -->
@@ -68,7 +68,7 @@
                 || currentTool?.id === TOOL_IDS.CLASSIFICATION.SVM
                 || currentTool?.id === TOOL_IDS.RASTER_OPERATION.CALCULATOR
                 || currentTool?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME
-                || currentTool?.id === TOOL_IDS.AI.TEXT_SEGMENT) && selectedLayerName.length > 0"
+                || currentTool?.id === TOOL_IDS.SEGMENT.TEXT_SEGMENT) && selectedLayerName.length > 0"
                 class="layer-select-right">
 
                 <!-- K-means 设置 -->
@@ -97,7 +97,7 @@
                 </div>
 
                 <!-- AI 工具设置 -->
-                <div v-if="currentTool?.id === TOOL_IDS.AI.TEXT_SEGMENT">
+                <div v-if="currentTool?.id === TOOL_IDS.SEGMENT.TEXT_SEGMENT">
                     <AiTools ref="aiToolsRef" :selectedLayerName="selectedLayerName" :availableLayers="availableLayers"
                         :currentTool="currentTool.id" />
                 </div>
@@ -191,7 +191,7 @@ const toolParams = computed(() => {
             }
         case TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME:
             return renameBandsRef.value?.renameBandsParams?.bands || []
-        case TOOL_IDS.AI.TEXT_SEGMENT:
+        case TOOL_IDS.SEGMENT.TEXT_SEGMENT:
             return aiToolsRef.value?.aiParams?.langSam || {}
         default:
             return null

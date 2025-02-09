@@ -48,13 +48,14 @@ export const TOOL_IDS = {
         CALCULATOR: 'raster-calculator'
     },
 
-    // // AI工具菜单
+    // AI工具菜单
     AI_TOOLS: 'ai-tools',
-    AI: {
-        SEGMENT_ROOT: 'segment',
+    SEGMENT: {
+        ROOT: 'segment',
         TEXT_SEGMENT: 'text_prompt',
         POINT_SEGMENT: 'point_prompt'
     },
+
 
     // 帮助菜单
     HELP: 'help',
@@ -531,16 +532,18 @@ export const TOOLS_CONFIG = {
         icon: 'fas fa-robot',
         children: {
             Segment: {
-                id: TOOL_IDS.AI.SEGMENT_ROOT,
+                id: TOOL_IDS.SEGMENT.ROOT,
                 label: 'Segment',
                 children: {
                     textSegment: {
-                        id: TOOL_IDS.AI.TEXT_SEGMENT,
+
+                        id: TOOL_IDS.SEGMENT.TEXT_SEGMENT,
                         label: 'text prompt segment',
                         icon: 'fas fa-brain',
                         requireLayers: true,
                         endpoint: API_ROUTES.AI.TEXT_SEGMENT,
                         description: '使用SAM模型进行地理空间分割',
+
 
                         processParams: (selectedLayers, mapView, params) => {
                             // 获取所有选中图层的显示参数
@@ -565,7 +568,7 @@ export const TOOLS_CONFIG = {
                         }
                     },
                     pointSegment: {
-                        id: TOOL_IDS.AI.POINT_SEGMENT,
+                        id: TOOL_IDS.SEGMENT.POINT_SEGMENT,
                         label: 'point prompt segment',
                         icon: 'fas fa-map-marker-alt',
                         requireLayers: true,
