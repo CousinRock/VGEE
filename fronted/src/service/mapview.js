@@ -754,6 +754,107 @@ export const toolManager = {
             pixelValues.value = null;
         }
     },
+    createShape: (event,layers,drawnItems,map,pointFeatures,pointLayerCounter) => {
+        const layer = event.layer;
+        drawnItems.value.addLayer(layer);
+
+        let coordinates;
+        let geometryType;
+
+        // 根据类型处理坐标
+        if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
+            // 多边形处理保持不变
+            coordinates = {
+                type: 'Polygon',
+                coordinates: [layer.getLatLngs()[0].map(latLng => [latLng.lng, latLng.lat])]
+            };
+            geometryType = 'Polygon';
+            console.log('MapView.vue - initDrawControl - coordinates:', coordinates.coordinates);
+
+
+            // 多边形仍然创建独立图层
+            const newLayer = {
+                id: `drawn_${Date.now()}`,
+                name: '绘制区域',
+                type: 'manual',
+                visible: true,
+                isStudyArea: false,
+                opacity: 1,
+                visParams: {
+                    color: '#3388ff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.2,
+                },
+                geometry: coordinates,
+                geometryType: geometryType,
+                zIndex: 1000 + layers.value.length
+            };
+
+            const vectorLayer = L.geoJSON(coordinates, {
+                style: newLayer.visParams,
+                interactive: false
+            });
+
+            newLayer.leafletLayer = vectorLayer;
+            layers.value.push(newLayer);
+            vectorLayer.addTo(map.value);
+        }
+        else if (layer instanceof L.Marker) {
+            coordinates = {
+                type: 'Point',
+                coordinates: [layer.getLatLng().lng, layer.getLatLng().lat]
+            };
+
+            // 查找或创建点图层
+            let pointLayer = layers.value.find(l => l.id === `points_layer_${pointLayerCounter.value}`);
+            if (!pointLayer) {
+                // 创建新的点图层
+                pointLayer = {
+                    id: `points_layer_${pointLayerCounter.value}`,
+                    name: `点集合 ${pointLayerCounter.value + 1}`,
+                    icon: 'fas fa-map-marker-alt',
+                    type: 'manual',
+                    geometryType: 'Point',
+                    visible: true,
+                    opacity: 1,
+                    features: [],
+                    visParams: {
+                        radius: 6,
+                        fillColor: "#3388ff",
+                        color: "#ffffff",
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }
+                };
+
+                // 创建 Leaflet 图层
+                pointLayer.leafletLayer = L.geoJSON({
+                    type: 'FeatureCollection',
+                    features: []
+                }, {
+                    pointToLayer: (feature, latlng) => {
+                        return L.circleMarker(latlng, pointLayer.visParams);
+                    }
+                }).addTo(map.value);
+
+                // 添加到图层列表
+                layers.value.push(pointLayer);
+            }
+
+            // 添加新点到特征集合
+            pointLayer.features.push(coordinates);
+            pointFeatures.value = [...pointLayer.features];
+
+            // 只添加新点，而不是重新创建整个图层
+            pointLayer.leafletLayer.addData({
+                type: 'Feature',
+                geometry: coordinates,
+                properties: {}
+            });
+        }
+    },
     getPointLayer: (layers, e, map) => {
         // 提取更新图层的公共方法
         const updatePointLayer = (layer, features) => {
