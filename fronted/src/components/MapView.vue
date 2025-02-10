@@ -917,6 +917,12 @@ const initDrawControl = () => {
             });
         }
     });
+
+    // 添加地图点击事件
+    map.value.on('click', (e) => {
+        toolManager.getPointLayer(layers,e,map)
+
+    });
 }
 
 // 在 script setup 中添加

@@ -753,5 +753,157 @@ export const toolManager = {
             map.value.getContainer().style.cursor = '';
             pixelValues.value = null;
         }
+    },
+    getPointLayer: (layers, e, map) => {
+        // 提取更新图层的公共方法
+        const updatePointLayer = (layer, features) => {
+            map.value.removeLayer(layer.leafletLayer);
+            layer.leafletLayer = L.geoJSON({
+                type: 'FeatureCollection',
+                features: features.map(point => ({
+                    type: 'Feature',
+                    geometry: point,
+                    properties: {}
+                }))
+            }, {
+                pointToLayer: (feature, latlng) => {
+                    return L.circleMarker(latlng, layer.visParams);
+                }
+            });
+            
+            if (layer.visible) {
+                layer.leafletLayer.addTo(map.value);
+            }
+        };
+
+        const pointLayers = layers.value.filter(layer => 
+            layer.type === 'manual' && layer.geometryType === 'Point'
+        );
+
+        pointLayers.forEach(pointLayer => {
+            if (pointLayer.leafletLayer) {
+                pointLayer.leafletLayer.eachLayer(marker => {
+                    const markerLatLng = marker.getLatLng();
+                    const clickPoint = map.value.latLngToContainerPoint(e.latlng);
+                    const markerPoint = map.value.latLngToContainerPoint(markerLatLng);
+                    
+                    const distance = clickPoint.distanceTo(markerPoint);
+                    
+                    if (distance <= pointLayer.visParams.radius + 2) {
+                        const actionButton = L.popup({
+                            closeButton: false,
+                            className: 'point-action-popup'
+                        })
+                            .setLatLng(markerLatLng)
+                            .setContent(`
+                                <div class="point-action-container">
+                                    <button class="point-move-btn">
+                                        <i class="fas fa-arrows-alt"></i> 移动到其他图层
+                                    </button>
+                                    <button class="point-delete-btn">
+                                        <i class="fas fa-trash"></i> 删除点位
+                                    </button>                                   
+                                </div>
+                            `);
+                        
+                        actionButton.addTo(map.value);
+
+                        setTimeout(() => {
+                            // 处理删除操作
+                            const deleteBtn = document.querySelector('.point-delete-btn');
+                            if (deleteBtn) {
+                                deleteBtn.onclick = () => {
+                                    const pointIndex = pointLayer.features.findIndex(
+                                        point => point.coordinates[0] === markerLatLng.lng 
+                                            && point.coordinates[1] === markerLatLng.lat
+                                    );
+                                    
+                                    if (pointIndex > -1 && !pointLayer.isSample) {
+                                        pointLayer.features.splice(pointIndex, 1);
+                                        updatePointLayer(pointLayer, pointLayer.features);
+                                        map.value.closePopup(actionButton);
+                                        
+                                        if (pointLayer.features.length === 0) {
+                                            ElMessage.warning('该点图层已无点位，建议删除图层');
+                                        }
+                                    } else {
+                                        ElMessage.warning('该点位为样本点，无法删除');
+                                        map.value.closePopup(actionButton);
+                                    }
+                                };
+                            }
+
+                            // 处理移动操作
+                            const moveBtn = document.querySelector('.point-move-btn');
+                            if (moveBtn) {
+                                moveBtn.onclick = () => {
+                                    const otherLayers = pointLayers.filter(layer => 
+                                        layer.id !== pointLayer.id
+                                    );
+
+                                    if (otherLayers.length === 0) {
+                                        ElMessage.warning('没有其他可用的点图层');
+                                        return;
+                                    }
+
+                                    const layerSelectPopup = L.popup({
+                                        closeButton: true,
+                                        className: 'layer-select-popup'
+                                    })
+                                        .setLatLng(markerLatLng)
+                                        .setContent(`
+                                            <div class="layer-select-container">
+                                                <h4>选择目标图层</h4>
+                                                <div class="layer-list">
+                                                    ${otherLayers.map(layer => `
+                                                        <button class="layer-select-btn" data-layer-id="${layer.id}">
+                                                            ${layer.name}
+                                                        </button>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        `);
+
+                                    map.value.closePopup(actionButton);
+                                    layerSelectPopup.addTo(map.value);
+
+                                    setTimeout(() => {
+                                        document.querySelectorAll('.layer-select-btn').forEach(btn => {
+                                            btn.onclick = () => {
+                                                const targetLayerId = btn.getAttribute('data-layer-id');
+                                                const targetLayer = otherLayers.find(l => l.id === targetLayerId);
+                                                
+                                                if (targetLayer) {
+                                                    const pointIndex = pointLayer.features.findIndex(
+                                                        point => point.coordinates[0] === markerLatLng.lng 
+                                                            && point.coordinates[1] === markerLatLng.lat
+                                                    );
+                                                    
+                                                    if (pointIndex > -1) {
+                                                        const point = pointLayer.features.splice(pointIndex, 1)[0];
+                                                        
+                                                        // 更新源图层和目标图层
+                                                        updatePointLayer(pointLayer, pointLayer.features);
+                                                        targetLayer.features.push(point);
+                                                        targetLayer.leafletLayer.addData({
+                                                            type: 'Feature',
+                                                            geometry: point,
+                                                            properties: {}
+                                                        });
+
+                                                        map.value.closePopup(layerSelectPopup);
+                                                        ElMessage.success('点位已成功移动到新图层');
+                                                    }
+                                                }
+                                            };
+                                        });
+                                    }, 0);
+                                };
+                            }
+                        }, 0);
+                    }
+                });
+            }
+        });
     }
 }

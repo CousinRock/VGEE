@@ -596,3 +596,118 @@
     font-family: monospace;
     color: #333;
 }
+
+/* 9. 点位删除弹窗样式 */
+/* 弹窗容器背景样式 */
+.point-delete-popup .leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    padding: 0;
+}
+
+/* 弹窗内容区域样式 */
+.point-delete-popup .leaflet-popup-content {
+    margin: 0;
+    padding: 0;
+}
+
+/* 删除按钮容器样式 */
+.point-delete-container {
+    padding: 5px;
+}
+
+/* 删除按钮样式 */
+.point-delete-btn {
+    background: #ff4d4f;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+}
+
+/* 删除按钮悬停效果 */
+.point-delete-btn:hover {
+    background: #ff7875;
+}
+
+/* 删除按钮图标样式 */
+.point-delete-btn i {
+    font-size: 12px;
+}
+
+/* 点位操作弹窗样式 */
+.point-action-popup .leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    padding: 0;
+}
+
+.point-action-popup .leaflet-popup-content {
+    margin: 0;
+    padding: 0;
+}
+
+.point-action-container {
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.point-move-btn {
+    background: #409EFF;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+}
+
+.point-move-btn:hover {
+    background: #66b1ff;
+}
+
+/* 图层选择弹窗样式 */
+.layer-select-popup .leaflet-popup-content-wrapper {
+    background: white;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.layer-select-container h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.layer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.layer-select-btn {
+    background: #f5f7fa;
+    border: 1px solid #dcdfe6;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 12px;
+    transition: all 0.3s;
+}
+
+.layer-select-btn:hover {
+    background: #ecf5ff;
+    border-color: #409EFF;
+    color: #409EFF;
+}
