@@ -235,7 +235,7 @@ export const handleStyle = {
 
                 // 移除旧图层
                 if (currentVectorLayer.value.leafletLayer) {
-                    map.removeLayer(currentVectorLayer.value.leafletLayer);
+                    map.value.removeLayer(currentVectorLayer.value.leafletLayer);
                 }
 
                 // 创建新图层并设置所有样式参数
@@ -259,7 +259,7 @@ export const handleStyle = {
 
                 // 添加新图层到地图
                 if (currentVectorLayer.value.visible) {
-                    newLayer.addTo(map);
+                    newLayer.addTo(map.value);
                     newLayer.setZIndex(currentVectorLayer.value.zIndex);
                 }
             }
@@ -884,6 +884,8 @@ export const toolManager = {
         pointLayers.forEach(pointLayer => {
             if (pointLayer.leafletLayer) {
                 pointLayer.leafletLayer.eachLayer(marker => {
+                    console.log(pointLayer);
+                    if(pointLayer.visible){
                     const markerLatLng = marker.getLatLng();
                     const clickPoint = map.value.latLngToContainerPoint(e.latlng);
                     const markerPoint = map.value.latLngToContainerPoint(markerLatLng);
@@ -1003,8 +1005,87 @@ export const toolManager = {
                             }
                         }, 0);
                     }
+                }
                 });
             }
         });
+    },
+    //拖动事件开始
+    handleDragStart: (e, layer) => {
+        e.dataTransfer.setData('text/plain', layer.id);
+        e.target.classList.add('dragging');
+    },
+
+    handleDragEnd: (e) => {
+        e.target.classList.remove('dragging');
+    },
+
+    handleDragOver: (e) => {
+        e.preventDefault();
+        const dragItem = e.target.closest('.layer-item');
+        if (dragItem) {
+            dragItem.classList.add('drag-over');
+        }
+    },
+
+    handleDragLeave: (e) => {
+        const dragItem = e.target.closest('.layer-item');
+        if (dragItem) {
+            dragItem.classList.remove('drag-over');
+        }
+    },
+
+    handleDrop: async (e, targetLayer, layersRef) => {  // 添加 async
+        e.preventDefault();
+        const draggedLayerId = e.dataTransfer.getData('text/plain');
+        const draggedLayer = layersRef.find(l => l.id === draggedLayerId);
+        
+        if (draggedLayer && targetLayer.id !== draggedLayerId) {
+            try {
+                // 获取源和目标索引
+                const fromIndex = layersRef.findIndex(l => l.id === draggedLayerId);
+                const toIndex = layersRef.findIndex(l => l.id === targetLayer.id);
+                
+                // 移除拖动的图层
+                layersRef.splice(fromIndex, 1);
+                // 插入到新位置
+                layersRef.splice(toIndex, 0, draggedLayer);
+                
+                // 更新图层的 zIndex
+                layersRef.forEach((layer, index) => {
+                    if (layer.leafletLayer) {
+                        layer.zIndex = 1000 + layersRef.length - index;
+                        layer.leafletLayer.setZIndex(layer.zIndex);
+                    }
+                });
+
+                // 发送请求到后端更新数据集顺序
+                const response = await fetch(`${API_ROUTES.MAP.UPDATE_LAYER_ORDER}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        layers: layersRef.map(layer => ({
+                            id: layer.id,
+                            index: layer.zIndex
+                        }))
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update layer order');
+                }
+            } catch (error) {
+                console.error('Error updating layer order:', error);
+                ElMessage.error('更新图层顺序失败');
+            }
+        }
+        
+        // 移除所有拖拽相关的样式类
+        document.querySelectorAll('.layer-item').forEach(item => {
+            item.classList.remove('drag-over', 'dragging');
+        });
     }
+    //拖动事件结束
 }

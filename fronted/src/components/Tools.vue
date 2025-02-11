@@ -68,6 +68,7 @@
                 || currentTool?.id === TOOL_IDS.CLASSIFICATION.SVM
                 || currentTool?.id === TOOL_IDS.RASTER_OPERATION.CALCULATOR
                 || currentTool?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME
+                || currentTool?.id === TOOL_IDS.RASTER_OPERATION.CLIP
                 || currentTool?.id === TOOL_IDS.SEGMENT.TEXT_SEGMENT) && selectedLayerName.length > 0"
                 class="layer-select-right">
 
@@ -102,6 +103,11 @@
                         :currentTool="currentTool.id" />
                 </div>
 
+                <!-- 裁剪设置 -->
+                <div v-if="currentTool?.id === TOOL_IDS.RASTER_OPERATION.CLIP">
+                    <ClipImage ref="clipImageRef" :mapView="props.mapView" />
+                </div>
+
             </div>
         </div>
 
@@ -119,6 +125,8 @@
     <SearchResults ref="searchResultsRef" />
     <!-- 上传数据 -->
     <UploadData ref="uploadDataRef" :mapView="mapView" />
+    <!-- 定位组件 -->
+    <LocationSearch ref="locationSearchRef" :mapView="props.mapView" />
 </template>
 
 <script setup>
@@ -137,6 +145,8 @@ import MacLeaClassify from './ToolsView/MacLeaClassify.vue'
 import UploadData from './ToolsView/UploadData.vue'
 import RenameBands from './ToolsView/RenameBands.vue'
 import AiTools from './ToolsView/AiTools.vue'
+import LocationSearch from './ToolsView/LocationSearch.vue'
+import ClipImage from './ToolsView/ClipImage.vue'
 
 const props = defineProps({
     mapView: {
@@ -171,6 +181,10 @@ const macLeaClassifyRef = ref(null)
 const renameBandsRef = ref(null)
 // AI 工具
 const aiToolsRef = ref(null)
+// 定位组件
+const locationSearchRef = ref(null)
+// 裁剪组件
+const clipImageRef = ref(null)
 
 // 添加 toolParams 计算属性
 const toolParams = computed(() => {
@@ -193,6 +207,8 @@ const toolParams = computed(() => {
             return renameBandsRef.value?.renameBandsParams?.bands || []
         case TOOL_IDS.SEGMENT.TEXT_SEGMENT:
             return aiToolsRef.value?.aiParams?.langSam || {}
+        case TOOL_IDS.RASTER_OPERATION.CLIP:
+            return clipImageRef.value?.getClipParams() || {}
         default:
             return null
     }
@@ -246,6 +262,9 @@ const handleSpecialTool = async (tool) => {
                 break
             case TOOL_IDS.SEARCH.ID:
                 searchResultsRef.value.toggleIdSearch()
+                break
+            case TOOL_IDS.LOCATION.LOCALIZE:
+                locationSearchRef.value.showDialog = true
                 break
             default:
                 ElMessage.warning('该功能尚未实现')
@@ -301,6 +320,7 @@ const handleLayerSelect = async () => {
     }
 
     try {
+
         const result = await ToolService.processLayerSelect(
             selectedLayerName.value,
             currentTool.value,

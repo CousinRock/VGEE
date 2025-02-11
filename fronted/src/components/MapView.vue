@@ -45,7 +45,15 @@
                 </div>
 
                 <!-- 动态图列表 -->
-                <div class="layer-item" v-for="layer in layers" :key="layer.id">
+                <div class="layer-item" 
+                    v-for="layer in layers" 
+                    :key="layer.id"
+                    draggable="true"
+                    @dragstart="toolManager.handleDragStart($event, layer)"
+                    @dragend="toolManager.handleDragEnd"
+                    @dragover="toolManager.handleDragOver"
+                    @dragleave="toolManager.handleDragLeave"
+                    @drop="toolManager.handleDrop($event, layer,layers)">
                     <div class="layer-header">
                         <input type="checkbox" v-model="layer.visible" :id="layer.id">
                         <label :for="layer.id">

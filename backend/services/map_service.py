@@ -37,6 +37,7 @@ def remove_dataset(layer_id):
         del datasetsNames[layer_id]
         print(f"Map_service.py - remove_dataset-datasets: {datasets}")
 
+
 def compute_image_stats(dataset, bands,region=None):
     """
     计算影像的统计信息
@@ -203,3 +204,32 @@ def get_map_data_service(satellite, start_date, end_date, cloud_cover, region=No
             'success': False,
             'message': str(e)
         }        
+
+def update_layer_order(layers):
+    '''
+    更新图层顺序
+    Args:
+        layers: 包含图层ID和索引的列表
+    '''
+    try:
+        # 创建临时字典存储数据集
+        temp_datasets = {}
+        temp_names = {}
+        
+        # 按新的顺序重新组织数据集
+        for layer in sorted(layers, key=lambda x: x['index'], reverse=True):
+            layer_id = layer['id']
+            if layer_id in datasets:
+                temp_datasets[layer_id] = datasets[layer_id]
+                temp_names[layer_id] = datasetsNames[layer_id]
+        
+        datasets.clear()
+        datasetsNames.clear()
+        datasets.update(temp_datasets)
+        datasetsNames.update(temp_names)
+        
+        return True, '图层顺序更新成功'
+        
+    except Exception as e:
+        print(f"Error updating layer order: {str(e)}")
+        return False, str(e)        

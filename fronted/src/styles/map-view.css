@@ -97,6 +97,29 @@
     margin-bottom: 12px;
     padding: 4px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    cursor: move;
+    transition: all 0.2s ease;
+}
+
+.layer-item.dragging {
+    opacity: 0.5;
+    background: rgba(64, 158, 255, 0.1);
+}
+
+.layer-item.drag-over {
+    border: 2px dashed #409EFF;
+    padding: 3px;  /* 补偿边框宽度 */
+}
+
+/* 拖拽时的视觉反馈 */
+.layer-item.drag-over::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #409EFF;
+    top: -1px;
 }
 
 .layer-header {
@@ -709,5 +732,36 @@
 .layer-select-btn:hover {
     background: #ecf5ff;
     border-color: #409EFF;
+    color: #409EFF;
+}
+
+/* 搜索框样式 */
+.location-search {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 4px;
+    padding: 4px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.location-search input {
+    border: none;
+    outline: none;
+    padding: 4px 8px;
+    width: 200px;
+    font-size: 14px;
+}
+
+.location-search button {
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    color: #666;
+}
+
+.location-search button:hover {
     color: #409EFF;
 }

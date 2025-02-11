@@ -17,6 +17,9 @@ export const TOOL_IDS = {
         DEM: 'search-data-dem',
         ID: 'search-data-id'
     },
+    LOCATION:{
+        ROOT:'location'
+    },
 
     // 工具箱菜单
     TOOLS: 'tools',
@@ -45,7 +48,9 @@ export const TOOL_IDS = {
     },
     RASTER_OPERATION: {
         ROOT: 'raster-operation',
-        CALCULATOR: 'raster-calculator'
+        CALCULATOR: 'raster-calculator',
+        MOSAIC: 'mosaic',
+        CLIP: 'clip'
     },
 
     // AI工具菜单
@@ -490,7 +495,7 @@ export const TOOLS_CONFIG = {
             },
             rasterOperation: {
                 id: TOOL_IDS.RASTER_OPERATION.ROOT,
-                label: '栅格运算',
+                label: '栅格操作',
                 children: {
                     rasterCalculator: {
                         id: TOOL_IDS.RASTER_OPERATION.CALCULATOR,
@@ -521,6 +526,54 @@ export const TOOLS_CONFIG = {
                             }
                             return true
                         }
+                    },
+                    mosaic: {
+                        id: TOOL_IDS.RASTER_OPERATION.MOSAIC,
+                        label: '影像拼接',
+                        icon: 'fas fa-image',
+                        requireLayers: true,
+                        endpoint: API_ROUTES.TOOLS.MOSAIC,
+                        description: '将多张影像拼接成一张大图',
+                        processParams: (selectedLayers, mapView) => ({
+                            layer_ids: selectedLayers,
+                            vis_params: mapView.layers
+                                .filter(l => selectedLayers.includes(l.id))
+                                .map(l => ({
+                                    id: l.id,
+                                    visParams: l.visParams
+                                }))
+                        })
+                    },
+                    clip: {
+                        id: TOOL_IDS.RASTER_OPERATION.CLIP,
+                        label: '影像裁剪',
+                        icon: 'fas fa-crop-alt',
+                        requireLayers: true,
+                        endpoint: API_ROUTES.TOOLS.CLIP,
+                        description: '使用矢量边界裁剪影像',
+                        processParams: (selectedLayers, mapView, params) => ({
+                            layer_ids: selectedLayers,
+                            vis_params: mapView.layers
+                                .filter(l => selectedLayers.includes(l.id))
+                                .map(l => ({
+                                    id: l.id,
+                                    visParams: l.visParams
+                                })),
+                            geometry: params?.clipLayer?.geometry || params?.clipLayer?.features?.[0]?.geometry
+                        })
+                    }
+                }
+            },
+            location: {
+                id: TOOL_IDS.LOCATION.ROOT,
+                label: '位置搜索',
+                children: {
+                    localize: {
+                        id: TOOL_IDS.LOCATION.LOCALIZE,
+                        label: '定位',
+                        icon: 'fas fa-map-marker-alt',
+                        component: 'LocationSearch',
+                        requireLayers: false
                     }
                 }
             }

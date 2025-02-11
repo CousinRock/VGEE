@@ -5,9 +5,9 @@ from tools.preprocessing import PreprocessingTool
 from tools.classification import ClassificationTool 
 from tools.calculateIndex import IndexTool
 from tools.parallel_processor import ParallelProcessor
+from tools.rasterOperator import RasterOperatorTool
 import ee
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 tool_bp = Blueprint('tool', __name__)
 
@@ -437,7 +437,7 @@ def raster_calculator():
 
         if mode == 'multi':
             # 多图层模式 - 一次性处理所有图层
-            result = PreprocessingTool.raster_calculator_multi(layer_ids, expression, datasets, datasetsNames)
+            result = RasterOperatorTool.raster_calculator_multi(layer_ids, expression, datasets, datasetsNames)
             
             calc_id = f"calc_multi_{int(time.time())}"
             calc_name = "多图层计算结果"
@@ -462,7 +462,7 @@ def raster_calculator():
                     
                     # 获取原始图像的副本
                     image = ee.Image(datasets[layer_id])
-                    result = PreprocessingTool.raster_calculator_all_bands(
+                    result = RasterOperatorTool.raster_calculator_all_bands(
                         image, 
                         expression,
                         selected_bands
@@ -500,7 +500,7 @@ def raster_calculator():
                     
                     # 获取原始图像的副本    
                     image = ee.Image(datasets[layer_id])
-                    result = PreprocessingTool.raster_calculator_single(image, expression)
+                    result = RasterOperatorTool.raster_calculator_single(image, expression)
                     
                     calc_id = f"calc_{int(time.time())}-{layer_id}"
                     calc_name = f"{datasetsNames.get(layer_id, f'Layer_{layer_id}')} (计算结果)"
@@ -655,3 +655,85 @@ def svm_classification():
             'success': False,
             'message': str(e)
         }), 500
+    
+
+@tool_bp.route('/mosaic', methods=['POST'])
+def mosaic():
+    try:
+        data = request.json
+        layer_ids = data.get('layer_ids')
+        vis_params = data.get('vis_params', [])
+        
+        print('Tool_routes.py - mosaic-layer_ids:', data)
+        print('Tool_routes.py - mosaic-datasets:', datasets)
+
+        selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
+        mosaic_result = RasterOperatorTool.img_mosaic(selected_images)
+        
+        # 创建新的图层ID和名称
+        mosaic_id = f"mosaic_{int(time.time())}"
+        mosaic_name = "mosaic_result"
+        # 保存拼接结果
+        save_dataset(mosaic_id, mosaic_result, mosaic_name)  
+        # 获取波段信息
+        try:
+            bandNames = mosaic_result.bandNames().getInfo()
+        except Exception as e:
+            print(f"Error getting band names: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': f"Error processing mosaic: {str(e)}"
+            }), 500          
+        # 使用第一个图层的可视化参数
+        vis_param = vis_params[0]['visParams'] if vis_params else {
+            'bands': ['B4', 'B3', 'B2'],
+            'min': 0,
+            'max': 0.3,
+            'gamma': 1.4
+        }     
+        # 获取拼接结果的地图ID
+        map_id = mosaic_result.getMapId(vis_param)        
+        return jsonify({
+            'success': True,
+            'message': '影像拼接完成',
+            'results': [{
+                'layer_id': mosaic_id,
+                'name': mosaic_name,
+                'tileUrl': map_id['tile_fetcher'].url_format,
+                'bandInfo': bandNames,
+                'visParams': vis_param,
+                'type': 'Raster'
+            }]
+        })
+    except Exception as e:
+        print(f"Error in mosaic: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@tool_bp.route('/clip', methods=['POST'])
+def clip():
+    try:
+        data = request.json
+        layer_ids = data.get('layer_ids')
+        vis_params = data.get('vis_params', [])
+        geometry = data.get('geometry',{})
+        print('Tool_routes.py - clip-data:', data)
+        
+        selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
+        # 先进行裁剪，然后将结果转换为 List
+        clipped_collection = RasterOperatorTool.img_clip(selected_images, geometry)
+        clip_result = clipped_collection.toList(clipped_collection.size())
+
+        return common_process(layer_ids, clip_result, vis_params, '影像裁剪完成')
+
+    except Exception as e:
+        print(f"Error in clip: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+

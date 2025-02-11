@@ -483,3 +483,24 @@ def get_pixel_value():
             'message': str(e)
         }), 500
 
+@map_bp.route('/update-layer-order', methods=['POST'])
+def update_layer_order():
+    try:
+        data = request.get_json()
+        layers = data.get('layers', [])
+        
+        success, message = map_service.update_layer_order(layers)
+        
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+        
+    except Exception as e:
+        print(f"Error in update_layer_order route: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
