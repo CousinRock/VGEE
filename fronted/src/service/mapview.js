@@ -398,7 +398,12 @@ export const layerManager = {
                 ElMessage.warning('图层名称不能为空')
                 return false
             }
-
+            console.log('MapView.vue - renameLayer - layer:', layer)
+            if (layer.type === 'manual' || layer.type === 'vector') {
+                layer.name = newName.trim()
+                ElMessage.success('图层重命名成功')
+                return true
+            }
             const response = await fetch(API_ROUTES.MAP.RENAME_LAYER, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

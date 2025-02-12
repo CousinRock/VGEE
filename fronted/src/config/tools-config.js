@@ -52,6 +52,11 @@ export const TOOL_IDS = {
         MOSAIC: 'mosaic',
         CLIP: 'clip'
     },
+    TERRAIN_OPERATION: {
+        ROOT: 'terrain-operation',
+        TERRAIN: 'terrain'
+    },
+
 
     // AI工具菜单
     AI_TOOLS: 'ai-tools',
@@ -560,6 +565,29 @@ export const TOOLS_CONFIG = {
                                     visParams: l.visParams
                                 })),
                             geometry: params?.clipLayer?.geometry || params?.clipLayer?.features?.[0]?.geometry
+                        })
+                    }
+                }
+            },
+            terrainOperation: {
+                id: TOOL_IDS.TERRAIN_OPERATION.ROOT,
+                label: '地形工具',
+                children: {
+                    terrain: {
+                        id: TOOL_IDS.TERRAIN_OPERATION.TERRAIN,
+                        label: '地形',
+                        icon: 'fas fa-mountain',
+                        requireLayers: true,
+                        endpoint: API_ROUTES.TOOLS.TERRAIN,
+                        description: '计算地形',
+                        processParams: (selectedLayers, mapView) => ({
+                            layer_ids: selectedLayers,
+                            vis_params: mapView.layers
+                                .filter(l => selectedLayers.includes(l.id))
+                                .map(l => ({
+                                    id: l.id,
+                                    visParams: l.visParams
+                                }))
                         })
                     }
                 }

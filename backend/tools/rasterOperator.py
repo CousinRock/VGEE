@@ -115,22 +115,17 @@ class RasterOperatorTool(BaseTool):
             raise Exception(f"Error in mosaic: {str(e)}")
 
     @staticmethod
-    def img_clip(imageCollection, geometry):
+    def img_clip(image, geometry):
         """影像裁剪"""
         try:
             clip_geometry = ee.Geometry(geometry)
-            def clip_image(image):
-                return image.clip(clip_geometry)
-            
-            def set_projection(image):
-                projection = image.projection()
-                return image.setDefaultProjection(projection)
             
             # 裁剪到指定边界
-            clipped = imageCollection.map(clip_image)
+            clipped = image.clip(clip_geometry)
             
             # 确保结果包含投影信息
-            clipped = clipped.map(set_projection)
+            projection = image.projection()
+            clipped = clipped.setDefaultProjection(projection)
             
             return clipped
             

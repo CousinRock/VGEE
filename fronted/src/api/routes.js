@@ -47,14 +47,18 @@ export const API_ROUTES = {
         CLOUD_REMOVAL: `${BASE_URL}/tools/cloud-removal`,
         CALCULATE_INDEX: `${BASE_URL}/tools/calculate-index`,
         IMAGE_FILLING: `${BASE_URL}/tools/image-filling`,
-        KMEANS_CLUSTERING: `${BASE_URL}/tools/kmeans-clustering`,
+        RENAME_BANDS: `${BASE_URL}/tools/rename-bands`,
         HISTOGRAM_EQUALIZATION: `${BASE_URL}/tools/histogram-equalization`,
+        //machine learning
+        KMEANS_CLUSTERING: `${BASE_URL}/tools/kmeans-clustering`,
         RANDOM_FOREST: `${BASE_URL}/tools/random-forest`,
         SVM: `${BASE_URL}/tools/svm`,
-        RENAME_BANDS: `${BASE_URL}/tools/rename-bands`,
+        //raster operation
         RASTER_CALCULATOR: `${BASE_URL}/tools/raster-calculator`,
         MOSAIC: `${BASE_URL}/tools/mosaic`,
-        CLIP: `${BASE_URL}/tools/clip`
+        CLIP: `${BASE_URL}/tools/clip`,
+        //terrain operation
+        TERRAIN: `${BASE_URL}/tools/terrain`
     },
     AI: {
         TEXT_SEGMENT: `${BASE_URL}/ai/text_segment`,

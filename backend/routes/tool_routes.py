@@ -6,6 +6,7 @@ from tools.classification import ClassificationTool
 from tools.calculateIndex import IndexTool
 from tools.parallel_processor import ParallelProcessor
 from tools.rasterOperator import RasterOperatorTool
+from tools.terrainOperator import TerrainOperationTool
 import ee
 import time
 
@@ -16,9 +17,9 @@ datasetsNames = None
 maxthread_num = 4
 
 
-def common_process(layer_ids, results, vis_params, message):
+def ReturnOriginLayer(layer_ids, results, vis_params, message):
     '''
-    通用的图层处理函数
+    返回原始图层
     '''
     layer_results = []
     for i, layer_id in enumerate(layer_ids):
@@ -65,6 +66,73 @@ def common_process(layer_ids, results, vis_params, message):
         'results': layer_results
     })
     
+def ReturnNewLayer(layer_ids, results, original_names, message, result_type=''):
+    '''
+    返回新的图层处理函数
+    参数:
+        layer_ids: 原始图层ID列表
+        results: 处理结果列表 (ee.Image 对象列表)
+        original_names: 原始图层名称字典
+        message: 返回给前端的消息
+        result_type: 结果类型标识(可选)，用于生成新图层名称前缀
+    '''
+    layer_results = []
+    
+    for i, result in enumerate(results):
+        try:
+            # 生成新的图层ID和名称
+            timestamp = int(time.time())
+            new_id = f"{result_type}_{timestamp}" if result_type else f"new_{timestamp}"
+            original_name = original_names.get(layer_ids[i], f'Layer_{layer_ids[i]}')
+            new_name = f"{original_name} ({result_type}结果)" if result_type else f"{original_name} (处理结果)"
+            
+            # 获取波段信息
+            bandNames = result.bandNames().getInfo()
+            
+            # 获取处理函数设置的可视化参数，如果没有则使用默认参数
+            try:
+                vis_params = result.get('vis_params').getInfo()
+            except:
+                default_bands = bandNames[:3] if len(bandNames) >= 3 else bandNames
+                vis_params = {
+                    'bands': default_bands,
+                    'min': 0,
+                    'max': 1,
+                    'gamma': 1.4
+                }
+            
+            # 获取地图瓦片URL
+            map_id = result.getMapId(vis_params)
+            
+            # 构建图层结果对象
+            layer_result = {
+                'layer_id': new_id,
+                'name': new_name,
+                'tileUrl': map_id['tile_fetcher'].url_format,
+                'bandInfo': bandNames,
+                'visParams': vis_params,
+                'type': 'Raster'
+            }
+            
+            # 保存新的数据集
+            save_dataset(new_id, result, new_name)
+            
+            layer_results.append(layer_result)
+            
+        except Exception as e:
+            print(f"处理图层 {layer_ids[i]} 时出错: {str(e)}")
+            continue
+    
+    if not layer_results:
+        raise ValueError("没有成功处理的结果")
+    
+    return jsonify({
+        'success': True,
+        'message': message,
+        'results': layer_results
+    })
+
+
 def get_vis_params(result):
     """动态计算可视化参数"""
     try:
@@ -113,7 +181,7 @@ def cloud_removal():
         
         results = selected_images.map(PreprocessingTool.cloud_removal).toList(selected_images.size())
         
-        return common_process(layer_ids, results, vis_params, '除云处理完成')
+        return ReturnOriginLayer(layer_ids, results, vis_params, '除云处理完成')
         
     except Exception as e:
         print(f"Error in cloud_removal: {str(e)}")
@@ -160,7 +228,7 @@ def calculate_index():
         results = ee.List(results)
         
         # 使用原有的 common_process 处理结果
-        return common_process(layer_ids, results, vis_params, f'已添加 {index_type.upper()} 波段')
+        return ReturnOriginLayer(layer_ids, results, vis_params, f'已添加 {index_type.upper()} 波段')
         
     except Exception as e:
         print(f"Error in calculate_index: {str(e)}")
@@ -194,7 +262,7 @@ def image_filling():
         #防止填补失败时出错
         print('Tool_routes.py - image_filling-results:',results.size().getInfo())
         # 使用 common_process 处理结果
-        return common_process(layer_ids, results, vis_params, '图像填补处理完成')
+        return ReturnOriginLayer(layer_ids, results, vis_params, '图像填补处理完成')
         
     except Exception as e:
         print(f"Error in image_filling: {str(e)}")
@@ -254,37 +322,19 @@ def kmeans_clustering():
                     ee.Image(images_list.get(i)), 
                     num_clusters
                 )
-
-                original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
-                kmeans_id = f"kmeans_{int(time.time())}-{layer_id}"
-                kmeans_name = f"{original_name} (K-means聚类)"
-
-                map_id = result.getMapId({
+                # 设置聚类结果的可视化参数
+                result = result.set('vis_params', {
+                    'bands': ['cluster'],
                     'min': 0,
                     'max': num_clusters - 1
                 })
-                
-                layer_result = {
-                    'layer_id': kmeans_id,
-                    'name': kmeans_name,
-                    'tileUrl': map_id['tile_fetcher'].url_format,
-                    'bandInfo': ['cluster'],
-                    'visParams': {
-                        'bands': ['cluster'],
-                        'min': 0,
-                        'max': num_clusters - 1
-                    },
-                    'type': 'Raster'
-                }
-
-                save_dataset(kmeans_id, result.select(['cluster']), kmeans_name)
-                return layer_result
+                return result
             except Exception as e:
                 print(f"Error processing layer {layer_id}: {str(e)}")
                 return None
 
         # 使用通用的并行处理函数
-        layer_results = ParallelProcessor.process_layers(
+        results = ParallelProcessor.process_layers(
             layer_ids=layer_ids,
             process_func=process_layer,
             max_workers=maxthread_num,
@@ -292,14 +342,16 @@ def kmeans_clustering():
             cluster_counts=cluster_counts
         )
 
-        if not layer_results:
+        if not results:
             raise ValueError("No successful classification results")
 
-        return jsonify({
-            'success': True,
-            'message': 'K-means聚类分析完成',
-            'results': layer_results
-        })
+        return ReturnNewLayer(
+            layer_ids=layer_ids,
+            results=results,
+            original_names=datasetsNames,
+            message='K-means聚类分析完成',
+            result_type='kmeans'
+        )
         
     except Exception as e:
         print(f"Error in kmeans_clustering: {str(e)}")
@@ -320,7 +372,7 @@ def histogram_equalization():
         results = selected_images.map(PreprocessingTool.histogram_equalization).toList(selected_images.size())
 
         
-        return common_process(layer_ids, results, vis_params, '直方图均衡化处理完成')
+        return ReturnOriginLayer(layer_ids, results, vis_params, '直方图均衡化处理完成')
         
     except Exception as e:
         print(f"Error in histogram_equalization: {str(e)}")
@@ -347,65 +399,46 @@ def random_forest():
         def process_layer(layer_id, images_list=None, rf_params=None, samples=None):
             try:
                 i = layer_ids.index(layer_id)
-                # 获取该图层的特定参数
                 layer_params = rf_params.get(layer_id, {})
                 num_trees = layer_params.get('numberOfTrees', 50)
                 train_ratio = layer_params.get('trainRatio', 0.7)
                 
                 image = ee.Image(images_list.get(i))
-                classified = ClassificationTool.random_forest_classification(
+                result = ClassificationTool.random_forest_classification(
                     image, samples,
                     num_trees=num_trees,
                     train_ratio=train_ratio
                 )
-
-                original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
-                rf_id = f"rf_{int(time.time())}-{layer_id}"
-                rf_name = f"{original_name} (随机森林分类)"
-                
-                map_id = classified.getMapId({
+                # 设置分类结果的可视化参数
+                result = result.set('vis_params', {
+                    'bands': ['classification'],
                     'min': 0,
                     'max': len(samples) - 1
                 })
-                
-                layer_result = {
-                    'layer_id': rf_id,
-                    'name': rf_name,
-                    'tileUrl': map_id['tile_fetcher'].url_format,
-                    'bandInfo': ['classification'],
-                    'visParams': {
-                        'bands': ['classification'],
-                        'min': 0,
-                        'max': len(samples) - 1
-                    },
-                    'type': 'Raster'
-                }
-
-                save_dataset(rf_id, classified.select(['classification']), rf_name)
-                return layer_result
+                return result
             except Exception as e:
                 print(f"Error processing layer {layer_id}: {str(e)}")
                 return None
 
-        # 使用通用的并行处理函数
-        layer_results = ParallelProcessor.process_layers(
+        results = ParallelProcessor.process_layers(
             layer_ids=layer_ids,
             process_func=process_layer,
             max_workers=maxthread_num,
             images_list=images_list,
             rf_params=rf_params,
             samples=samples
-
         )
 
-        if not layer_results:
+        if not results:
             raise ValueError("No successful classification results")
 
-        return jsonify({
-            'success': True,
-            'message': '随机森林分类完成',
-            'results': layer_results
-        })
+        return ReturnNewLayer(
+            layer_ids=layer_ids,
+            results=results,
+            original_names=datasetsNames,
+            message='随机森林分类完成',
+            result_type='rf'
+        )
         
     except Exception as e:
         print(f"Error in random_forest: {str(e)}")
@@ -416,42 +449,29 @@ def random_forest():
 
 @tool_bp.route('/raster-calculator', methods=['POST'])
 def raster_calculator():
-    def create_layer_result(layer_id, name, result, vis_params):
-        """创建图层结果对象"""
-        map_id = result.getMapId(vis_params)
-        return {
-            'layer_id': layer_id,
-            'name': name,
-            'tileUrl': map_id['tile_fetcher'].url_format,
-            'bandInfo': result.bandNames().getInfo(),
-            'visParams': vis_params,
-            'type':'Raster'
-        }
-
     try:
         data = request.json
         layer_ids = data.get('layer_ids')
         expression = data.get('expression')
         mode = data.get('mode', 'single')
-        layer_results = []
 
         if mode == 'multi':
             # 多图层模式 - 一次性处理所有图层
             result = RasterOperatorTool.raster_calculator_multi(layer_ids, expression, datasets, datasetsNames)
+            # 设置计算结果的可视化参数
+            vis_params = get_vis_params(result)
+            result = result.set('vis_params', vis_params)
+            results = [result]  # 将单个结果转换为列表
             
-            calc_id = f"calc_multi_{int(time.time())}"
-            calc_name = "多图层计算结果"
-            save_dataset(calc_id, result, calc_name)
-            
-            band_names = result.bandNames().getInfo()
-            default_bands = band_names[:3] if len(band_names) >= 3 else band_names
-            vis_params = {'bands': default_bands, 'min': 0, 'max': 1, 'gamma': 1.4}
-            
-            layer_results = [create_layer_result(calc_id, calc_name, result, vis_params)]
+            return ReturnNewLayer(
+                layer_ids=layer_ids,
+                results=results,
+                original_names=datasetsNames,
+                message='多图层计算完成',
+                result_type='calc_multi'
+            )
                 
         elif mode == 'all_bands':
-            # 例如: {'x*2': ['B1','B2','B3'], 'x/2': ['B5','B6','B7']}
-            # {'x/10000':['B1','B2','B3','B4','B5','B6','B7','B8','B8A','B9','B10','B11','B12']}
             selected_bands = eval(expression)
             print('Tool_routes.py - raster_calculator-selected_bands:', selected_bands)
             
@@ -459,37 +479,34 @@ def raster_calculator():
                 try:
                     if layer_id not in datasets:
                         return None
-                    
-                    # 获取原始图像的副本
                     image = ee.Image(datasets[layer_id])
                     result = RasterOperatorTool.raster_calculator_all_bands(
                         image, 
                         expression,
                         selected_bands
                     )
-                    
-                    if result is not None:
-                        calc_id = f"calc_all_{int(time.time())}-{layer_id}"
-                        calc_name = f"{datasetsNames.get(layer_id, f'Layer_{layer_id}')} (全波段计算结果)"
-                        save_dataset(calc_id, result, calc_name)
-                        
-                        band_names = result.bandNames().getInfo()
-                        default_bands = band_names[:3] if len(band_names) >= 3 else band_names
-                        vis_params = {'bands': default_bands, 'min': 0, 'max': 1, 'gamma': 1.4}
-                        
-                        return create_layer_result(calc_id, calc_name, result, vis_params)
+                    # 设置计算结果的可视化参数
+                    vis_params = get_vis_params(result)
+                    result = result.set('vis_params', vis_params)
+                    return result
                 except Exception as e:
                     print(f"Error processing layer {layer_id}: {str(e)}")
                     return None
 
-            # 使用通用的并行处理函数
-            layer_results = ParallelProcessor.process_layers(
+            results = ParallelProcessor.process_layers(
                 layer_ids=layer_ids,
                 process_func=process_layer,
                 max_workers=maxthread_num,
                 selected_bands=selected_bands
             )
-                    
+            
+            return ReturnNewLayer(
+                layer_ids=layer_ids,
+                results=results,
+                original_names=datasetsNames,
+                message='全波段计算完成',
+                result_type='calc_all'
+            )
 
         else:
             # 单波段模式
@@ -497,39 +514,31 @@ def raster_calculator():
                 try:
                     if layer_id not in datasets:
                         return None
-                    
-                    # 获取原始图像的副本    
                     image = ee.Image(datasets[layer_id])
                     result = RasterOperatorTool.raster_calculator_single(image, expression)
-                    
-                    calc_id = f"calc_{int(time.time())}-{layer_id}"
-                    calc_name = f"{datasetsNames.get(layer_id, f'Layer_{layer_id}')} (计算结果)"
-                    save_dataset(calc_id, result, calc_name)
-                    
+                    # 设置计算结果的可视化参数
                     vis_params = get_vis_params(result)
-                    return create_layer_result(calc_id, calc_name, result, vis_params)
+                    result = result.set('vis_params', vis_params)
+                    return result
                 except Exception as e:
                     print(f"Error processing layer {layer_id}: {str(e)}")
                     return None
 
-            # 使用通用的并行处理函数
-            layer_results = ParallelProcessor.process_layers(
+            results = ParallelProcessor.process_layers(
                 layer_ids=layer_ids,
                 process_func=process_layer,
                 max_workers=maxthread_num,
                 expression=expression
-
             )
 
-        if not layer_results:
-            raise ValueError("No successful calculation results")
+            return ReturnNewLayer(
+                layer_ids=layer_ids,
+                results=results,
+                original_names=datasetsNames,
+                message='单波段计算完成',
+                result_type='calc'
+            )
 
-        return jsonify({
-            'success': True,
-            'message': '栅格计算完成',
-            'results': layer_results
-        })
-        
     except Exception as e:
         print(f"Error in raster calculator: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -564,7 +573,7 @@ def rename_bands():
                 for b in vis_param['visParams']['bands']
             ]
         
-        return common_process(layer_ids, results, vis_params, '波段重命名完成')
+        return ReturnOriginLayer(layer_ids, results, vis_params, '波段重命名完成')
         
     except Exception as e:
         print(f"Error renaming bands: {str(e)}")
@@ -590,48 +599,28 @@ def svm_classification():
         def process_layer(layer_id, images_list=None, svm_params=None, samples=None):
             try:
                 i = layer_ids.index(layer_id)
-                # 获取该图层的特定参数
                 layer_params = svm_params.get(layer_id, {})
                 kernel = layer_params.get('kernel', 'RBF')
                 train_ratio = layer_params.get('trainRatio', 0.7)
                 
                 image = ee.Image(images_list.get(i))
-                classified = ClassificationTool.svm_classification(
+                result = ClassificationTool.svm_classification(
                     image, samples,
                     kernel=kernel,
                     train_ratio=train_ratio
                 )
-
-                original_name = datasetsNames.get(layer_id, f'Layer_{layer_id}')
-                svm_id = f"svm_{int(time.time())}-{layer_id}"
-                svm_name = f"{original_name} (SVM分类)"
-                
-                map_id = classified.getMapId({
+                # 设置分类结果的可视化参数
+                result = result.set('vis_params', {
+                    'bands': ['classification'],
                     'min': 0,
                     'max': len(samples) - 1
                 })
-                
-                layer_result = {
-                    'layer_id': svm_id,
-                    'name': svm_name,
-                    'tileUrl': map_id['tile_fetcher'].url_format,
-                    'bandInfo': ['classification'],
-                    'visParams': {
-                        'bands': ['classification'],
-                        'min': 0,
-                        'max': len(samples) - 1
-                    },
-                    'type': 'Raster'
-                }
-
-                save_dataset(svm_id, classified.select(['classification']), svm_name)
-                return layer_result
+                return result
             except Exception as e:
                 print(f"Error processing layer {layer_id}: {str(e)}")
                 return None
 
-        # 使用通用的并行处理函数
-        layer_results = ParallelProcessor.process_layers(
+        results = ParallelProcessor.process_layers(
             layer_ids=layer_ids,
             process_func=process_layer,
             max_workers=maxthread_num,
@@ -640,14 +629,16 @@ def svm_classification():
             samples=samples
         )
 
-        if not layer_results:
+        if not results:
             raise ValueError("No successful classification results")
 
-        return jsonify({
-            'success': True,
-            'message': 'SVM分类完成',
-            'results': layer_results
-        })
+        return ReturnNewLayer(
+            layer_ids=layer_ids,
+            results=results,
+            original_names=datasetsNames,
+            message='SVM分类完成',
+            result_type='svm'
+        )
         
     except Exception as e:
         print(f"Error in svm_classification: {str(e)}")
@@ -662,49 +653,24 @@ def mosaic():
     try:
         data = request.json
         layer_ids = data.get('layer_ids')
-        vis_params = data.get('vis_params', [])
+        print('Tool_routes.py - mosaic-data:', data)
         
-        print('Tool_routes.py - mosaic-layer_ids:', data)
-        print('Tool_routes.py - mosaic-datasets:', datasets)
-
         selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
-        mosaic_result = RasterOperatorTool.img_mosaic(selected_images)
+        # 执行拼接
+        result = RasterOperatorTool.img_mosaic(selected_images)
         
-        # 创建新的图层ID和名称
-        mosaic_id = f"mosaic_{int(time.time())}"
-        mosaic_name = "mosaic_result"
-        # 保存拼接结果
-        save_dataset(mosaic_id, mosaic_result, mosaic_name)  
-        # 获取波段信息
-        try:
-            bandNames = mosaic_result.bandNames().getInfo()
-        except Exception as e:
-            print(f"Error getting band names: {str(e)}")
-            return jsonify({
-                'success': False,
-                'message': f"Error processing mosaic: {str(e)}"
-            }), 500          
-        # 使用第一个图层的可视化参数
-        vis_param = vis_params[0]['visParams'] if vis_params else {
-            'bands': ['B4', 'B3', 'B2'],
-            'min': 0,
-            'max': 0.3,
-            'gamma': 1.4
-        }     
-        # 获取拼接结果的地图ID
-        map_id = mosaic_result.getMapId(vis_param)        
-        return jsonify({
-            'success': True,
-            'message': '影像拼接完成',
-            'results': [{
-                'layer_id': mosaic_id,
-                'name': mosaic_name,
-                'tileUrl': map_id['tile_fetcher'].url_format,
-                'bandInfo': bandNames,
-                'visParams': vis_param,
-                'type': 'Raster'
-            }]
-        })
+        # 设置拼接结果的可视化参数
+        vis_params = get_vis_params(result)
+        result = result.set('vis_params', vis_params)
+
+        return ReturnNewLayer(
+            layer_ids=layer_ids,
+            results=[result],  # 拼接只有一个结果
+            original_names=datasetsNames,
+            message='影像拼接完成',
+            result_type='mosaic'
+        )
+
     except Exception as e:
         print(f"Error in mosaic: {str(e)}")
         return jsonify({
@@ -717,16 +683,41 @@ def clip():
     try:
         data = request.json
         layer_ids = data.get('layer_ids')
-        vis_params = data.get('vis_params', [])
         geometry = data.get('geometry',{})
         print('Tool_routes.py - clip-data:', data)
         
-        selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
-        # 先进行裁剪，然后将结果转换为 List
-        clipped_collection = RasterOperatorTool.img_clip(selected_images, geometry)
-        clip_result = clipped_collection.toList(clipped_collection.size())
+        def process_layer(layer_id, geometry=None):
+            try:
+                if layer_id not in datasets:
+                    return None
+                image = ee.Image(datasets[layer_id])
+                result = RasterOperatorTool.img_clip(image, geometry)
+                # 设置裁剪结果的可视化参数
+                vis_params = get_vis_params(result)
+                result = result.set('vis_params', vis_params)
+                return result
+            except Exception as e:
+                print(f"Error processing layer {layer_id}: {str(e)}")
+                return None
 
-        return common_process(layer_ids, clip_result, vis_params, '影像裁剪完成')
+        # 使用通用的并行处理函数
+        results = ParallelProcessor.process_layers(
+            layer_ids=layer_ids,
+            process_func=process_layer,
+            max_workers=maxthread_num,
+            geometry=geometry
+        )
+
+        if not results:
+            raise ValueError("No successful clip results")
+
+        return ReturnNewLayer(
+            layer_ids=layer_ids,
+            results=results,
+            original_names=datasetsNames,
+            message='影像裁剪完成',
+            result_type='clip'
+        )
 
     except Exception as e:
         print(f"Error in clip: {str(e)}")
@@ -734,6 +725,61 @@ def clip():
             'success': False,
             'message': str(e)
         }), 500
+
+@tool_bp.route('/terrain', methods=['POST'])
+def terrain():
+    try:
+        data = request.json
+        layer_ids = data.get('layer_ids')
+
+        PreprocessingTool.validate_inputs(layer_ids, datasets)
+        selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
+
+        def process_layer(layer_id):
+            try:
+                if layer_id not in datasets:
+                    return None
+                image = ee.Image(datasets[layer_id])
+                    
+                # 执行地形分析
+                result = TerrainOperationTool.terrain(image)
+                
+                # 保持原始图像的边界范围
+                result = result.clip(image.geometry())
+                
+                return result   
+            except Exception as e:
+                print(f"Error processing layer {layer_id}: {str(e)}")
+                return None
+
+        results = ParallelProcessor.process_layers(
+            layer_ids=layer_ids,
+            process_func=process_layer,
+            max_workers=maxthread_num
+        )
+
+        if not results:
+            raise ValueError("No successful terrain analysis results")
+
+        return ReturnNewLayer(
+            layer_ids=layer_ids,
+            results=results,
+            original_names=datasetsNames,
+            message='地形分析完成',
+            result_type='terrain'
+        )
+
+    except Exception as e:
+        print(f"Error in terrain analysis: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+
+
+
 
 
 
