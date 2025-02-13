@@ -1,6 +1,10 @@
 from flask import Blueprint, jsonify, request
 from services.map_service import save_dataset
+from routes.map_routes import get_study_areas
 import ee
+import time
+import datetime
+from tools.parallel_processor import ParallelProcessor
 
 upload_bp = Blueprint('upload', __name__)
 
@@ -167,3 +171,209 @@ def add_image_asset():
             'success': False,
             'message': str(e)
         }), 500
+
+@upload_bp.route('/add-landsat-timeseries', methods=['POST'])
+def add_landsat_timeseries():
+    # Make a dummy image for missing years.
+    bands = ['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2', 'QA_PIXEL']
+    bandNames = ee.List(bands)
+    fillerValues = ee.List.repeat(0, bandNames.size())
+    dummyImg = ee.Image.constant(fillerValues).rename(bandNames).selfMask().int16()
+    try:
+        data = request.json
+        start_date = data.get('startDate')  # 格式: "YYYY-MM-DD"
+        end_date = data.get('endDate')    # 格式: "YYYY-MM-DD"
+        cloud_cover = data.get('cloudCover', 20)
+
+        # 获取年份
+        start_year = int(start_date.split('-')[0])
+        end_year = int(end_date.split('-')[0])
+        
+        # 获取月日
+        start_month = int(start_date.split('-')[1])
+        start_day = int(start_date.split('-')[2])
+        end_month = int(end_date.split('-')[1])
+        end_day = int(end_date.split('-')[2])
+        def days_between(d1, d2):
+            d1 = datetime.datetime.strptime(d1, "%Y-%m-%d")
+            d2 = datetime.datetime.strptime(d2, "%Y-%m-%d")
+            return abs((d2 - d1).days)
+
+        n_days = days_between(
+            f"{start_year}-{start_month:02d}-{start_day:02d}",
+            f"{end_year}-{end_month:02d}-{end_day:02d}"
+        )
+        print('Tool_routes.py - add_landsat_timeseries-n_days:', n_days)
+
+        # 获取研究区域
+        roi = get_study_areas()
+        if roi == [] :
+            roi = ee.Geometry.Polygon(
+                [
+                    [
+                        [-115.471773, 35.892718],
+                        [-115.471773, 36.409454],
+                        [-114.271283, 36.409454],
+                        [-114.271283, 35.892718],
+                        [-115.471773, 35.892718],
+                    ]
+                ],
+                None,
+                False,
+            )
+        else:
+            roi = ee.Geometry.MultiPolygon([area['coordinates'] for area in roi])
+
+        # 获取 Landsat 影像集合
+        l9_collection = ee.ImageCollection('LANDSAT/LC09/C02/T1_TOA')
+        l8_collection = ee.ImageCollection('LANDSAT/LC08/C02/T1_TOA')
+        l7_collection = ee.ImageCollection('LANDSAT/LE07/C02/T1_TOA')
+        l5_collection = ee.ImageCollection('LANDSAT/LT05/C02/T1_TOA')
+        l4_collection = ee.ImageCollection('LANDSAT/LT04/C02/T1_TOA')
+
+        # 过滤条件
+        def filter_collection(collection, start_date, end_date):
+            return collection.filterBounds(roi) \
+                           .filterDate(start_date, end_date) \
+                           .filter(ee.Filter.lt('CLOUD_COVER', cloud_cover))
+
+        # 重命名 Landsat 影像的波段名称
+        def rename_TM_ETM(image):
+            return image.select(
+                ['B1', 'B2', 'B3', 'B4', 'B5', 'B7', 'QA_PIXEL'],
+                bands
+            )
+
+        def rename_OLI(image):
+            return image.select(
+                ['B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'QA_PIXEL'],
+                bands
+            )
+
+        # 创建年度合成影像
+        def get_annual_composite(year):
+            # 构建日期
+            startDate = ee.Date.fromYMD(
+                ee.Number(year), ee.Number(start_month), ee.Number(start_day)
+            )
+            endDate = startDate.advance(ee.Number(n_days), "day")
+
+            # 过滤每个传感器的数据
+            l9_filtered = filter_collection(l9_collection, startDate, endDate).map(rename_OLI)
+            l8_filtered = filter_collection(l8_collection, startDate, endDate).map(rename_OLI)
+            l7_filtered = filter_collection(l7_collection, startDate, endDate).map(rename_TM_ETM)
+            l5_filtered = filter_collection(l5_collection, startDate, endDate).map(rename_TM_ETM)
+            l4_filtered = filter_collection(l4_collection, startDate, endDate).map(rename_TM_ETM)
+
+            # 合并所有集合
+            merged = ee.ImageCollection(l9_filtered) \
+                .merge(l8_filtered) \
+                .merge(l7_filtered) \
+                .merge(l5_filtered) \
+                .merge(l4_filtered)
+
+            # 计算中值合成
+            composite = merged.median()
+            nBands = composite.bandNames().size()
+            composite = ee.Image(ee.Algorithms.If(nBands, composite, dummyImg))
+            
+            # 设置属性
+            return composite.set({
+                # 'system:time_start': ee.Date(f"{year}-{start_month:02d}-{start_day:02d}").millis(),
+                'year': year
+            })
+
+        # 生成年度序列
+        years = ee.List.sequence(start_year, end_year, 1)
+        composites = years.map(get_annual_composite)
+        
+        # 创建影像集合
+        collection = ee.ImageCollection.fromImages(composites)
+        
+        # 获取集合大小
+        collection_size = collection.size().getInfo()
+        print('Tool_routes.py - add_landsat_timeseries-collection_size:',collection_size)
+
+        if collection_size == 0:
+            raise ValueError("未找到符合条件的影像")
+
+        # 设置可视化参数
+        vis_params = {
+            'bands': bands[2::-1],
+            'min': 0,
+            'max': 0.3,
+            'gamma': 1.4
+        }
+
+        # 获取边界信息
+        bounds = roi.getInfo()
+        print('Tool_routes.py - add_landsat_timeseries-bounds:',bounds)
+
+        def process_year(year, **kwargs):
+            """处理单年影像的函数"""
+            try:
+                collection = kwargs.get('collection')
+                roi = kwargs.get('roi')
+                vis_params = kwargs.get('vis_params')
+                
+                # 过滤特定年份的影像
+                year_collection = collection.filter(ee.Filter.eq('year', year))
+                
+
+                year_image = year_collection.median().clip(roi)
+                
+                # 获取地图ID
+                map_id = year_image.getMapId(vis_params)
+                
+                # 保存数据集
+                timestamp = int(time.time())
+                collection_id = f"landsat_{year}_{timestamp}"
+                save_dataset(collection_id, year_image, f"Landsat时间序列_{year}")
+                
+                return {
+                    'year': year,
+                    'tileUrl': map_id['tile_fetcher'].url_format,
+                    'id': collection_id,
+                    'name': f"Landsat {year}年影像",
+                    'bandInfo': bands,
+                    'visParams': vis_params,
+                    'type': 'Raster'
+                }
+            except Exception as e:
+                print(f"Error processing year {year}: {str(e)}")
+                return None
+
+        # 使用并行处理器处理每年的影像
+        annual_images = ParallelProcessor.process_layers(
+            layer_ids=years.getInfo(),  # 年份列表
+            process_func=process_year,
+            max_workers=4,  # 可以根据需要调整并行数
+            collection=collection,
+            roi=roi,
+            vis_params=vis_params
+        )
+
+        # 过滤掉 None 值
+        annual_images = [img for img in annual_images if img is not None]
+
+        if not annual_images:
+            raise ValueError("未找到符合条件的影像")
+
+        return jsonify({
+            'success': True,
+            'message': f'找到 {len(annual_images)} 幅影像',
+            'bounds': bounds['coordinates'][0],
+            'collectionSize': len(annual_images),
+            'images': annual_images,
+            'type': 'Raster'
+        })
+
+    except Exception as e:
+        print(f"Error in add_landsat_timeseries: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+

@@ -11,6 +11,9 @@ CORS(map_bp)
 
 # 存储研究区域列表
 study_areas = []
+def get_study_areas():
+    return study_areas
+
 
 @map_bp.route('/map-data', methods=['GET'])
 def get_map_data():

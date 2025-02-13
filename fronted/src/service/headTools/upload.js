@@ -231,3 +231,93 @@ const handleImageAsset = async (selectedAsset, mapView) => {
         return false
     }
 }
+
+// 修改 Landsat 时间序列相关方法
+export const onSubmitLandsatTimeseries = async (form, mapView, showLandsatTimeseriesDialog, isSubmitting) => {
+    if (!form.value.startDate || !form.value.endDate) {
+        ElMessage.warning('请选择时间范围')
+        return
+    }
+
+    try {
+        isSubmitting.value = true
+        
+        const params = {
+            ...form.value,
+        }
+        
+        const response = await fetch(API_ROUTES.UPLOAD.ADD_LANDSAT_TIMESERIES, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(params)
+        })
+        
+        const data = await response.json()
+        console.log('upload.js - onSubmitLandsatTimeseries - data:', data);
+        
+        if (data.success) {
+            ElMessage.success(data.message)
+            showLandsatTimeseriesDialog.value = false
+
+            // 添加每年的影像到地图
+            if (data.images && Array.isArray(data.images)) {
+                data.images.forEach(imageData => {
+                    // 创建新图层对象
+                    const newLayer = {
+                        id: imageData.id,
+                        name: imageData.name,
+                        type: imageData.type,
+                        bandInfo: imageData.bandInfo,
+                        year: imageData.year,
+                        visible: true,
+                        opacity: 1,
+                        leafletLayer: null,
+                        zIndex: 1000 + mapView.layers.length,
+                        visParams: imageData.visParams
+                    }
+
+                    // 创建 Leaflet 瓦片图层
+                    const imageLayer = L.tileLayer(imageData.tileUrl, {
+                        opacity: newLayer.opacity,
+                        maxZoom: 20,
+                        maxNativeZoom: 20,
+                        tileSize: 256,
+                        updateWhenIdle: false,
+                        updateWhenZooming: false,
+                        keepBuffer: 2,
+                        zIndex: newLayer.zIndex
+                    })
+
+                    // 添加到地图
+                    newLayer.leafletLayer = imageLayer
+                    mapView.layers.push(newLayer)
+                    imageLayer.addTo(mapView.map)
+                })
+
+                // 使用返回的边界信息进行定位
+                if (data.bounds) {
+                    const bounds = L.latLngBounds([
+                        [data.bounds[0][1], data.bounds[0][0]], // 西南角
+                        [data.bounds[2][1], data.bounds[2][0]]  // 东北角
+                    ])
+                    mapView.map.fitBounds(bounds, {
+                        padding: [50, 50],
+                        maxZoom: 13
+                    })
+                }
+            }
+            return true
+        } else {
+            ElMessage.error(data.message)
+            return false
+        }
+    } catch (error) {
+        console.error('Error submitting Landsat timeseries:', error)
+        ElMessage.error('添加时间序列失败')
+        return false
+    } finally {
+        isSubmitting.value = false
+    }
+}

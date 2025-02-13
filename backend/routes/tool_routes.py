@@ -17,7 +17,7 @@ datasetsNames = None
 maxthread_num = 4
 
 
-def ReturnOriginLayer(layer_ids, results, vis_params, message):
+def return_origin_layer(layer_ids, results, vis_params, message):
     '''
     返回原始图层
     '''
@@ -66,7 +66,7 @@ def ReturnOriginLayer(layer_ids, results, vis_params, message):
         'results': layer_results
     })
     
-def ReturnNewLayer(layer_ids, results, original_names, message, result_type=''):
+def return_new_layer(layer_ids, results, original_names, message, result_type=''):
     '''
     返回新的图层处理函数
     参数:
@@ -181,7 +181,7 @@ def cloud_removal():
         
         results = selected_images.map(PreprocessingTool.cloud_removal).toList(selected_images.size())
         
-        return ReturnOriginLayer(layer_ids, results, vis_params, '除云处理完成')
+        return return_origin_layer(layer_ids, results, vis_params, '除云处理完成')
         
     except Exception as e:
         print(f"Error in cloud_removal: {str(e)}")
@@ -228,7 +228,7 @@ def calculate_index():
         results = ee.List(results)
         
         # 使用原有的 common_process 处理结果
-        return ReturnOriginLayer(layer_ids, results, vis_params, f'已添加 {index_type.upper()} 波段')
+        return return_origin_layer(layer_ids, results, vis_params, f'已添加 {index_type.upper()} 波段')
         
     except Exception as e:
         print(f"Error in calculate_index: {str(e)}")
@@ -262,7 +262,7 @@ def image_filling():
         #防止填补失败时出错
         print('Tool_routes.py - image_filling-results:',results.size().getInfo())
         # 使用 common_process 处理结果
-        return ReturnOriginLayer(layer_ids, results, vis_params, '图像填补处理完成')
+        return return_origin_layer(layer_ids, results, vis_params, '图像填补处理完成')
         
     except Exception as e:
         print(f"Error in image_filling: {str(e)}")
@@ -345,7 +345,7 @@ def kmeans_clustering():
         if not results:
             raise ValueError("No successful classification results")
 
-        return ReturnNewLayer(
+        return return_new_layer(
             layer_ids=layer_ids,
             results=results,
             original_names=datasetsNames,
@@ -372,7 +372,7 @@ def histogram_equalization():
         results = selected_images.map(PreprocessingTool.histogram_equalization).toList(selected_images.size())
 
         
-        return ReturnOriginLayer(layer_ids, results, vis_params, '直方图均衡化处理完成')
+        return return_origin_layer(layer_ids, results, vis_params, '直方图均衡化处理完成')
         
     except Exception as e:
         print(f"Error in histogram_equalization: {str(e)}")
@@ -432,7 +432,7 @@ def random_forest():
         if not results:
             raise ValueError("No successful classification results")
 
-        return ReturnNewLayer(
+        return return_new_layer(
             layer_ids=layer_ids,
             results=results,
             original_names=datasetsNames,
@@ -463,7 +463,7 @@ def raster_calculator():
             result = result.set('vis_params', vis_params)
             results = [result]  # 将单个结果转换为列表
             
-            return ReturnNewLayer(
+            return return_new_layer(
                 layer_ids=layer_ids,
                 results=results,
                 original_names=datasetsNames,
@@ -500,7 +500,7 @@ def raster_calculator():
                 selected_bands=selected_bands
             )
             
-            return ReturnNewLayer(
+            return return_new_layer(
                 layer_ids=layer_ids,
                 results=results,
                 original_names=datasetsNames,
@@ -531,7 +531,7 @@ def raster_calculator():
                 expression=expression
             )
 
-            return ReturnNewLayer(
+            return return_new_layer(
                 layer_ids=layer_ids,
                 results=results,
                 original_names=datasetsNames,
@@ -573,7 +573,7 @@ def rename_bands():
                 for b in vis_param['visParams']['bands']
             ]
         
-        return ReturnOriginLayer(layer_ids, results, vis_params, '波段重命名完成')
+        return return_origin_layer(layer_ids, results, vis_params, '波段重命名完成')
         
     except Exception as e:
         print(f"Error renaming bands: {str(e)}")
@@ -632,7 +632,7 @@ def svm_classification():
         if not results:
             raise ValueError("No successful classification results")
 
-        return ReturnNewLayer(
+        return return_new_layer(
             layer_ids=layer_ids,
             results=results,
             original_names=datasetsNames,
@@ -663,7 +663,7 @@ def mosaic():
         vis_params = get_vis_params(result)
         result = result.set('vis_params', vis_params)
 
-        return ReturnNewLayer(
+        return return_new_layer(
             layer_ids=layer_ids,
             results=[result],  # 拼接只有一个结果
             original_names=datasetsNames,
@@ -711,7 +711,7 @@ def clip():
         if not results:
             raise ValueError("No successful clip results")
 
-        return ReturnNewLayer(
+        return return_new_layer(
             layer_ids=layer_ids,
             results=results,
             original_names=datasetsNames,
@@ -761,7 +761,7 @@ def terrain():
         if not results:
             raise ValueError("No successful terrain analysis results")
 
-        return ReturnNewLayer(
+        return return_new_layer(
             layer_ids=layer_ids,
             results=results,
             original_names=datasetsNames,

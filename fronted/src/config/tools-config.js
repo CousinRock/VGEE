@@ -6,7 +6,8 @@ export const TOOL_IDS = {
     FILE: 'file',
     UPLOAD: {
         ROOT: 'upload-vector',
-        VECTOR: 'upload-vector-assets'
+        VECTOR: 'upload-vector-assets',
+        LANDSAT_TIMESERIES: 'upload-landsat-timeseries'
     },
     SEARCH: {
         ROOT: 'search-data',
@@ -87,7 +88,7 @@ export const TOOLS_CONFIG = {
         children: {
             uploadVector: {
                 id: TOOL_IDS.UPLOAD.ROOT,
-                label: '上传数据',
+                label: '添加数据',
                 children: {
                     uploadVectorAssets: {
                         id: TOOL_IDS.UPLOAD.VECTOR,
@@ -103,6 +104,20 @@ export const TOOLS_CONFIG = {
                                 })
                             }
                             return formData
+                        }
+                    },
+                    landsatTimeseries: {
+                        id: TOOL_IDS.UPLOAD.LANDSAT_TIMESERIES,
+                        label: 'Landsat时间序列',
+                        requireLayers: false,
+                        endpoint: API_ROUTES.UPLOAD.ADD_LANDSAT_TIMESERIES,
+                        processParams: (params) => ({
+                            dataset_type: 'landsat',
+                            ...params
+                        }),
+                        defaultParams: {
+                            startDate: '',
+                            endDate: '' 
                         }
                     }
                 }
