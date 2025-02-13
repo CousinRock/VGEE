@@ -5,6 +5,7 @@ import ee
 import time
 import datetime
 from tools.parallel_processor import ParallelProcessor
+from services.common import date_sequence
 
 upload_bp = Blueprint('upload', __name__)
 
@@ -184,6 +185,7 @@ def add_landsat_timeseries():
         start_date = data.get('startDate')  # 格式: "YYYY-MM-DD"
         end_date = data.get('endDate')    # 格式: "YYYY-MM-DD"
         cloud_cover = data.get('cloudCover', 20)
+        frequency = data.get('frequency', 'year')
 
         # 获取年份
         start_year = int(start_date.split('-')[0])
@@ -201,7 +203,7 @@ def add_landsat_timeseries():
 
         n_days = days_between(
             f"{start_year}-{start_month:02d}-{start_day:02d}",
-            f"{end_year}-{end_month:02d}-{end_day:02d}"
+            f"{start_year}-{end_month:02d}-{end_day:02d}"
         )
         print('Tool_routes.py - add_landsat_timeseries-n_days:', n_days)
 
@@ -251,7 +253,7 @@ def add_landsat_timeseries():
             )
 
         # 创建年度合成影像
-        def get_annual_composite(year):
+        def getAnnualComp(year):
             # 构建日期
             startDate = ee.Date.fromYMD(
                 ee.Number(year), ee.Number(start_month), ee.Number(start_day)
@@ -279,13 +281,52 @@ def add_landsat_timeseries():
             
             # 设置属性
             return composite.set({
-                # 'system:time_start': ee.Date(f"{year}-{start_month:02d}-{start_day:02d}").millis(),
+                'system:time_start':startDate.millis(),
                 'year': year
             })
+        # 创建月度合成影像
+        def getMonthlyComp(startDate):
+            startDate = ee.Date(startDate)
+            endDate = startDate.advance(1, "month")
 
-        # 生成年度序列
-        years = ee.List.sequence(start_year, end_year, 1)
-        composites = years.map(get_annual_composite)
+             # 过滤每个传感器的数据
+            l9_filtered = filter_collection(l9_collection, startDate, endDate).map(rename_OLI)
+            l8_filtered = filter_collection(l8_collection, startDate, endDate).map(rename_OLI)
+            l7_filtered = filter_collection(l7_collection, startDate, endDate).map(rename_TM_ETM)
+            l5_filtered = filter_collection(l5_collection, startDate, endDate).map(rename_TM_ETM)
+            l4_filtered = filter_collection(l4_collection, startDate, endDate).map(rename_TM_ETM)
+
+            # 合并所有集合
+            merged = ee.ImageCollection(l9_filtered) \
+                .merge(l8_filtered) \
+                .merge(l7_filtered) \
+                .merge(l5_filtered) \
+                .merge(l4_filtered)
+
+            monthImg = merged.median()
+            nBands = monthImg.bandNames().size()
+            monthImg = ee.Image(ee.Algorithms.If(nBands, monthImg, dummyImg))
+            return monthImg.set(
+                {
+                    "system:time_start": startDate.millis(),
+                    "nBands": nBands,
+                    "system:date": ee.Date(startDate).format('YYYY-MM-dd'),
+                }
+            )
+
+        if frequency == "year":
+            # 生成年度序列
+            years = ee.List.sequence(start_year, end_year, 1)
+            composites = years.map(getAnnualComp)
+        elif frequency == "month":
+            months = date_sequence(
+                f"{start_year}-{start_month:02d}-{start_day:02d}",
+                f"{end_year}-{end_month:02d}-{end_day:02d}",
+                "month",
+                'YYYY-MM-dd',
+                1,
+            )
+            composites = months.map(getMonthlyComp)
         
         # 创建影像集合
         collection = ee.ImageCollection.fromImages(composites)
@@ -309,45 +350,58 @@ def add_landsat_timeseries():
         bounds = roi.getInfo()
         print('Tool_routes.py - add_landsat_timeseries-bounds:',bounds)
 
-        def process_year(year, **kwargs):
-            """处理单年影像的函数"""
+        def process_year(date_str, **kwargs):
+            """处理影像的函数"""
             try:
                 collection = kwargs.get('collection')
                 roi = kwargs.get('roi')
                 vis_params = kwargs.get('vis_params')
                 
-                # 过滤特定年份的影像
-                year_collection = collection.filter(ee.Filter.eq('year', year))
-                
+                if frequency == 'year':
+                    # 过滤特定年份的影像
+                    year = int(date_str)
+                    images_collection = collection.filter(ee.Filter.eq('year', year))
+                    name = f"Landsat {year}年影像"
+                    collection_id = f"landsat_{year}_{int(time.time())}"
+                    save_name = f"Landsat时间序列_{year}"
+                else:  # month
+                    # 过滤特定日期的影像
+                    images_collection = collection.filter(ee.Filter.eq('system:date', date_str))
+                    name = f"Landsat {date_str}影像"
+                    collection_id = f"landsat_{date_str}_{int(time.time())}"
+                    save_name = f"Landsat时间序列_{date_str}"
 
-                year_image = year_collection.median().clip(roi)
+                filtered_image = images_collection.median().clip(roi)
                 
                 # 获取地图ID
-                map_id = year_image.getMapId(vis_params)
+                map_id = filtered_image.getMapId(vis_params)
                 
                 # 保存数据集
-                timestamp = int(time.time())
-                collection_id = f"landsat_{year}_{timestamp}"
-                save_dataset(collection_id, year_image, f"Landsat时间序列_{year}")
+                save_dataset(collection_id, filtered_image, save_name)
                 
                 return {
-                    'year': year,
+                    'date': date_str,
                     'tileUrl': map_id['tile_fetcher'].url_format,
                     'id': collection_id,
-                    'name': f"Landsat {year}年影像",
+                    'name': name,
                     'bandInfo': bands,
                     'visParams': vis_params,
                     'type': 'Raster'
                 }
             except Exception as e:
-                print(f"Error processing year {year}: {str(e)}")
+                print(f"Error processing date {date_str}: {str(e)}")
                 return None
 
-        # 使用并行处理器处理每年的影像
+        # 使用并行处理器处理影像
+        if frequency == "year":
+            dates = years.getInfo()  # 年份列表
+        else:  # month
+            dates = months.getInfo()  # 月份日期列表
+
         annual_images = ParallelProcessor.process_layers(
-            layer_ids=years.getInfo(),  # 年份列表
+            layer_ids=dates,
             process_func=process_year,
-            max_workers=4,  # 可以根据需要调整并行数
+            max_workers=4,
             collection=collection,
             roi=roi,
             vis_params=vis_params

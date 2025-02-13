@@ -36,6 +36,13 @@
         <el-dialog v-model="showLandsatTimeseriesDialog" title="添加 Landsat 时间序列" width="400px">
             <div class="upload-form">
                 <el-form :model="form" label-width="120px">
+                    <el-form-item label="时间频率">
+                        <el-select v-model="form.frequency" placeholder="选择时间频率">
+                            <el-option label="年度" value="year" />
+                            <el-option label="月度" value="month" />
+                        </el-select>
+                    </el-form-item>
+
                     <el-form-item label="开始日期">
                         <el-date-picker 
                             v-model="form.startDate"
@@ -106,7 +113,8 @@ const isSubmitting = ref(false)
 const form = ref({
     startDate: '',
     endDate: '',
-    cloudCover: 20
+    cloudCover: 20,
+    frequency: 'year'  // 默认为年度
 })
 
 // 修改 loadAssets 方法

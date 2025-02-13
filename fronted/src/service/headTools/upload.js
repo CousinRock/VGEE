@@ -270,7 +270,7 @@ export const onSubmitLandsatTimeseries = async (form, mapView, showLandsatTimese
                         name: imageData.name,
                         type: imageData.type,
                         bandInfo: imageData.bandInfo,
-                        year: imageData.year,
+                        date: imageData.date,  // 使用 date 替代 year
                         visible: true,
                         opacity: 1,
                         leafletLayer: null,
