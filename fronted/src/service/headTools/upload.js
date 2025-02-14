@@ -1,5 +1,6 @@
 import { API_ROUTES } from '../../api/routes'
 import { ElMessage } from 'element-plus'
+import { TOOLS_CONFIG } from '../../config/tools-config'
 
 // 修改 loadAssets 方法
 export const onLoadAssets = async (folder = null, isLoadingAssets, assetsList) => {
@@ -232,8 +233,8 @@ const handleImageAsset = async (selectedAsset, mapView) => {
     }
 }
 
-// 修改 Landsat 时间序列相关方法
-export const onSubmitLandsatTimeseries = async (form, mapView, showLandsatTimeseriesDialog, isSubmitting) => {
+// 修改为通用的时间序列提交方法
+export const onSubmitTimeseries = async (form, mapView, showTimeseriesDialog, isSubmitting, toolId) => {
     if (!form.value.startDate || !form.value.endDate) {
         ElMessage.warning('请选择时间范围')
         return
@@ -242,15 +243,22 @@ export const onSubmitLandsatTimeseries = async (form, mapView, showLandsatTimese
     try {
         isSubmitting.value = true
         
-        const params = {
+        // 从工具配置中获取对应的工具配置
+        const toolConfig = TOOLS_CONFIG.getToolById(toolId)
+        if (!toolConfig || !toolConfig.endpoint) {
+            throw new Error('Invalid tool configuration')
+        }
+
+        // 使用工具配置中的 processParams 处理参数
+        const params = toolConfig.processParams({
             startDate: form.value.startDate,
             endDate: form.value.endDate,
             cloudCover: form.value.cloudCover,
             frequency: form.value.frequency,
-            interval: form.value.interval || 1  // 如果未定义则使用默认值1
-        }
+            interval: form.value.interval || 1
+        })
         
-        const response = await fetch(API_ROUTES.UPLOAD.ADD_LANDSAT_TIMESERIES, {
+        const response = await fetch(toolConfig.endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -259,13 +267,13 @@ export const onSubmitLandsatTimeseries = async (form, mapView, showLandsatTimese
         })
         
         const data = await response.json()
-        console.log('upload.js - onSubmitLandsatTimeseries - data:', data);
+        console.log(`upload.js - onSubmitTimeseries - ${toolConfig.label} data:`, data)
         
         if (data.success) {
             ElMessage.success(data.message)
-            showLandsatTimeseriesDialog.value = false
+            showTimeseriesDialog.value = false
 
-            // 添加每年的影像到地图
+            // 添加影像到地图
             if (data.images && Array.isArray(data.images)) {
                 data.images.forEach(imageData => {
                     // 创建新图层对象
@@ -274,7 +282,7 @@ export const onSubmitLandsatTimeseries = async (form, mapView, showLandsatTimese
                         name: imageData.name,
                         type: imageData.type,
                         bandInfo: imageData.bandInfo,
-                        date: imageData.date,  // 使用 date 替代 year
+                        date: imageData.date,
                         visible: true,
                         opacity: 1,
                         leafletLayer: null,
@@ -320,7 +328,7 @@ export const onSubmitLandsatTimeseries = async (form, mapView, showLandsatTimese
             return false
         }
     } catch (error) {
-        console.error('Error submitting Landsat timeseries:', error)
+        console.error(`Error submitting ${toolConfig?.label || ''} timeseries:`, error)
         ElMessage.error('添加时间序列失败')
         return false
     } finally {

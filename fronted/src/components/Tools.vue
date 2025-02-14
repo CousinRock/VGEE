@@ -251,7 +251,8 @@ const handleSpecialTool = async (tool) => {
                 await uploadDataRef.value.loadAssets()
                 break
             case TOOL_IDS.UPLOAD.LANDSAT_TIMESERIES:
-                uploadDataRef.value.showLandsatTimeseriesDialog = true
+            case TOOL_IDS.UPLOAD.SENTINEL2_TIMESERIES:
+                uploadDataRef.value.showTimeseriesDialogMethod(tool.id)
                 break
             case TOOL_IDS.SEARCH.LANDSAT:
             case TOOL_IDS.SEARCH.SENTINEL:

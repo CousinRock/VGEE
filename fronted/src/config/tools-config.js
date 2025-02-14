@@ -7,7 +7,8 @@ export const TOOL_IDS = {
     UPLOAD: {
         ROOT: 'upload-vector',
         VECTOR: 'upload-vector-assets',
-        LANDSAT_TIMESERIES: 'upload-landsat-timeseries'
+        LANDSAT_TIMESERIES: 'upload-landsat-timeseries',
+        SENTINEL2_TIMESERIES:'upload-sentinel2-timeseries'
     },
     SEARCH: {
         ROOT: 'search-data',
@@ -118,6 +119,20 @@ export const TOOLS_CONFIG = {
                         defaultParams: {
                             startDate: '',
                             endDate: '' 
+                        }
+                    },
+                    sentinelTimeseries: {
+                        id: TOOL_IDS.UPLOAD.SENTINEL2_TIMESERIES,
+                        label: 'Sentinel时间序列',
+                        requireLayers: false,
+                        endpoint: API_ROUTES.UPLOAD.ADD_SENTINEL_TIMESERIES,
+                        processParams: (params) => ({
+                            dataset_type: 'sentinel',
+                            ...params
+                        }),
+                        defaultParams: {
+                            startDate: '',
+                            endDate: ''
                         }
                     }
                 }

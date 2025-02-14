@@ -430,5 +430,7 @@ def add_landsat_timeseries():
             'message': str(e)
         }), 500
 
-
+@upload_bp.route('/add-sentinel-timeseries', methods=['POST'])
+def add_sentinel_timeseries():
+    pass
 

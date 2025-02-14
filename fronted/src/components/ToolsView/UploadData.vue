@@ -32,8 +32,12 @@
             </template>
         </el-dialog>
 
-        <!-- Landsat时间序列对话框 -->
-        <el-dialog v-model="showLandsatTimeseriesDialog" title="添加 Landsat 时间序列" width="400px">
+        <!-- 时间序列对话框 -->
+        <el-dialog 
+            v-model="showTimeseriesDialog" 
+            :title="`添加 ${satelliteType} 时间序列`" 
+            width="400px"
+        >
             <div class="upload-form">
                 <el-form :model="form" label-width="120px">
                     <el-form-item label="时间频率">
@@ -86,7 +90,7 @@
 
             <template #footer>
                 <span class="dialog-footer">
-                    <el-button @click="showLandsatTimeseriesDialog = false">取消</el-button>
+                    <el-button @click="showTimeseriesDialog = false">取消</el-button>
                     <el-button type="primary" @click="submitForm" :loading="isSubmitting">
                         {{ isSubmitting ? '添加中...' : '确定' }}
                     </el-button>
@@ -102,8 +106,9 @@ import {
     onLoadAssets, 
     onHandleAssetSelect, 
     onConfirmAssetSelect,
-    onSubmitLandsatTimeseries 
+    onSubmitTimeseries 
 } from '../../service/headTools/upload'
+import { TOOL_IDS } from '../../config/tools-config'
 
 // 定义 props
 const props = defineProps({
@@ -115,7 +120,7 @@ const props = defineProps({
 
 // 状态变量
 const showAssetsDialog = ref(false)
-const showLandsatTimeseriesDialog = ref(false)
+const showTimeseriesDialog = ref(false)
 const assetsList = ref([])
 const selectedAsset = ref(null)
 const isLoadingAssets = ref(false)
@@ -127,6 +132,12 @@ const form = ref({
     frequency: 'year',  // 默认为年度
     interval: 1  // 默认间隔为1
 })
+
+// 添加卫星类型状态
+const satelliteType = ref('Landsat')
+
+// 添加当前工具ID状态
+const currentToolId = ref(null)
 
 // 修改 loadAssets 方法
 const loadAssets = async (folder = null) => {
@@ -143,16 +154,34 @@ const confirmAssetSelect = async () => {
     await onConfirmAssetSelect(selectedAsset, showAssetsDialog, isLoadingAssets, props.mapView)
 }
 
-// 提交 Landsat 时间序列表单
+// 修改显示对话框的方法
+const showTimeseriesDialogMethod = (toolId) => {
+    currentToolId.value = toolId  // 保存当前工具ID
+    if (toolId === TOOL_IDS.UPLOAD.LANDSAT_TIMESERIES) {
+        satelliteType.value = 'Landsat'
+    } else if (toolId === TOOL_IDS.UPLOAD.SENTINEL2_TIMESERIES) {
+        satelliteType.value = 'Sentinel-2'
+    }
+    showTimeseriesDialog.value = true
+}
+
+// 提交表单
 const submitForm = async () => {
-    await onSubmitLandsatTimeseries(form, props.mapView, showLandsatTimeseriesDialog, isSubmitting)
+    await onSubmitTimeseries(
+        form, 
+        props.mapView, 
+        showTimeseriesDialog, 
+        isSubmitting,
+        currentToolId.value  // 传递工具ID
+    )
 }
 
 // 暴露方法和状态给父组件
 defineExpose({
     showAssetsDialog,
-    showLandsatTimeseriesDialog,
-    loadAssets
+    showTimeseriesDialog,
+    loadAssets,
+    showTimeseriesDialogMethod
 })
 </script>
 
