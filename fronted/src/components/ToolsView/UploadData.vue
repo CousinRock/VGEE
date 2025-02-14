@@ -43,6 +43,16 @@
                         </el-select>
                     </el-form-item>
 
+                    <el-form-item label="时间间隔">
+                        <el-input-number 
+                            v-model="form.interval" 
+                            :min="1" 
+                            :max="12"
+                            :step="1"
+                            controls-position="right"
+                        />
+                    </el-form-item>
+
                     <el-form-item label="开始日期">
                         <el-date-picker 
                             v-model="form.startDate"
@@ -114,7 +124,8 @@ const form = ref({
     startDate: '',
     endDate: '',
     cloudCover: 20,
-    frequency: 'year'  // 默认为年度
+    frequency: 'year',  // 默认为年度
+    interval: 1  // 默认间隔为1
 })
 
 // 修改 loadAssets 方法

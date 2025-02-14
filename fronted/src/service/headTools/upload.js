@@ -243,7 +243,11 @@ export const onSubmitLandsatTimeseries = async (form, mapView, showLandsatTimese
         isSubmitting.value = true
         
         const params = {
-            ...form.value,
+            startDate: form.value.startDate,
+            endDate: form.value.endDate,
+            cloudCover: form.value.cloudCover,
+            frequency: form.value.frequency,
+            interval: form.value.interval || 1  // 如果未定义则使用默认值1
         }
         
         const response = await fetch(API_ROUTES.UPLOAD.ADD_LANDSAT_TIMESERIES, {
@@ -297,15 +301,17 @@ export const onSubmitLandsatTimeseries = async (form, mapView, showLandsatTimese
                 })
 
                 // 使用返回的边界信息进行定位
-                if (data.bounds) {
+                console.log('upload.js - onSubmitLandsatTimeseries - data.bounds:', data.bounds);
+                if (data.bounds && data.bounds[0]) {
+                    const coordinates = data.bounds[0];  // 获取第一个多边形的坐标
                     const bounds = L.latLngBounds([
-                        [data.bounds[0][1], data.bounds[0][0]], // 西南角
-                        [data.bounds[2][1], data.bounds[2][0]]  // 东北角
-                    ])
+                        [coordinates[0][1], coordinates[0][0]], // 西南角
+                        [coordinates[2][1], coordinates[2][0]]  // 东北角
+                    ]);
                     mapView.map.fitBounds(bounds, {
                         padding: [50, 50],
                         maxZoom: 13
-                    })
+                    });
                 }
             }
             return true

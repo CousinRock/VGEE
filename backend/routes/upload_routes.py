@@ -186,6 +186,7 @@ def add_landsat_timeseries():
         end_date = data.get('endDate')    # 格式: "YYYY-MM-DD"
         cloud_cover = data.get('cloudCover', 20)
         frequency = data.get('frequency', 'year')
+        interval = data.get('interval', 1)
 
         # 获取年份
         start_year = int(start_date.split('-')[0])
@@ -316,7 +317,7 @@ def add_landsat_timeseries():
 
         if frequency == "year":
             # 生成年度序列
-            years = ee.List.sequence(start_year, end_year, 1)
+            years = ee.List.sequence(start_year, end_year, interval)
             composites = years.map(getAnnualComp)
         elif frequency == "month":
             months = date_sequence(
@@ -324,7 +325,7 @@ def add_landsat_timeseries():
                 f"{end_year}-{end_month:02d}-{end_day:02d}",
                 "month",
                 'YYYY-MM-dd',
-                1,
+                interval,
             )
             composites = months.map(getMonthlyComp)
         
