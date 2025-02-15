@@ -673,6 +673,50 @@ export const exportManager = {
             ElMessage.error(error.message || '导出图层失败');
             return false;
         }
+    },
+    exportToAsset: async (layer, API_ROUTES, assetId, description, scale=30) => {
+        try {
+            console.log('MapView.vue - exportToCloud - layer:', layer);
+
+            const requestBody = {
+                layer_id: layer.id,
+                layer_name: layer.name,
+                layer_type: layer.type,
+                vis_params: layer.visParams,
+                geometryType: layer.geometryType,
+                asset_id: assetId,
+                description: description,
+                scale: scale  // 添加分辨率参数
+            };
+
+            if (layer.type === 'manual') {
+                if (layer.geometryType === 'Polygon') {
+                    requestBody.features = [{
+                        coordinates: layer.geometry.coordinates[0]
+                    }];
+                } else {
+                    requestBody.features = layer.features;
+                }
+            }
+
+            const response = await fetch(API_ROUTES.MAP.EXPORT_TO_ASSET, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                ElMessage.success('图层已成功导出到资产');
+                return true;
+            } else {
+                throw new Error(data.message || '导出失败');
+            }
+        } catch (error) {
+            console.error('Error exporting layer:', error);
+            ElMessage.error(error.message || '导出图层失败');
+            return false;
+        }
     }
 };
 

@@ -131,7 +131,7 @@
                                                 <i :class="[
                                                     layer.isExporting ? 'fas fa-spinner fa-spin' : MENU_ICONS.EXPORT
                                                 ]"></i>
-                                                导出到云盘
+                                                导出
                                             </el-dropdown-item>
                                         </el-dropdown-menu>
                                     </template>
@@ -338,9 +338,31 @@
         <el-dialog v-model="showExportDialog" title="导出图层" width="400px">
             <div class="export-form">
                 <el-form label-width="100px">
-                    <el-form-item label="导出文件夹">
-                        <el-input v-model="exportFolder" placeholder="请输入导出文件夹名称" />
+                    <!-- 添加导出类型选择 -->
+                    <el-form-item label="导出类型">
+                        <el-radio-group v-model="exportType">
+                            <el-radio label="drive">导出到云盘</el-radio>
+                            <el-radio label="asset">导出到资产</el-radio>
+                        </el-radio-group>
                     </el-form-item>
+
+                    <!-- 云盘导出选项 -->
+                    <template v-if="exportType === 'drive'">
+                        <el-form-item label="导出文件夹">
+                            <el-input v-model="exportFolder" placeholder="请输入导出文件夹名称" />
+                        </el-form-item>
+                    </template>
+
+                    <!-- 资产导出选项 -->
+                    <template v-if="exportType === 'asset'">
+                        <el-form-item label="资产ID">
+                            <el-input v-model="assetId" placeholder="请输入资产ID" />
+                        </el-form-item>
+                        <el-form-item label="描述">
+                            <el-input v-model="assetDescription" placeholder="请输入描述" />
+                        </el-form-item>
+                    </template>
+
                     <!-- 添加分辨率选择 -->
                     <el-form-item label="导出分辨率">
                         <el-select v-model="exportScale" placeholder="选择分辨率">
@@ -462,6 +484,10 @@ const exportFolder = ref('EarthEngine_Exports')  // 默认文件夹名
 const exportScale = ref(30)  // 默认30米分辨率
 const currentExportLayer = ref(null)//当前导出图层
 
+// 添加新的响应式变量
+const exportType = ref('drive')
+const assetId = ref('')
+const assetDescription = ref('')
 
 // 修改 togglePixelTool 方法
 const togglePixelTool = () => {
@@ -935,27 +961,37 @@ const exportLayer = (layer) => {
     showExportDialog.value = true
 }
 
-// 添加确认导出方法
+// 修改导出方法
 const confirmExport = async () => {
     const layer = currentExportLayer.value
     if (!layer) return
 
-    // 修改这里：使用 .value.isExporting
-    currentExportLayer.value.isExporting = true
+    layer.isExporting = true
 
     try {
-        await exportManager.exportToCloud(
-            layer,
-            API_ROUTES,
-            exportFolder.value,
-            exportScale.value
-        )
+        if (exportType.value === 'drive') {
+            await exportManager.exportToCloud(
+                layer,
+                API_ROUTES,
+                exportFolder.value,
+                exportScale.value
+            )
+        } else if (exportType.value === 'asset') {
+            await exportManager.exportToAsset(
+                layer,
+                API_ROUTES,
+                assetId.value,
+                assetDescription.value,
+                exportScale.value
+            )
+        }
+        
         showExportDialog.value = false
         currentExportLayer.value.isExporting = false
     } catch (error) {
-        console.error('Error exporting layer:', error)
         currentExportLayer.value.isExporting = false
         ElMessage.error('导出图层失败')
+        layer.isExporting = false
     }
 }
 

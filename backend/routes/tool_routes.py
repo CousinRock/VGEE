@@ -34,7 +34,7 @@ def return_origin_layer(layer_ids, results, vis_params, message):
                 'message': f"Error processing layer: {str(e)}"
             }), 500
         
-        print(f"Tool_routes.py - common_process - bandNames for {layer_id}:", bandNames)
+        print(f"Tool_routes.py - return_origin_layer - bandNames for {layer_id}:", bandNames)
 
         datasets[layer_id] = result        
         layer_vis = next((v for v in vis_params if v['id'] == layer_ids[i]), None)
@@ -454,6 +454,8 @@ def raster_calculator():
         layer_ids = data.get('layer_ids')
         expression = data.get('expression')
         mode = data.get('mode', 'single')
+        resultMode = data.get('resultMode', 'new')
+        print('tool_routes.py-raster_calculator-data:', data)
 
         if mode == 'multi':
             # 多图层模式 - 一次性处理所有图层
@@ -516,6 +518,9 @@ def raster_calculator():
                         return None
                     image = ee.Image(datasets[layer_id])
                     result = RasterOperatorTool.raster_calculator_single(image, expression)
+                    if resultMode == 'append':
+                        newBandName = data.get('newBandName', '')
+                        result = image.addBands(result.rename(newBandName))
                     # 设置计算结果的可视化参数
                     vis_params = get_vis_params(result)
                     result = result.set('vis_params', vis_params)
@@ -531,6 +536,11 @@ def raster_calculator():
                 expression=expression
             )
 
+            if resultMode == 'append':
+                vis_params = data.get('vis_params', [])
+                print('Tool_routes.py - raster_calculator-vis_params:', vis_params)
+                return return_origin_layer(layer_ids, ee.List(results), vis_params, '单波段计算完成')
+            
             return return_new_layer(
                 layer_ids=layer_ids,
                 results=results,

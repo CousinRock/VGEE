@@ -24,6 +24,19 @@
             </div>
         </div>
 
+        <!-- 添加结果处理选项 -->
+        <el-form-item v-if="calculatorParams.mode === 'single'" label="结果处理">
+            <el-radio-group v-model="calculatorParams.resultMode">
+                <el-radio label="new">创建新图层</el-radio>
+                <el-radio label="append">添加到原图层</el-radio>
+            </el-radio-group>
+        </el-form-item>
+
+        <!-- 如果选择添加到原图层，显示新波段名称输入 -->
+        <el-form-item v-if="calculatorParams.resultMode === 'append'" label="新波段名称">
+            <el-input v-model="calculatorParams.newBandName" placeholder="请输入新波段名称" />
+        </el-form-item>
+
         <!-- 波段列表 -->
         <div class="bands-list">
             <h5>可用波段:</h5>
@@ -119,7 +132,9 @@ const props = defineProps({
 // 统一管理计算器参数
 const calculatorParams = ref({
     mode: 'single',      // 计算模式
-    expression: ''      // 计算表达式
+    expression: '',      // 计算表达式
+    resultMode: 'new',   // 结果处理模式：'new' 或 'append'
+    newBandName: ''     // 新波段名称
 })
 
 // 监听参数变化

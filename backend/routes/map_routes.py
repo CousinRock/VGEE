@@ -444,6 +444,50 @@ def export_layer_to_cloud():
             'message': str(e)
         }), 500
     
+@map_bp.route('/export-to-asset', methods=['POST'])
+def export_layer_to_asset():
+    try:
+        data = request.json
+        layer_id = data.get('layer_id')
+        asset_id = data.get('asset_id')
+        description = data.get('description', 'Export to Asset')
+        scale = data.get('scale', 30)
+        
+        if not layer_id or not asset_id:
+            raise ValueError("Layer ID and Asset ID are required")
+            
+        # 获取图层数据
+        dataset, datasetsNames = map_service.get_all_datasets()
+        if layer_id not in dataset:
+            raise ValueError("Layer not found")
+            
+        image = ee.Image(dataset[layer_id])
+        
+        # 创建导出任务
+        task = ee.batch.Export.image.toAsset(
+            image=image,
+            description=description,
+            assetId=asset_id,
+            scale=scale,
+            maxPixels=1e13,
+            region=image.geometry()
+        )
+        
+        # 启动任务
+        task.start()
+        
+        return jsonify({
+            'success': True,
+            'message': '导出任务已启动'
+        })
+        
+    except Exception as e:
+        print(f"Error exporting to asset: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 @map_bp.route('/get-pixel-value', methods=['POST'])
 def get_pixel_value():
     try:

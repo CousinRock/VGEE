@@ -16,6 +16,7 @@ export const API_ROUTES = {
         RENAME_LAYER: `${BASE_URL}/rename-layer`,
         GET_PIXEL_VALUE: `${BASE_URL}/get-pixel-value`,
         EXPORT_TO_CLOUD: `${BASE_URL}/export-to-cloud`,
+        EXPORT_TO_ASSET: `${BASE_URL}/export-to-asset`,
         UPDATE_LAYER_ORDER: `${BASE_URL}/update-layer-order`,
         GEOCODE: `${BASE_URL}/map/geocode`
     },

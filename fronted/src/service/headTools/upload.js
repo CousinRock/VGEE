@@ -260,7 +260,8 @@ export const onSubmitTimeseries = async (form, mapView, showTimeseriesDialog, is
             endDate: form.value.endDate,
             cloudCover: form.value.cloudCover,
             frequency: form.value.frequency,
-            interval: form.value.interval || 1
+            interval: form.value.interval || 1,
+            apply_fmask: form.value.apply_fmask
         })
         
         const response = await fetch(toolConfig.endpoint, {

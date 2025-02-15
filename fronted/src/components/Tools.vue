@@ -258,7 +258,7 @@ const handleSubMenuClick = (item) => {
 const handleSpecialTool = async (tool) => {
     try {
         switch (tool.id) {
-            case TOOL_IDS.UPLOAD.VECTOR:
+            case TOOL_IDS.UPLOAD.ASSET:
                 uploadDataRef.value.showAssetsDialog = true
                 await uploadDataRef.value.loadAssets()
                 break

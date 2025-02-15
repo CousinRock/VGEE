@@ -6,7 +6,7 @@ export const TOOL_IDS = {
     FILE: 'file',
     UPLOAD: {
         ROOT: 'upload-vector',
-        VECTOR: 'upload-vector-assets',
+        ASSET: 'upload-asset',
         LANDSAT_TIMESERIES: 'upload-landsat-timeseries',
         SENTINEL2_TIMESERIES:'upload-sentinel2-timeseries'
     },
@@ -92,8 +92,8 @@ export const TOOLS_CONFIG = {
                 id: TOOL_IDS.UPLOAD.ROOT,
                 label: '添加数据',
                 children: {
-                    uploadVectorAssets: {
-                        id: TOOL_IDS.UPLOAD.VECTOR,
+                    Assets: {
+                        id: TOOL_IDS.UPLOAD.ASSET,
                         label: 'Assets',
                         requireLayers: false,
                         endpoint: API_ROUTES.UPLOAD.ADD_VECTOR_ASSET,
@@ -554,7 +554,9 @@ export const TOOLS_CONFIG = {
                                     visParams: l.visParams
                                 })),
                             expression: params.expression,
-                            mode: params.mode
+                            mode: params.mode,
+                            resultMode: params.resultMode,
+                            newBandName: params.newBandName
                         }),
                         validate: (params) => {
                             if (!params?.expression) {

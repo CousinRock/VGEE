@@ -86,6 +86,7 @@ def get_assets():
             'message': str(e)
         }), 500
 
+
 @upload_bp.route('/add-vector-asset', methods=['POST'])
 def add_vector_asset():
     try:
@@ -135,6 +136,7 @@ def add_image_asset():
         data = request.json
         asset_id = data.get('asset_id')
         layerName = data.get('layerName')
+        
         
         # 获取影像数据
         image_asset = ee.Image(asset_id)
@@ -188,6 +190,8 @@ def add_landsat_timeseries():
         cloud_cover = data.get('cloudCover', 20)
         frequency = data.get('frequency', 'year')
         interval = data.get('interval', 1)
+        apply_fmask = data.get('apply_fmask', False)  # 获取除云参数
+        print('Tool_routes.py - add_image_asset-data:', data)
 
         # 获取年份
         start_year = int(start_date.split('-')[0])
@@ -254,6 +258,44 @@ def add_landsat_timeseries():
                 bands
             )
 
+        def fmask(image):
+            # see https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LC09_C02_T1_L2
+            # Bit 0 - Fill
+            # Bit 1 - Dilated Cloud
+            # Bit 2 - Cirrus
+            # Bit 3 - Cloud
+            # Bit 4 - Cloud Shadow
+            # dilated_cloud = 1 << 1
+            # cloud_shadow_bit_mask = 1 << 4
+            # clouds_bit_mask = 1 << 3
+            
+            # qa = image.select("QA_PIXEL").toInt()
+            # mask = (
+            #     qa.bitwiseAnd(cloud_shadow_bit_mask).eq(0)
+            #     .And(qa.bitwiseAnd(clouds_bit_mask).eq(0))
+            #     .And(qa.bitwiseAnd(dilated_cloud).eq(0))
+            # )
+            qaMask = image.select("QA_PIXEL").bitwiseAnd(int("11111", 2)).eq(0)
+            # Replace the original bands with the scaled ones and apply the masks.
+            return image.updateMask(qaMask)
+        
+        # Define function to prepare OLI images.
+        def prepOli(img):
+            orig = img
+            if apply_fmask:
+                img = fmask(img)
+            img = rename_OLI(img)
+            return ee.Image(img.copyProperties(orig, orig.propertyNames())).resample(
+                "bicubic"
+            )
+        def prepEtm(img):
+            orig = img
+            if apply_fmask:
+                img = fmask(img)
+            img = rename_TM_ETM(img)
+            return ee.Image(img.copyProperties(orig, orig.propertyNames())).resample(
+                "bicubic"
+            )
         # 创建年度合成影像
         def getAnnualComp(year):
             # 构建日期
@@ -263,11 +305,11 @@ def add_landsat_timeseries():
             endDate = startDate.advance(ee.Number(n_days), "day")
 
             # 过滤每个传感器的数据
-            l9_filtered = filter_collection(l9_collection, startDate, endDate).map(rename_OLI)
-            l8_filtered = filter_collection(l8_collection, startDate, endDate).map(rename_OLI)
-            l7_filtered = filter_collection(l7_collection, startDate, endDate).map(rename_TM_ETM)
-            l5_filtered = filter_collection(l5_collection, startDate, endDate).map(rename_TM_ETM)
-            l4_filtered = filter_collection(l4_collection, startDate, endDate).map(rename_TM_ETM)
+            l9_filtered = filter_collection(l9_collection, startDate, endDate).map(prepOli)
+            l8_filtered = filter_collection(l8_collection, startDate, endDate).map(prepOli)
+            l7_filtered = filter_collection(l7_collection, startDate, endDate).map(prepEtm)
+            l5_filtered = filter_collection(l5_collection, startDate, endDate).map(prepEtm)
+            l4_filtered = filter_collection(l4_collection, startDate, endDate).map(prepEtm)
 
             # 合并所有集合
             merged = ee.ImageCollection(l9_filtered) \
@@ -445,6 +487,7 @@ def add_sentinel_timeseries():
         cloud_cover = data.get('cloudCover', 20)
         frequency = data.get('frequency', 'year')
         interval = data.get('interval', 1)
+        apply_fmask = data.get('apply_fmask', False)  # 获取除云参数
 
         # 获取年份
         start_year = int(start_date.split('-')[0])
@@ -500,7 +543,29 @@ def add_sentinel_timeseries():
                 ['B2', 'B3', 'B4', 'B8', 'B11', 'B12', 'QA60'],
                 bands
             )
+        
+        def fmask(image):
+            qa = image.select('QA60').toInt()
+        
+            # Bits 10 and 11 are clouds and cirrus
+            cloud_bit_mask = 1 << 10
+            cirrus_bit_mask = 1 << 11
+            
+            mask = (
+                qa.bitwiseAnd(cloud_bit_mask).eq(0)
+                .And(qa.bitwiseAnd(cirrus_bit_mask).eq(0))
+            )
+            return image.updateMask(mask)
 
+        def prep(image):
+            orig = image
+            if apply_fmask:
+                image = fmask(image)
+            image = rename(image)
+            return ee.Image(image.copyProperties(orig, orig.propertyNames())).resample(
+                "bicubic"
+            )
+        
         # 创建年度合成影像
         def getAnnualComp(year):
             # 构建日期
@@ -510,7 +575,7 @@ def add_sentinel_timeseries():
             endDate = startDate.advance(ee.Number(n_days), "day")
 
             # 过滤每个传感器的数据
-            merged = filter_collection(s2_collection, startDate, endDate).map(rename)
+            merged = filter_collection(s2_collection, startDate, endDate).map(prep)
 
             # 计算中值合成
             composite = merged.median()
