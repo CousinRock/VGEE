@@ -232,10 +232,10 @@ export const handleStyle = {
                 if (!data.success) {
                     throw new Error(data.message);
                 }
-
+                console.log('MapView.vue - applyVectorStyle - currentVectorLayer.value:', currentVectorLayer.value);
                 // 移除旧图层
                 if (currentVectorLayer.value.leafletLayer) {
-                    map.value.removeLayer(currentVectorLayer.value.leafletLayer);
+                    map.removeLayer(currentVectorLayer.value.leafletLayer);
                 }
 
                 // 创建新图层并设置所有样式参数
@@ -259,7 +259,7 @@ export const handleStyle = {
 
                 // 添加新图层到地图
                 if (currentVectorLayer.value.visible) {
-                    newLayer.addTo(map.value);
+                    newLayer.addTo(map);
                     newLayer.setZIndex(currentVectorLayer.value.zIndex);
                 }
             }
