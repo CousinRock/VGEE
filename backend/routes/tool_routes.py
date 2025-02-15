@@ -794,6 +794,7 @@ def statistics():
 
                 # 获取当前图层的参数
                 layer_params = params.get('params', {}).get(layer_id, {})
+                resolution = params.get('resolution', 30)
                 band = layer_params.get('band')
                 value = layer_params.get('value')
                 
@@ -809,21 +810,55 @@ def statistics():
                 area = mask.multiply(ee.Image.pixelArea()).divide(1e6).reduceRegion(
                     reducer=ee.Reducer.sum(),
                     geometry=image.geometry(),
-                    scale=30,
+                    scale=resolution,
+                    maxPixels=1e13
+                ).getInfo()
+
+                count = mask.reduceRegion(
+                    reducer=ee.Reducer.count(),
+                    geometry=image.geometry(),
+                    scale=resolution,
                     maxPixels=1e13
                 ).getInfo()
                 
+                # 计算其他统计指标
+                stats = band_image.reduceRegion(
+                    reducer=ee.Reducer.mean()
+                        .combine(ee.Reducer.median(), '', True)
+                        .combine(ee.Reducer.minMax(), '', True)
+                        .combine(ee.Reducer.stdDev(), '', True)  # 标准差
+                        .combine(ee.Reducer.variance(), '', True)  # 方差
+                        .combine(ee.Reducer.sum(), '', True)  # 总和
+                        .combine(ee.Reducer.mode(), '', True)  # 众数
+                        .combine(ee.Reducer.percentile([25, 75]), '', True),  # 四分位数
+                    geometry=image.geometry(),
+                    scale=resolution,
+                    maxPixels=1e13
+                ).getInfo()
+
                 print('Tool_routes.py - statistics-area:', area)
-                
+                print('Tool_routes.py - statistics-stats:', stats)
+                print('Tool_routes.py - statistics-count:', count)
+
                 result = {
                     'layerId': layer_id,
                     'totalArea': area.get(band),
                     'band': band,
-                    'value': value
+                    'value': value,
+                    'mean': stats.get(f'{band}_mean'),
+                    'median': stats.get(f'{band}_median'),
+                    'min': stats.get(f'{band}_min'),
+                    'max': stats.get(f'{band}_max'),
+                    'stdDev': stats.get(f'{band}_stdDev'),
+                    'variance': stats.get(f'{band}_variance'),
+                    'sum': stats.get(f'{band}_sum'),
+                    'mode': stats.get(f'{band}_mode'),
+                    'q1': stats.get(f'{band}_p25'),  # 第一四分位数
+                    'q3': stats.get(f'{band}_p75'),  # 第三四分位数
+                    'count': count.get(band)
                 }
                 
                 return result
-                
                 
             except Exception as e:
                 print(f"Error processing layer {layer_id}: {str(e)}")
@@ -851,6 +886,7 @@ def statistics():
             'success': False,
             'message': str(e)
         }), 500
+
 
 
 

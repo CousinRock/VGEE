@@ -1,6 +1,18 @@
 <template>
     <div class="statistics-container">
         <el-form :model="statisticsParams" label-width="120px">
+            <el-form-item label="分辨率(米)">
+                <el-input-number 
+                    v-model="statisticsParams.resolution" 
+                    :min="1"
+                    :max="1000"
+                    :step="1"
+                    class="resolution-input"
+                />
+                <div class="parameter-hint">
+                    计算精度，数值越小精度越高，但计算时间会更长
+                </div>
+            </el-form-item>
 
             <!-- 面积统计模式的参数 -->
             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
@@ -37,7 +49,48 @@
                     <template #default="scope">
                         {{ Number(scope.row.totalArea).toFixed(2) }}
                     </template>
-                </el-table-column>         
+                </el-table-column>
+                <el-table-column prop="count" label="像素数量" />
+                <el-table-column prop="mean" label="均值">
+                    <template #default="scope">
+                        {{ Number(scope.row.mean).toFixed(2) }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="median" label="中位值">
+                    <template #default="scope">
+                        {{ Number(scope.row.median).toFixed(2) }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="mode" label="众数">
+                    <template #default="scope">
+                        {{ Number(scope.row.mode).toFixed(2) }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="min" label="最小值">
+                    <template #default="scope">
+                        {{ Number(scope.row.min).toFixed(2) }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="max" label="最大值">
+                    <template #default="scope">
+                        {{ Number(scope.row.max).toFixed(2) }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="stdDev" label="标准差">
+                    <template #default="scope">
+                        {{ Number(scope.row.stdDev).toFixed(2) }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="q1" label="Q1">
+                    <template #default="scope">
+                        {{ Number(scope.row.q1).toFixed(2) }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="q3" label="Q3">
+                    <template #default="scope">
+                        {{ Number(scope.row.q3).toFixed(2) }}
+                    </template>
+                </el-table-column>
             </el-table>
         </div>
     </div>
@@ -63,6 +116,7 @@ const props = defineProps({
 
 // 统计参数
 const statisticsParams = ref({
+    resolution: 30,  // 默认分辨率为30米
     params: {}  // 每个图层的面积统计参数
 })
 
@@ -99,7 +153,15 @@ const formatResults = computed(() => {
         band: result.band,
         value: result.value,
         totalArea: result.totalArea,
-       
+        mean: result.mean,
+        median: result.median,
+        min: result.min,
+        max: result.max,
+        count: result.count,
+        mode: result.mode,
+        stdDev: result.stdDev,
+        q1: result.q1,
+        q3: result.q3
     }))
 })
 
@@ -139,5 +201,16 @@ defineExpose({
 }
 :deep(.el-select) {
     width: 200px;
+}
+
+.resolution-input {
+    width: 180px;
+}
+
+.parameter-hint {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 4px;
+    line-height: 1.4;
 }
 </style>
