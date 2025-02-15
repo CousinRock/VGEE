@@ -674,7 +674,7 @@ export const exportManager = {
             return false;
         }
     },
-    exportToAsset: async (layer, API_ROUTES, assetId, description, scale=30) => {
+    exportToAsset: async (layer, API_ROUTES, assetId, description, scale = 30) => {
         try {
             console.log('MapView.vue - exportToCloud - layer:', layer);
 
@@ -803,7 +803,7 @@ export const toolManager = {
             pixelValues.value = null;
         }
     },
-    createShape: (event,layers,drawnItems,map,pointFeatures,pointLayerCounter) => {
+    createShape: (event, layers, drawnItems, map, pointFeatures, pointLayerCounter) => {
         const layer = event.layer;
         drawnItems.value.addLayer(layer);
 
@@ -907,7 +907,13 @@ export const toolManager = {
     getPointLayer: (layers, e, map) => {
         // 提取更新图层的公共方法
         const updatePointLayer = (layer, features) => {
-            map.value.removeLayer(layer.leafletLayer);
+            // 先关闭所有弹出窗口
+            map.value.closePopup();
+
+            if (map.value.hasLayer(layer.leafletLayer)) {
+                map.value.removeLayer(layer.leafletLayer);
+            }
+
             layer.leafletLayer = L.geoJSON({
                 type: 'FeatureCollection',
                 features: features.map(point => ({
@@ -920,13 +926,13 @@ export const toolManager = {
                     return L.circleMarker(latlng, layer.visParams);
                 }
             });
-            
+
             if (layer.visible) {
                 layer.leafletLayer.addTo(map.value);
             }
         };
 
-        const pointLayers = layers.value.filter(layer => 
+        const pointLayers = layers.value.filter(layer =>
             layer.type === 'manual' && layer.geometryType === 'Point'
         );
 
@@ -934,127 +940,141 @@ export const toolManager = {
             if (pointLayer.leafletLayer) {
                 pointLayer.leafletLayer.eachLayer(marker => {
                     console.log(pointLayer);
-                    if(pointLayer.visible){
-                    const markerLatLng = marker.getLatLng();
-                    const clickPoint = map.value.latLngToContainerPoint(e.latlng);
-                    const markerPoint = map.value.latLngToContainerPoint(markerLatLng);
-                    
-                    const distance = clickPoint.distanceTo(markerPoint);
-                    
-                    if (distance <= pointLayer.visParams.radius + 2) {
-                        const actionButton = L.popup({
-                            closeButton: false,
-                            className: 'point-action-popup'
-                        })
-                            .setLatLng(markerLatLng)
-                            .setContent(`
-                                <div class="point-action-container">
-                                    <button class="point-move-btn">
-                                        <i class="fas fa-arrows-alt"></i> 移动到其他图层
-                                    </button>
-                                    <button class="point-delete-btn">
-                                        <i class="fas fa-trash"></i> 删除点位
-                                    </button>                                   
-                                </div>
-                            `);
-                        
-                        actionButton.addTo(map.value);
+                    if (pointLayer.visible) {
+                        const markerLatLng = marker.getLatLng();
+                        const clickPoint = map.value.latLngToContainerPoint(e.latlng);
+                        const markerPoint = map.value.latLngToContainerPoint(markerLatLng);
 
-                        setTimeout(() => {
-                            // 处理删除操作
-                            const deleteBtn = document.querySelector('.point-delete-btn');
-                            if (deleteBtn) {
-                                deleteBtn.onclick = () => {
-                                    const pointIndex = pointLayer.features.findIndex(
-                                        point => point.coordinates[0] === markerLatLng.lng 
-                                            && point.coordinates[1] === markerLatLng.lat
-                                    );
-                                    
-                                    if (pointIndex > -1 && !pointLayer.isSample) {
-                                        pointLayer.features.splice(pointIndex, 1);
-                                        updatePointLayer(pointLayer, pointLayer.features);
-                                        map.value.closePopup(actionButton);
-                                        
-                                        if (pointLayer.features.length === 0) {
-                                            ElMessage.warning('该点图层已无点位，建议删除图层');
+                        const distance = clickPoint.distanceTo(markerPoint);
+
+                        if (distance <= pointLayer.visParams.radius + 2) {
+                            // 先关闭任何已存在的弹出窗口
+                            map.value.closePopup();
+
+                            const actionButton = L.popup({
+                                closeButton: false,
+                                className: 'point-action-popup',
+                                // 禁用动画以避免缩放问题
+                                animate: false
+                            })
+                                .setLatLng(markerLatLng)
+                                .setContent(`
+                                    <div class="point-action-container">
+                                        <button class="point-move-btn">
+                                            <i class="fas fa-arrows-alt"></i> 移动到其他图层
+                                        </button>
+                                        <button class="point-delete-btn">
+                                            <i class="fas fa-trash"></i> 删除点位
+                                        </button>                                   
+                                    </div>
+                                `);
+
+                            actionButton.addTo(map.value);
+
+                            setTimeout(() => {
+                                // 处理删除操作
+                                const deleteBtn = document.querySelector('.point-delete-btn');
+                                if (deleteBtn) {
+                                    deleteBtn.onclick = () => {
+                                        // 先关闭弹出窗口
+                                        map.value.closePopup();
+
+                                        const pointIndex = pointLayer.features.findIndex(
+                                            point => point.coordinates[0] === markerLatLng.lng
+                                                && point.coordinates[1] === markerLatLng.lat
+                                        );
+
+                                        if (pointIndex > -1 && !pointLayer.isSample) {
+                                            pointLayer.features.splice(pointIndex, 1);
+                                            // 确保在更新图层之前关闭所有弹出窗口
+                                            map.value.closePopup();
+                                            updatePointLayer(pointLayer, pointLayer.features);
+
+                                            if (pointLayer.features.length === 0) {
+                                                ElMessage.warning('该点图层已无点位，建议删除图层');
+                                            }
+                                        } else {
+                                            ElMessage.warning('该点位为样本点，无法删除');
                                         }
-                                    } else {
-                                        ElMessage.warning('该点位为样本点，无法删除');
-                                        map.value.closePopup(actionButton);
-                                    }
-                                };
-                            }
+                                    };
+                                }
 
-                            // 处理移动操作
-                            const moveBtn = document.querySelector('.point-move-btn');
-                            if (moveBtn) {
-                                moveBtn.onclick = () => {
-                                    const otherLayers = pointLayers.filter(layer => 
-                                        layer.id !== pointLayer.id
-                                    );
+                                // 处理移动操作
+                                const moveBtn = document.querySelector('.point-move-btn');
+                                if (moveBtn) {
+                                    moveBtn.onclick = () => {
+                                        // 先关闭当前弹出窗口
+                                        map.value.closePopup();
 
-                                    if (otherLayers.length === 0) {
-                                        ElMessage.warning('没有其他可用的点图层');
-                                        return;
-                                    }
+                                        const otherLayers = pointLayers.filter(layer =>
+                                            layer.id !== pointLayer.id
+                                        );
 
-                                    const layerSelectPopup = L.popup({
-                                        closeButton: true,
-                                        className: 'layer-select-popup'
-                                    })
-                                        .setLatLng(markerLatLng)
-                                        .setContent(`
-                                            <div class="layer-select-container">
-                                                <h4>选择目标图层</h4>
-                                                <div class="layer-list">
-                                                    ${otherLayers.map(layer => `
-                                                        <button class="layer-select-btn" data-layer-id="${layer.id}">
-                                                            ${layer.name}
-                                                        </button>
-                                                    `).join('')}
+                                        if (otherLayers.length === 0) {
+                                            ElMessage.warning('没有其他可用的点图层');
+                                            return;
+                                        }
+
+                                        const layerSelectPopup = L.popup({
+                                            closeButton: true,
+                                            className: 'layer-select-popup',
+                                            // 禁用动画
+                                            animate: false
+                                        })
+                                            .setLatLng(markerLatLng)
+                                            .setContent(`
+                                                <div class="layer-select-container">
+                                                    <h4>选择目标图层</h4>
+                                                    <div class="layer-list">
+                                                        ${otherLayers.map(layer => `
+                                                            <button class="layer-select-btn" data-layer-id="${layer.id}">
+                                                                ${layer.name}
+                                                            </button>
+                                                        `).join('')}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        `);
+                                            `);
 
-                                    map.value.closePopup(actionButton);
-                                    layerSelectPopup.addTo(map.value);
+                                        layerSelectPopup.addTo(map.value);
 
-                                    setTimeout(() => {
-                                        document.querySelectorAll('.layer-select-btn').forEach(btn => {
-                                            btn.onclick = () => {
-                                                const targetLayerId = btn.getAttribute('data-layer-id');
-                                                const targetLayer = otherLayers.find(l => l.id === targetLayerId);
-                                                
-                                                if (targetLayer) {
-                                                    const pointIndex = pointLayer.features.findIndex(
-                                                        point => point.coordinates[0] === markerLatLng.lng 
-                                                            && point.coordinates[1] === markerLatLng.lat
-                                                    );
-                                                    
-                                                    if (pointIndex > -1) {
-                                                        const point = pointLayer.features.splice(pointIndex, 1)[0];
-                                                        
-                                                        // 更新源图层和目标图层
-                                                        updatePointLayer(pointLayer, pointLayer.features);
-                                                        targetLayer.features.push(point);
-                                                        targetLayer.leafletLayer.addData({
-                                                            type: 'Feature',
-                                                            geometry: point,
-                                                            properties: {}
-                                                        });
+                                        setTimeout(() => {
+                                            document.querySelectorAll('.layer-select-btn').forEach(btn => {
+                                                btn.onclick = () => {
+                                                    const targetLayerId = btn.getAttribute('data-layer-id');
+                                                    const targetLayer = otherLayers.find(l => l.id === targetLayerId);
 
-                                                        map.value.closePopup(layerSelectPopup);
-                                                        ElMessage.success('点位已成功移动到新图层');
+                                                    if (targetLayer) {
+                                                        const pointIndex = pointLayer.features.findIndex(
+                                                            point => point.coordinates[0] === markerLatLng.lng
+                                                                && point.coordinates[1] === markerLatLng.lat
+                                                        );
+
+                                                        if (pointIndex > -1) {
+                                                            // 先关闭弹出窗口
+                                                            map.value.closePopup();
+
+                                                            const point = pointLayer.features.splice(pointIndex, 1)[0];
+
+                                                            // 更新源图层和目标图层
+                                                            updatePointLayer(pointLayer, pointLayer.features);
+                                                            targetLayer.features.push(point);
+                                                            targetLayer.leafletLayer.addData({
+                                                                type: 'Feature',
+                                                                geometry: point,
+                                                                properties: {}
+                                                            });
+
+                                                            ElMessage.success('点位已成功移动到新图层');
+                                                        }
                                                     }
-                                                }
-                                            };
-                                        });
-                                    }, 0);
-                                };
-                            }
-                        }, 0);
+                                                };
+                                            });
+                                        }, 0);
+                                    };
+                                }
+                            }, 0);
+                        }
                     }
-                }
                 });
             }
         });
@@ -1088,18 +1108,18 @@ export const toolManager = {
         e.preventDefault();
         const draggedLayerId = e.dataTransfer.getData('text/plain');
         const draggedLayer = layersRef.find(l => l.id === draggedLayerId);
-        
+
         if (draggedLayer && targetLayer.id !== draggedLayerId) {
             try {
                 // 获取源和目标索引
                 const fromIndex = layersRef.findIndex(l => l.id === draggedLayerId);
                 const toIndex = layersRef.findIndex(l => l.id === targetLayer.id);
-                
+
                 // 移除拖动的图层
                 layersRef.splice(fromIndex, 1);
                 // 插入到新位置
                 layersRef.splice(toIndex, 0, draggedLayer);
-                
+
                 // 更新图层的 zIndex
                 layersRef.forEach((layer, index) => {
                     if (layer.leafletLayer) {
@@ -1130,7 +1150,7 @@ export const toolManager = {
                 ElMessage.error('更新图层顺序失败');
             }
         }
-        
+
         // 移除所有拖拽相关的样式类
         document.querySelectorAll('.layer-item').forEach(item => {
             item.classList.remove('drag-over', 'dragging');
