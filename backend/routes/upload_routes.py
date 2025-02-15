@@ -415,7 +415,7 @@ def add_landsat_timeseries():
                     collection_id = f"landsat_{date_str}_{int(time.time())}"
                     save_name = f"Landsat时间序列_{date_str}"
 
-                filtered_image = images_collection.median().clip(roi)
+                filtered_image = images_collection.median().clip(roi).set('date', date_str)
                 
                 # 获取地图ID
                 map_id = filtered_image.getMapId(vis_params)
@@ -663,7 +663,7 @@ def add_sentinel_timeseries():
                     collection_id = f"sentinel2_{date_str}_{int(time.time())}"
                     save_name = f"Sentinel2时间序列_{date_str}"
 
-                filtered_image = images_collection.median().clip(roi)
+                filtered_image = images_collection.median().clip(roi).set('date', date_str)
                 
                 # 获取地图ID
                 map_id = filtered_image.getMapId(vis_params)
