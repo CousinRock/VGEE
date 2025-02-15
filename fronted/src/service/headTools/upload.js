@@ -111,7 +111,8 @@ const handleVectorAsset = async (selectedAsset, mapView) => {
         if (!data.success) {
             throw new Error(data.message)
         }
-
+        console.log('upload.js - handleVectorAsset - data:', data);
+        
         // 创建新图层对象
         const newLayer = {
             id: selectedAsset.id,
@@ -176,13 +177,15 @@ const handleImageAsset = async (selectedAsset, mapView) => {
         })
 
         const data = await response.json()
+        console.log('upload.js - handleImageAsset - data:', data);
+        
         if (!data.success) {
             throw new Error(data.message)
         }
 
         // 创建新图层对象
         const newLayer = {
-            id: selectedAsset.id,
+            id: data.id,
             name: selectedAsset.name,
             type: data.type,
             visible: true,
@@ -207,6 +210,8 @@ const handleImageAsset = async (selectedAsset, mapView) => {
 
         // 添加到地图
         newLayer.leafletLayer = imageLayer
+        console.log('upload.js - handleImageAsset - newLayer:', newLayer);
+        
         mapView.layers.push(newLayer)
         imageLayer.addTo(mapView.map)
 

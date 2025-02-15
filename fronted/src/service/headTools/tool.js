@@ -172,7 +172,7 @@ export const updateMapLayer = async (layerResult, mapView) => {
 }
 
 // 统一的工具处理函数
-export const processLayerSelect = async (selectedLayers, currentTool, mapView, params, isProcessing) => {
+export const processLayerSelect = async (selectedLayers, currentTool, mapView, params, isProcessing, refs) => {
     const toolConfig = TOOLS_CONFIG.getToolById(currentTool.id)
     if (!toolConfig) {
         throw new Error('未知的工具类型')
@@ -208,7 +208,7 @@ export const processLayerSelect = async (selectedLayers, currentTool, mapView, p
 
         // 处理结果
         if (toolConfig.processResult) {
-            await toolConfig.processResult(data, mapView)
+            await toolConfig.processResult(data, mapView, refs)
         } else {
             // 默认处理逻辑
             for (const result of data.results) {

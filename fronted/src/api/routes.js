@@ -59,6 +59,7 @@ export const API_ROUTES = {
         RASTER_CALCULATOR: `${BASE_URL}/tools/raster-calculator`,
         MOSAIC: `${BASE_URL}/tools/mosaic`,
         CLIP: `${BASE_URL}/tools/clip`,
+        STATISTICS: `${BASE_URL}/tools/statistics`,
         //terrain operation
         TERRAIN: `${BASE_URL}/tools/terrain`
     },

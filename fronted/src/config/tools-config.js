@@ -52,7 +52,8 @@ export const TOOL_IDS = {
         ROOT: 'raster-operation',
         CALCULATOR: 'raster-calculator',
         MOSAIC: 'mosaic',
-        CLIP: 'clip'
+        CLIP: 'clip',
+        STATISTICS: 'statistics'
     },
     TERRAIN_OPERATION: {
         ROOT: 'terrain-operation',
@@ -596,6 +597,31 @@ export const TOOLS_CONFIG = {
                                 })),
                             geometry: params?.clipLayer?.geometry || params?.clipLayer?.features?.[0]?.geometry
                         })
+                    },
+                    statistics: {
+                        id: TOOL_IDS.RASTER_OPERATION.STATISTICS,
+                        label: '栅格统计',
+                        icon: 'fas fa-chart-bar',
+                        component: 'RasterStatistics',
+                        requireLayers: true,
+                        endpoint: API_ROUTES.TOOLS.STATISTICS,
+                        description: '统计栅格数据的像素值和面积',
+                        keepWindowOpen: true,
+                        processParams: (selectedLayers, mapView, params) => ({
+                            layer_ids: selectedLayers,
+                            vis_params: mapView.layers
+                                .filter(l => selectedLayers.includes(l.id))
+                                .map(l => ({
+                                    id: l.id,
+                                    visParams: l.visParams
+                                })),
+                            params: params
+                        }),
+                        processResult: (data, mapView, refs) => {
+                            if (refs?.rasterStatisticsRef) {
+                                refs.rasterStatisticsRef.setResult(data.results)
+                            }
+                        }
                     }
                 }
             },

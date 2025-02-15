@@ -776,6 +776,82 @@ def terrain():
             'message': str(e)
         }), 500
 
+@tool_bp.route('/statistics', methods=['POST'])
+def statistics():
+    try:
+        data = request.json
+        layer_ids = data.get('layer_ids')
+        params = data.get('params', {})
+        vis_params = data.get('vis_params', [])
+        print('Tool_routes.py - statistics-data:', data)
+
+        def process_layer(layer_id, params=None):
+            try:
+                if layer_id not in datasets:
+                    return None
+                    
+                image = ee.Image(datasets[layer_id])
+
+                # 获取当前图层的参数
+                layer_params = params.get('params', {}).get(layer_id, {})
+                band = layer_params.get('band')
+                value = layer_params.get('value')
+                
+                if not band or value is None:
+                    return None
+                
+                band_image = image.select([band])
+                
+                # 创建掩膜
+                mask = band_image.eq(value)
+                
+                # 计算面积（平方公里）
+                area = mask.multiply(ee.Image.pixelArea()).divide(1e6).reduceRegion(
+                    reducer=ee.Reducer.sum(),
+                    geometry=image.geometry(),
+                    scale=30,
+                    maxPixels=1e13
+                ).getInfo()
+                
+                print('Tool_routes.py - statistics-area:', area)
+                
+                result = {
+                    'layerId': layer_id,
+                    'totalArea': area.get(band),
+                    'band': band,
+                    'value': value
+                }
+                
+                return result
+                
+                
+            except Exception as e:
+                print(f"Error processing layer {layer_id}: {str(e)}")
+                return None
+
+        results = ParallelProcessor.process_layers(
+            layer_ids=layer_ids,
+            process_func=process_layer,
+            max_workers=maxthread_num,
+            params=params
+        )
+
+        if not results:
+            raise ValueError("No successful statistics results")
+
+        return jsonify({
+            'success': True,
+            'results': results,
+            'message': '统计完成'
+        })
+
+    except Exception as e:
+        print(f"Error in statistics: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 
 
 

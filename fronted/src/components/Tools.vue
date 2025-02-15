@@ -38,7 +38,7 @@
     <el-dialog v-model="showLayerSelect" :title="'选择需要处理的图层'" :width="[TOOL_IDS.CLASSIFICATION.KMEANS,
     TOOL_IDS.RASTER_OPERATION.CALCULATOR,
     TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME,
-    TOOL_IDS.SEGMENT.TEXT_SEGMENT].includes(currentTool?.id) ? '800px' : '400px'" width="800px">
+    TOOL_IDS.SEGMENT.TEXT_SEGMENT,TOOL_IDS].includes(currentTool?.id) ? '800px' : '400px'" width="800px">
         <div class="layer-select-content" :class="{
             'with-settings': [TOOL_IDS.CLASSIFICATION.KMEANS,
             TOOL_IDS.RASTER_OPERATION.CALCULATOR,
@@ -67,6 +67,7 @@
                 || currentTool?.id === TOOL_IDS.CLASSIFICATION.RANDOM_FOREST
                 || currentTool?.id === TOOL_IDS.CLASSIFICATION.SVM
                 || currentTool?.id === TOOL_IDS.RASTER_OPERATION.CALCULATOR
+                || currentTool?.id === TOOL_IDS.RASTER_OPERATION.STATISTICS
                 || currentTool?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME
                 || currentTool?.id === TOOL_IDS.RASTER_OPERATION.CLIP
                 || currentTool?.id === TOOL_IDS.SEGMENT.TEXT_SEGMENT) && selectedLayerName.length > 0"
@@ -108,6 +109,16 @@
                     <ClipImage ref="clipImageRef" :mapView="props.mapView" />
                 </div>
 
+                <!-- 栅格统计设置 -->
+                <div v-if="currentTool?.id === TOOL_IDS.RASTER_OPERATION.STATISTICS">
+                    <RasterStatistics 
+                        ref="rasterStatisticsRef" 
+                        :selectedLayerName="selectedLayerName"
+                        :availableLayers="availableLayers" 
+                        :layerBands="layerBands"
+                    />
+                </div>
+
             </div>
         </div>
 
@@ -142,6 +153,7 @@ import * as SearchDataService from '../service/headTools/searchData'// 导入搜
 import SearchResults from './ToolsView/SearchResults.vue'
 import RasterCalculator from './ToolsView/RasterCalculator.vue'
 import MacLeaClassify from './ToolsView/MacLeaClassify.vue'
+import RasterStatistics from './ToolsView/RasterStatistics.vue'
 import UploadData from './ToolsView/UploadData.vue'
 import RenameBands from './ToolsView/RenameBands.vue'
 import AiTools from './ToolsView/AiTools.vue'
@@ -185,27 +197,27 @@ const aiToolsRef = ref(null)
 const locationSearchRef = ref(null)
 // 裁剪组件
 const clipImageRef = ref(null)
+// 添加统计组件的引用
+const rasterStatisticsRef = ref(null)
 
 // 添加 toolParams 计算属性
 const toolParams = computed(() => {
     if (!currentTool.value) return null
 
     switch (currentTool.value.id) {
-        case TOOL_IDS.CLASSIFICATION.KMEANS:
+        case TOOL_IDS.CLASSIFICATION.KMEANS://K-means
             return macLeaClassifyRef.value?.classifyParams?.clusterCounts || {}
-        case TOOL_IDS.CLASSIFICATION.RANDOM_FOREST:
+        case TOOL_IDS.CLASSIFICATION.RANDOM_FOREST://随机森林
             return macLeaClassifyRef.value?.classifyParams?.rfParams || {}
-        case TOOL_IDS.CLASSIFICATION.SVM:
+        case TOOL_IDS.CLASSIFICATION.SVM://SVM
             return macLeaClassifyRef.value?.classifyParams?.svmParams || {}
-        case TOOL_IDS.RASTER_OPERATION.CALCULATOR:
-            if (!rasterCalculatorRef.value?.calculatorParams) return {}
-            return {
-                expression: rasterCalculatorRef.value.calculatorParams.expression || '',
-                mode: rasterCalculatorRef.value.calculatorParams.mode || 'single'
-            }
-        case TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME:
+        case TOOL_IDS.RASTER_OPERATION.CALCULATOR://栅格计算器
+            return rasterCalculatorRef.value?.calculatorParams || {}
+        case TOOL_IDS.RASTER_OPERATION.STATISTICS://栅格统计
+            return rasterStatisticsRef.value?.statisticsParams || {}
+        case TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME://重命名波段
             return renameBandsRef.value?.renameBandsParams?.bands || []
-        case TOOL_IDS.SEGMENT.TEXT_SEGMENT:
+        case TOOL_IDS.SEGMENT.TEXT_SEGMENT://AI工具
             return aiToolsRef.value?.aiParams?.langSam || {}
         case TOOL_IDS.RASTER_OPERATION.CLIP:
             return clipImageRef.value?.getClipParams() || {}
@@ -324,16 +336,18 @@ const handleLayerSelect = async () => {
     }
 
     try {
-
         const result = await ToolService.processLayerSelect(
             selectedLayerName.value,
             currentTool.value,
             props.mapView,
-            toolParams.value,  // 使用计算属性
-            isProcessing
+            toolParams.value,
+            isProcessing,
+            { rasterStatisticsRef: rasterStatisticsRef.value }
         )
 
-        if (result) {
+        // 根据工具配置决定是否关闭窗口
+        const toolConfig = TOOLS_CONFIG.getToolById(currentTool.value.id)
+        if (result && !toolConfig.keepWindowOpen) {
             showLayerSelect.value = false
         }
     } catch (error) {
@@ -379,7 +393,8 @@ watch(showLayerSelect, (newVal) => {
 // 监听选中图层的变化，初始化波段信息
 watch(selectedLayerName, async (newVal) => {
     if (currentTool.value?.id === TOOL_IDS.RASTER_OPERATION.CALCULATOR
-        || currentTool.value?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME) {
+        || currentTool.value?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME
+    || currentTool.value?.id == TOOL_IDS.RASTER_OPERATION.STATISTICS) {
         for (const layerId of newVal) {
             if (!layerBands.value[layerId]) {
 
