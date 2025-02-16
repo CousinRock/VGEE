@@ -969,30 +969,32 @@ export const toolManager = {
                                     </div>
                                 `);
 
-                            actionButton.addTo(map.value);
+                            const popup = actionButton.addTo(map.value);
 
                             setTimeout(() => {
                                 // 处理删除操作
                                 const deleteBtn = document.querySelector('.point-delete-btn');
                                 if (deleteBtn) {
                                     deleteBtn.onclick = () => {
-                                        // 先关闭弹出窗口
-                                        map.value.closePopup();
-
                                         const pointIndex = pointLayer.features.findIndex(
                                             point => point.coordinates[0] === markerLatLng.lng
                                                 && point.coordinates[1] === markerLatLng.lat
                                         );
 
                                         if (pointIndex > -1 && !pointLayer.isSample) {
-                                            pointLayer.features.splice(pointIndex, 1);
-                                            // 确保在更新图层之前关闭所有弹出窗口
+                                            // 先关闭弹出窗口
+                                            // popup.remove();
                                             map.value.closePopup();
-                                            updatePointLayer(pointLayer, pointLayer.features);
-
-                                            if (pointLayer.features.length === 0) {
-                                                ElMessage.warning('该点图层已无点位，建议删除图层');
-                                            }
+                                            
+                                            
+                                            // 然后删除点位并更新图层
+                                            pointLayer.features.splice(pointIndex, 1);
+                                            setTimeout(() => {
+                                                updatePointLayer(pointLayer, pointLayer.features);
+                                                if (pointLayer.features.length === 0) {
+                                                    ElMessage.warning('该点图层已无点位，建议删除图层');
+                                                }
+                                            }, 0);
                                         } else {
                                             ElMessage.warning('该点位为样本点，无法删除');
                                         }

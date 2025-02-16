@@ -3,6 +3,16 @@
         <!-- 添加资产选择对话框 -->
         <el-dialog v-model="showAssetsDialog" :title="selectedAsset ? `选择资产: ${selectedAsset.name}` : '选择资产'"
             :width="'400px'" >
+            <div class="assets-header">
+                <el-button 
+                    @click="refreshAssetsList" 
+                    :loading="isLoadingAssets"
+                    type="primary"
+                    size="small"
+                >
+                    <i class="fas fa-sync-alt"></i> 刷新
+                </el-button>
+            </div>
             <div class="assets-select-content">
                 <el-tree :data="assetsList" :props="{
                     label: 'name',
@@ -117,7 +127,8 @@ import {
     onLoadAssets, 
     onHandleAssetSelect, 
     onConfirmAssetSelect,
-    onSubmitTimeseries 
+    onSubmitTimeseries,
+    refreshAssets
 } from '../../service/headTools/upload'
 import { TOOL_IDS } from '../../config/tools-config'
 
@@ -152,9 +163,14 @@ const satelliteType = ref('Landsat')
 // 添加当前工具ID状态
 const currentToolId = ref(null)
 
+// 添加刷新方法
+const refreshAssetsList = async () => {
+    await refreshAssets(isLoadingAssets, assetsList);
+}
+
 // 修改 loadAssets 方法
-const loadAssets = async (folder = null) => {
-    await onLoadAssets(folder, isLoadingAssets, assetsList)
+const loadAssets = async () => {
+    await onLoadAssets(isLoadingAssets, assetsList);
 }
 
 // 修改资产选择处理方法
@@ -240,5 +256,17 @@ defineExpose({
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.assets-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.current-path {
+    font-size: 14px;
+    color: #666;
 }
 </style>

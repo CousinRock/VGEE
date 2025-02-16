@@ -2,31 +2,45 @@ import { API_ROUTES } from '../../api/routes'
 import { ElMessage } from 'element-plus'
 import { TOOLS_CONFIG } from '../../config/tools-config'
 
+// 添加缓存变量
+let cachedAssets = null;
+
 // 修改 loadAssets 方法
-export const onLoadAssets = async (folder = null, isLoadingAssets, assetsList) => {
+export const onLoadAssets = async (isLoadingAssets, assetsList, forceRefresh = false) => {
     try {
-        isLoadingAssets.value = true
-        const url = new URL(API_ROUTES.UPLOAD.GET_ASSETS)
-        if (folder) {
-            url.searchParams.append('folder', folder)
+        // 如果有缓存且不是强制刷新，直接使用缓存
+        if (cachedAssets && !forceRefresh) {
+            console.log('upload.js - onLoadAssets - cachedAssets:', cachedAssets);
+            assetsList.value = cachedAssets;
+            return;
         }
 
-        const response = await fetch(url)
-        const data = await response.json()
+        isLoadingAssets.value = true;
+        const url = new URL(API_ROUTES.UPLOAD.GET_ASSETS);
+        const response = await fetch(url);
+        const data = await response.json();
+        console.log('upload.js - onLoadAssets - data:', data);
 
         if (!data.success) {
-            ElMessage.error(data.message || '获取资产列表失败')
-            return
+            ElMessage.error(data.message || '获取资产列表失败');
+            return;
         }
 
-        assetsList.value = data.assets
-        console.log('upload.js - onLoadAssets - assets:', data.assets)
+        // 更新缓存和列表
+        cachedAssets = data.assets;
+        assetsList.value = data.assets;
+        console.log('upload.js - onLoadAssets - assets:', data.assets);
     } catch (error) {
-        console.error('upload.js - Error loading assets:', error)
-        ElMessage.error('获取资产列表失败')
+        console.error('upload.js - Error loading assets:', error);
+        ElMessage.error('获取资产列表失败');
     } finally {
-        isLoadingAssets.value = false
+        isLoadingAssets.value = false;
     }
+}
+
+// 添加刷新方法
+export const refreshAssets = async (isLoadingAssets, assetsList) => {
+    await onLoadAssets(isLoadingAssets, assetsList, true);
 }
 
 // 修改资产选择处理方法
