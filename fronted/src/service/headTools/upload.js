@@ -99,7 +99,7 @@ export const onConfirmAssetSelect = async (selectedAsset, showAssetsDialog, isLo
             }
         }
 
-        showAssetsDialog.value = false
+        // showAssetsDialog.value = false
     } catch (error) {
         console.error('upload.js - Error confirming asset selection:', error)
         ElMessage.error('添加图层失败')

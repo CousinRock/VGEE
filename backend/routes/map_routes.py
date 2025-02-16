@@ -452,30 +452,85 @@ def export_layer_to_asset():
         asset_id = data.get('asset_id')
         description = data.get('description', 'Export to Asset')
         scale = data.get('scale', 30)
-        
+        layer_type = data.get('layer_type')
+        geometry_type = data.get('geometryType')
+        features = data.get('features', [])
+
         if not layer_id or not asset_id:
             raise ValueError("Layer ID and Asset ID are required")
             
+        if layer_type == 'Raster':
         # 获取图层数据
-        dataset, datasetsNames = map_service.get_all_datasets()
-        if layer_id not in dataset:
-            raise ValueError("Layer not found")
+            dataset, datasetsNames = map_service.get_all_datasets()
+            if layer_id not in dataset:
+                raise ValueError("Layer not found")
             
-        image = ee.Image(dataset[layer_id])
+            image = ee.Image(dataset[layer_id])
+            
+            # 创建导出任务
+            task = ee.batch.Export.image.toAsset(
+                image=image,
+                description=description,
+                assetId=asset_id,
+                scale=scale,
+                maxPixels=1e13,
+                region=image.geometry()
+            )
+             
+        else:
+            if layer_type == 'vector':
+                vector_fc = ee.FeatureCollection(layer_id)
+                task = ee.batch.Export.table.toAsset(
+                    collection=vector_fc,
+                    description=description,
+                    assetId=asset_id,
+                    scale=scale
+                )
+
+            else:
+                # 处理手动绘制的矢量数据
+                features_list = []
+                
+                try:
+                    if geometry_type == 'Point':
+                        # 处理点数据
+                        for feature in features:
+                            if isinstance(feature['coordinates'], list) and len(feature['coordinates']) == 2:
+                                ee_feature = ee.Feature(
+                                    ee.Geometry.Point(feature['coordinates'])
+                                )
+                                features_list.append(ee_feature)
+                    else:
+                        # 处理多边形数据
+                        for feature in features:
+                            if isinstance(feature['coordinates'], list):
+                                print(f"Processing polygon coordinates: {feature['coordinates']}")
+                                ee_feature = ee.Feature(
+                                    ee.Geometry.Polygon([feature['coordinates']])
+                                )
+                                features_list.append(ee_feature)
+                except Exception as e:
+                    print(f"Error processing features: {str(e)}")
+                    raise
+                
+                if not features_list:
+                    raise ValueError("No valid features to export")
+                
+                print(f"Created {len(features_list)} features")
+                
+                # 创建 FeatureCollection
+                manual_fc = ee.FeatureCollection(features_list)
+                
+                task = ee.batch.Export.table.toAsset(
+                    collection=manual_fc,
+                    description=description,
+                    assetId=asset_id,
+                    scale=scale
+                )
         
-        # 创建导出任务
-        task = ee.batch.Export.image.toAsset(
-            image=image,
-            description=description,
-            assetId=asset_id,
-            scale=scale,
-            maxPixels=1e13,
-            region=image.geometry()
-        )
-        
-        # 启动任务
+         # 启动任务
         task.start()
-        
+
         return jsonify({
             'success': True,
             'message': '导出任务已启动'

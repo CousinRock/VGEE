@@ -98,7 +98,7 @@
                                                 <i :class="[
                                                     layer.isExporting ? 'fas fa-spinner fa-spin' : MENU_ICONS.EXPORT
                                                 ]"></i>
-                                                导出到云盘
+                                                导出
                                             </el-dropdown-item>
                                         </el-dropdown-menu>
                                     </template>

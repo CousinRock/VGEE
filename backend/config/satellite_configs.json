@@ -6,6 +6,8 @@
         "LANDSAT/LC09/C02/T1_TOA",
         "COPERNICUS/S2_HARMONIZED",
         "USDA/NAIP/DOQQ",
-        "USGS/SRTMGL1_003"
+        "USGS/SRTMGL1_003",
+        "ESA/WorldCover/v100",
+        "ESA/WorldCover/v200"
     ]
 }
