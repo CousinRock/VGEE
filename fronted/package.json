@@ -14,7 +14,8 @@
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
     "mitt": "^3.0.1",
-    "vue": "^3.5.12"
+    "vue": "^3.5.12",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.1.4",

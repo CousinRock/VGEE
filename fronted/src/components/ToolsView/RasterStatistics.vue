@@ -40,7 +40,24 @@
 
         <!-- 统计结果展示 -->
         <div v-if="statisticsResult" class="statistics-result">
-            <h3>统计结果</h3>
+            <div class="result-header">
+                <h3>统计结果</h3>
+                <div class="export-buttons">
+                    <el-dropdown @command="handleExport">
+                        <el-button type="primary" size="small">
+                            <i class="fas fa-download"></i> 导出
+                            <i class="el-icon-arrow-down el-icon--right"></i>
+                        </el-button>
+                        <template #dropdown>
+                            <el-dropdown-menu>
+                                <el-dropdown-item command="csv">导出为CSV</el-dropdown-item>
+                                <el-dropdown-item command="excel">导出为Excel</el-dropdown-item>
+                            </el-dropdown-menu>
+                        </template>
+                    </el-dropdown>
+                </div>
+            </div>
+            
             <el-table :data="formatResults" border style="width: 100%">
                 <el-table-column prop="layerName" label="影像名称" />
                 <el-table-column prop="band" label="统计波段" />
@@ -98,6 +115,8 @@
 
 <script setup>
 import { ref, defineProps, defineExpose, computed, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import * as XLSX from 'xlsx'
 
 const props = defineProps({
     selectedLayerName: {
@@ -165,6 +184,119 @@ const formatResults = computed(() => {
     }))
 })
 
+// 添加导出相关函数
+const handleExport = (type) => {
+    if (!statisticsResult.value) {
+        ElMessage.warning('没有可导出的数据')
+        return
+    }
+
+    const data = formatResults.value
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    
+    if (type === 'csv') {
+        exportCSV(data, `统计结果_${timestamp}.csv`)
+    } else if (type === 'excel') {
+        exportExcel(data, `统计结果_${timestamp}.xlsx`)
+    }
+}
+
+const exportCSV = (data, filename) => {
+    // 获取表头
+    const headers = [
+        '影像名称', '统计波段', '目标值', '面积(km²)', 
+        '像素数量', '均值', '中位值', '众数', 
+        '最小值', '最大值', '标准差', 'Q1', 'Q3'
+    ]
+    
+    // 转换数据为CSV格式
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => [
+            row.layerName,
+            row.band,
+            row.value,
+            Number(row.totalArea).toFixed(2),
+            row.count,
+            Number(row.mean).toFixed(2),
+            Number(row.median).toFixed(2),
+            Number(row.mode).toFixed(2),
+            Number(row.min).toFixed(2),
+            Number(row.max).toFixed(2),
+            Number(row.stdDev).toFixed(2),
+            Number(row.q1).toFixed(2),
+            Number(row.q3).toFixed(2)
+        ].join(','))
+    ].join('\n')
+
+    // 创建Blob对象并下载
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(link.href)
+}
+
+const exportExcel = async (data, filename) => {
+    try {
+        const excelData = data.map(row => ({
+            'layer_name': row.layerName,
+            'band': row.band,
+            'target_value': row.value,
+            'area': Number(row.totalArea).toFixed(2),
+            'pixel_count': row.count,
+            'mean': Number(row.mean).toFixed(2),
+            'median': Number(row.median).toFixed(2),
+            'mode': Number(row.mode).toFixed(2),
+            'min': Number(row.min).toFixed(2),
+            'max': Number(row.max).toFixed(2),
+            'std_dev': Number(row.stdDev).toFixed(2),
+            'q1': Number(row.q1).toFixed(2),
+            'q3': Number(row.q3).toFixed(2)
+        }))
+
+        const wb = XLSX.utils.book_new()
+        const ws = XLSX.utils.json_to_sheet(excelData)
+
+        // 定义中文表头
+        const headers = [
+            '影像名称', '统计波段', '目标值', '面积(km²)', 
+            '像素数量', '均值', '中位值', '众数', 
+            '最小值', '最大值', '标准差', 'Q1', 'Q3'
+        ]
+
+        // 在第一行插入中文表头
+        XLSX.utils.sheet_add_aoa(ws, [headers], { origin: 'A1' })
+
+        // 设置列宽
+        const colWidths = [
+            { wch: 20 }, // 影像名称
+            { wch: 10 }, // 统计波段
+            { wch: 12 }, // 目标值
+            { wch: 12 }, // 面积
+            { wch: 12 }, // 像素数量
+            { wch: 10 }, // 均值
+            { wch: 10 }, // 中位值
+            { wch: 10 }, // 众数
+            { wch: 10 }, // 最小值
+            { wch: 10 }, // 最大值
+            { wch: 10 }, // 标准差
+            { wch: 10 }, // Q1
+            { wch: 10 }  // Q3
+        ]
+        ws['!cols'] = colWidths
+
+        XLSX.utils.book_append_sheet(wb, ws, '统计结果')
+        XLSX.writeFile(wb, filename)
+        
+        ElMessage.success('导出成功')
+    } catch (error) {
+        console.error('Error exporting to Excel:', error)
+        ElMessage.error('导出Excel失败')
+    }
+}
+
 // 导出参数和方法
 defineExpose({
     statisticsParams,
@@ -184,6 +316,12 @@ defineExpose({
     padding: 15px;
     border: 1px solid #dcdfe6;
     border-radius: 4px;
+}
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
 }
 .layer-option-item {
     margin-bottom: 20px;
