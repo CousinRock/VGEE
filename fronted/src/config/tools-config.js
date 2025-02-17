@@ -597,7 +597,7 @@ export const TOOLS_CONFIG = {
                                     id: l.id,
                                     visParams: l.visParams
                                 })),
-                            geometry: params?.clipLayer?.geometry || params?.clipLayer?.features?.[0]?.geometry
+                            geometry: params?.clipLayer?.geometry || params?.clipLayer?.features?.[0]?.geometry||params?.clipLayer
                         })
                     },
                     statistics: {

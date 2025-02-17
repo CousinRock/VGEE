@@ -202,18 +202,24 @@ def calculate_index():
         selected_images = IndexTool.get_image_collection(layer_ids, datasets)
         images_list = selected_images.toList(len(layer_ids))
         
+        # 创建一个有序字典来存储结果
+        results_dict = {}
+        
         def process_layer(layer_id, images_list=None, index_type=None):
             try:
                 i = layer_ids.index(layer_id)
+                print('Tool_routes.py - calculate_index-layer_id:', layer_id)
                 image = ee.Image(images_list.get(i))
                 result = IndexTool.calculate_index(image, index_type)
+                # 存储结果时使用原始索引
+                results_dict[i] = result
                 return result
             except Exception as e:
                 print(f"Error processing layer {layer_id}: {str(e)}")
                 return None
 
         # 使用通用的并行处理函数
-        results = ParallelProcessor.process_layers(
+        ParallelProcessor.process_layers(
             layer_ids=layer_ids,
             process_func=process_layer,
             max_workers=maxthread_num,
@@ -221,11 +227,14 @@ def calculate_index():
             index_type=index_type
         )
 
-        if not results:
+        if not results_dict:
             raise ValueError("No successful index calculation results")
             
+        # 按原始顺序重建结果列表
+        ordered_results = [results_dict[i] for i in range(len(layer_ids))]
+        
         # 转换结果为 ee.List
-        results = ee.List(results)
+        results = ee.List(ordered_results)
         
         # 使用原有的 common_process 处理结果
         return return_origin_layer(layer_ids, results, vis_params, f'已添加 {index_type.upper()} 波段')
@@ -511,11 +520,14 @@ def raster_calculator():
             )
 
         else:
+            # 创建一个有序字典来存储结果
+            results_dict = {}
             # 单波段模式
             def process_layer(layer_id, expression=None):
                 try:
                     if layer_id not in datasets:
                         return None
+                    i = layer_ids.index(layer_id)
                     image = ee.Image(datasets[layer_id])
                     result = RasterOperatorTool.raster_calculator_single(image, expression)
                     if resultMode == 'append':
@@ -524,11 +536,33 @@ def raster_calculator():
                     # 设置计算结果的可视化参数
                     vis_params = get_vis_params(result)
                     result = result.set('vis_params', vis_params)
+                    results_dict[i] = result
                     return result
                 except Exception as e:
                     print(f"Error processing layer {layer_id}: {str(e)}")
-                    return None
+                    return None       
 
+            if resultMode == 'append':
+                ParallelProcessor.process_layers(
+                    layer_ids=layer_ids,
+                    process_func=process_layer,
+                    max_workers=maxthread_num,
+                    expression=expression
+                )
+
+                if not results_dict:
+                    raise ValueError("No successful calculation results")
+
+                # 按原始顺序重建结果列表
+                ordered_results = [results_dict[i] for i in range(len(layer_ids))]
+
+                # 转换结果为 ee.List
+                results = ee.List(ordered_results)
+                
+                vis_params = data.get('vis_params', [])
+                print('Tool_routes.py - raster_calculator-vis_params:', vis_params)
+                return return_origin_layer(layer_ids, results, vis_params, '单波段计算完成')
+            
             results = ParallelProcessor.process_layers(
                 layer_ids=layer_ids,
                 process_func=process_layer,
@@ -536,11 +570,6 @@ def raster_calculator():
                 expression=expression
             )
 
-            if resultMode == 'append':
-                vis_params = data.get('vis_params', [])
-                print('Tool_routes.py - raster_calculator-vis_params:', vis_params)
-                return return_origin_layer(layer_ids, ee.List(results), vis_params, '单波段计算完成')
-            
             return return_new_layer(
                 layer_ids=layer_ids,
                 results=results,
@@ -701,7 +730,11 @@ def clip():
                 if layer_id not in datasets:
                     return None
                 image = ee.Image(datasets[layer_id])
-                result = RasterOperatorTool.img_clip(image, geometry)
+                if geometry.get('type') == 'Raster':
+                    mask = ee.Image(datasets[geometry.get('id')])
+                    result = image.updateMask(mask)
+                else:
+                    result = RasterOperatorTool.img_clip(image, geometry)
                 # 设置裁剪结果的可视化参数
                 vis_params = get_vis_params(result)
                 result = result.set('vis_params', vis_params)

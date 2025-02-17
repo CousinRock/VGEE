@@ -15,7 +15,7 @@
                 >
                     <span style="float: left">{{ layer.name }}</span>
                     <span style="float: right; color: #8492a6; font-size: 13px">
-                        {{ layer.type === 'vector' ? '矢量' : '手绘多边形' }}
+                        {{ layer.type === 'vector' ? '矢量' : layer.type === 'Raster' ? '栅格' : '手绘多边形' }}
                     </span>
                 </el-option>
             </el-select>
@@ -46,19 +46,40 @@ const props = defineProps({
 // 选中的裁剪边界
 const selectedBoundary = ref('')
 
-// 获取所有可用的矢量图层（包括矢量资产和手绘多边形）
+// 获取所有可用的矢量图层和栅格图层
 const vectorLayers = computed(() => {
     return props.mapView.layers.filter(layer => 
         layer.type === 'vector' || 
+        layer.type === 'Raster' ||  // 添加栅格图层
         (layer.type === 'manual' && layer.geometryType === 'Polygon')
     )
 })
 
 // 暴露给父组件的方法
 defineExpose({
-    getClipParams: () => ({
-        clipLayer: vectorLayers.value.find(l => l.id === selectedBoundary.value)
-    })
+    getClipParams: () => {
+        const selectedLayer = vectorLayers.value.find(l => l.id === selectedBoundary.value)
+        if (!selectedLayer) return { clipLayer: null }
+
+        // 如果是栅格图层，只传递必要的信息
+        if (selectedLayer.type === 'Raster') {
+            return {
+                clipLayer: {
+                    id: selectedLayer.id,
+                    type: selectedLayer.type
+                }
+            }
+        }
+
+        // 如果是矢量图层，返回原有的几何信息
+        return {
+            clipLayer: {
+                geometry: selectedLayer.geometry,
+                features: selectedLayer.features,
+                type: selectedLayer.type
+            }
+        }
+    }
 })
 </script>
 
