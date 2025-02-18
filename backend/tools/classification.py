@@ -118,12 +118,13 @@ class ClassificationTool(BaseTool):
             trainAccuracy = classifier.confusionMatrix()
             
             # 设置分类结果的属性
+            # 先设置精度属性
             classified = classified.set({
                 'kappa': trainAccuracy.kappa(),
                 'accuracy': trainAccuracy.accuracy()
             })
             
-            # 添加可视化参数
+            
             return classified
             
         except Exception as e:
@@ -210,6 +211,7 @@ class ClassificationTool(BaseTool):
             
             # 获取精度评估
             trainAccuracy = classifier.confusionMatrix()
+            
             
             # 设置分类结果的属性
             classified = classified.set({

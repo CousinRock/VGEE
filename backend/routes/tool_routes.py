@@ -323,6 +323,8 @@ def kmeans_clustering():
         selected_images = ClassificationTool.get_image_collection(layer_ids, datasets)
         images_list = selected_images.toList(len(layer_ids))
         
+        # 创建一个有序字典来存储结果
+        results_dict = {}
         def process_layer(layer_id, images_list=None, cluster_counts=None):
             try:
                 i = layer_ids.index(layer_id)
@@ -337,19 +339,24 @@ def kmeans_clustering():
                     'min': 0,
                     'max': num_clusters - 1
                 })
+                results_dict[i] = result
                 return result
             except Exception as e:
                 print(f"Error processing layer {layer_id}: {str(e)}")
                 return None
 
         # 使用通用的并行处理函数
-        results = ParallelProcessor.process_layers(
+        ParallelProcessor.process_layers(
             layer_ids=layer_ids,
             process_func=process_layer,
             max_workers=maxthread_num,
             images_list=images_list,
             cluster_counts=cluster_counts
         )
+
+         # 按原始顺序重建结果列表
+        results = [results_dict[i] for i in range(len(layer_ids))]
+
 
         if not results:
             raise ValueError("No successful classification results")
@@ -404,6 +411,9 @@ def random_forest():
             
         selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
         images_list = selected_images.toList(len(layer_ids))
+
+        # 创建一个有序字典来存储结果
+        results_dict = {}
         
         def process_layer(layer_id, images_list=None, rf_params=None, samples=None):
             try:
@@ -424,12 +434,13 @@ def random_forest():
                     'min': 0,
                     'max': len(samples) - 1
                 })
+                results_dict[i] = result
                 return result
             except Exception as e:
                 print(f"Error processing layer {layer_id}: {str(e)}")
                 return None
 
-        results = ParallelProcessor.process_layers(
+        ParallelProcessor.process_layers(
             layer_ids=layer_ids,
             process_func=process_layer,
             max_workers=maxthread_num,
@@ -438,19 +449,24 @@ def random_forest():
             samples=samples
         )
 
-        if not results:
+        # 按原始顺序重建结果列表
+        ordered_results = [results_dict[i] for i in range(len(layer_ids))]
+        print('Tool_routes.py - random_forest-ordered_results:', ordered_results)
+        
+        # 直接使用 ordered_results，不需要转换为 ee.List
+        if not ordered_results:
             raise ValueError("No successful classification results")
 
         return return_new_layer(
             layer_ids=layer_ids,
-            results=results,
+            results=ordered_results,  # 直接使用 ordered_results
             original_names=datasetsNames,
             message='随机森林分类完成',
             result_type='rf'
         )
-        
+
     except Exception as e:
-        print(f"Error in random_forest: {str(e)}")
+        print(f"Error in random forest: {str(e)}")
         return jsonify({
             'success': False,
             'message': str(e)
@@ -486,10 +502,12 @@ def raster_calculator():
             selected_bands = eval(expression)
             print('Tool_routes.py - raster_calculator-selected_bands:', selected_bands)
             
+            results_dict = {}
             def process_layer(layer_id, selected_bands=None):
                 try:
                     if layer_id not in datasets:
                         return None
+                    i = layer_ids.index(layer_id)
                     image = ee.Image(datasets[layer_id])
                     result = RasterOperatorTool.raster_calculator_all_bands(
                         image, 
@@ -499,18 +517,23 @@ def raster_calculator():
                     # 设置计算结果的可视化参数
                     vis_params = get_vis_params(result)
                     result = result.set('vis_params', vis_params)
+                    results_dict[i] = result
                     return result
                 except Exception as e:
                     print(f"Error processing layer {layer_id}: {str(e)}")
                     return None
 
-            results = ParallelProcessor.process_layers(
+            ParallelProcessor.process_layers(
                 layer_ids=layer_ids,
                 process_func=process_layer,
                 max_workers=maxthread_num,
                 selected_bands=selected_bands
             )
+
+            # 按原始顺序重建结果列表
+            results = [results_dict[i] for i in range(len(layer_ids))]
             
+
             return return_new_layer(
                 layer_ids=layer_ids,
                 results=results,
@@ -540,35 +563,26 @@ def raster_calculator():
                     return result
                 except Exception as e:
                     print(f"Error processing layer {layer_id}: {str(e)}")
-                    return None       
-
-            if resultMode == 'append':
-                ParallelProcessor.process_layers(
-                    layer_ids=layer_ids,
-                    process_func=process_layer,
-                    max_workers=maxthread_num,
-                    expression=expression
-                )
-
-                if not results_dict:
-                    raise ValueError("No successful calculation results")
-
-                # 按原始顺序重建结果列表
-                ordered_results = [results_dict[i] for i in range(len(layer_ids))]
-
-                # 转换结果为 ee.List
-                results = ee.List(ordered_results)
-                
-                vis_params = data.get('vis_params', [])
-                print('Tool_routes.py - raster_calculator-vis_params:', vis_params)
-                return return_origin_layer(layer_ids, results, vis_params, '单波段计算完成')
+                    return None                  
             
-            results = ParallelProcessor.process_layers(
+            ParallelProcessor.process_layers(
                 layer_ids=layer_ids,
                 process_func=process_layer,
                 max_workers=maxthread_num,
                 expression=expression
             )
+
+            # 按原始顺序重建结果列表
+            results = [results_dict[i] for i in range(len(layer_ids))]
+            
+            
+
+            if resultMode == 'append':
+                # 转换结果为 ee.List
+                results = ee.List(results)
+                vis_params = data.get('vis_params', [])
+                print('Tool_routes.py - raster_calculator-vis_params:', vis_params)
+                return return_origin_layer(layer_ids, results, vis_params, '单波段计算完成')
 
             return return_new_layer(
                 layer_ids=layer_ids,
@@ -635,6 +649,8 @@ def svm_classification():
         selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
         images_list = selected_images.toList(len(layer_ids))
         
+        # 创建一个有序字典来存储结果
+        results_dict = {}
         def process_layer(layer_id, images_list=None, svm_params=None, samples=None):
             try:
                 i = layer_ids.index(layer_id)
@@ -654,12 +670,13 @@ def svm_classification():
                     'min': 0,
                     'max': len(samples) - 1
                 })
+                results_dict[i] = result
                 return result
             except Exception as e:
                 print(f"Error processing layer {layer_id}: {str(e)}")
                 return None
 
-        results = ParallelProcessor.process_layers(
+        ParallelProcessor.process_layers(
             layer_ids=layer_ids,
             process_func=process_layer,
             max_workers=maxthread_num,
@@ -667,6 +684,8 @@ def svm_classification():
             svm_params=svm_params,
             samples=samples
         )
+         # 按原始顺序重建结果列表
+        results = [results_dict[i] for i in range(len(layer_ids))]
 
         if not results:
             raise ValueError("No successful classification results")
@@ -725,10 +744,13 @@ def clip():
         geometry = data.get('geometry',{})
         print('Tool_routes.py - clip-data:', data)
         
+         # 创建一个有序字典来存储结果
+        results_dict = {}
         def process_layer(layer_id, geometry=None):
             try:
                 if layer_id not in datasets:
                     return None
+                i = layer_ids.index(layer_id)
                 image = ee.Image(datasets[layer_id])
                 if geometry.get('type') == 'Raster':
                     mask = ee.Image(datasets[geometry.get('id')])
@@ -738,19 +760,23 @@ def clip():
                 # 设置裁剪结果的可视化参数
                 vis_params = get_vis_params(result)
                 result = result.set('vis_params', vis_params)
+                results_dict[i] = result
                 return result
             except Exception as e:
                 print(f"Error processing layer {layer_id}: {str(e)}")
                 return None
 
         # 使用通用的并行处理函数
-        results = ParallelProcessor.process_layers(
+        ParallelProcessor.process_layers(
             layer_ids=layer_ids,
             process_func=process_layer,
             max_workers=maxthread_num,
             geometry=geometry
         )
 
+         # 按原始顺序重建结果列表
+        results = [results_dict[i] for i in range(len(layer_ids))]
+        
         if not results:
             raise ValueError("No successful clip results")
 
@@ -778,10 +804,13 @@ def terrain():
         PreprocessingTool.validate_inputs(layer_ids, datasets)
         selected_images = PreprocessingTool.get_image_collection(layer_ids, datasets)
 
+         # 创建一个有序字典来存储结果
+        results_dict = {}
         def process_layer(layer_id):
             try:
                 if layer_id not in datasets:
                     return None
+                i = layer_ids.index(layer_id)
                 image = ee.Image(datasets[layer_id])
                     
                 # 执行地形分析
@@ -789,17 +818,21 @@ def terrain():
                 
                 # 保持原始图像的边界范围
                 result = result.clip(image.geometry())
-                
+                results_dict[i] = result
                 return result   
             except Exception as e:
                 print(f"Error processing layer {layer_id}: {str(e)}")
                 return None
 
-        results = ParallelProcessor.process_layers(
+        ParallelProcessor.process_layers(
             layer_ids=layer_ids,
             process_func=process_layer,
             max_workers=maxthread_num
         )
+
+         # 按原始顺序重建结果列表
+        results = [results_dict[i] for i in range(len(layer_ids))]
+        
 
         if not results:
             raise ValueError("No successful terrain analysis results")
