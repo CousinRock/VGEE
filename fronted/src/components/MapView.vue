@@ -45,15 +45,10 @@
                 </div>
 
                 <!-- 动态图列表 -->
-                <div class="layer-item" 
-                    v-for="layer in layers" 
-                    :key="layer.id"
-                    draggable="true"
-                    @dragstart="toolManager.handleDragStart($event, layer)"
-                    @dragend="toolManager.handleDragEnd"
-                    @dragover="toolManager.handleDragOver"
-                    @dragleave="toolManager.handleDragLeave"
-                    @drop="toolManager.handleDrop($event, layer,layers)">
+                <div class="layer-item" v-for="layer in layers" :key="layer.id" draggable="true"
+                    @dragstart="toolManager.handleDragStart($event, layer)" @dragend="toolManager.handleDragEnd"
+                    @dragover="toolManager.handleDragOver" @dragleave="toolManager.handleDragLeave"
+                    @drop="toolManager.handleDrop($event, layer, layers)">
                     <div class="layer-header">
                         <input type="checkbox" v-model="layer.visible" :id="layer.id">
                         <label :for="layer.id">
@@ -61,6 +56,12 @@
                             <span>{{ layer.name }}</span>
                         </label>
                         <div class="layer-actions">
+                            <!-- 添加锁定按钮，只对点图层显示 -->
+                            <button v-if="layer.geometryType === 'Point'" class="layer-action-btn"
+                                :class="{ 'active': layer.locked }" @click="handleLayerLock(layer)"
+                                :title="layer.locked ? '解锁图层' : '锁定图层'">
+                                <i :class="layer.locked ? 'fas fa-lock' : 'fas fa-lock-open'"></i>
+                            </button>
                             <template v-if="layer.type === 'vector' || layer.type === 'manual'">
                                 <el-dropdown trigger="click" :teleported="false">
                                     <button class="layer-settings" title="图层设置" :disabled="layer.isSettingStudyArea">
@@ -453,9 +454,6 @@ const vectorStyle = ref({
     fillOpacity: 0.2
 })//矢量样式
 
-// 在 script setup 顶部添加新的 ref
-const pointFeatures = ref([]);  // 存储所有点要素
-
 //样本数据
 const showSampleDialog = ref(false);//样本对话框
 const sampleForm = ref({
@@ -464,7 +462,7 @@ const sampleForm = ref({
 const currentSampleLayer = ref(null);//当前样本图层
 
 // 在 script setup 顶部添加计数器
-const pointLayerCounter = ref(0);
+const pointLayerCounter = ref(-1);
 
 // 属性查看相关的响应式变量
 const showPropertiesDialog = ref(false)
@@ -851,14 +849,14 @@ const initDrawControl = () => {
 
     // 修改绘制完成事件处理
     map.value.on(L.Draw.Event.CREATED, async (event) => {
-        toolManager.createShape(event,layers,drawnItems,map,pointFeatures,pointLayerCounter)
+        toolManager.createShape(event, layers, drawnItems, map, pointLayerCounter)
     });
 
-    // 添加地图点击事件
-    map.value.on('click', (e) => {
-        toolManager.getPointLayer(layers,e,map)
+    // // 添加地图点击事件
+    // map.value.on('click', (e) => {
+    //     toolManager.getPointLayer(layers,e,map)
 
-    });
+    // });
 }
 
 // 在 script setup 中添加
@@ -873,10 +871,10 @@ const toggleSample = (layer) => {
 // 确认设置样本
 const confirmSetSample = async () => {
     await handleSample.confirmSetSample(sampleForm, currentSampleLayer, showSampleDialog);
-    if (currentSampleLayer.value?.geometryType === 'Point') {
-        pointLayerCounter.value++;  // 增加计数器
-        pointFeatures.value = [];   // 清空当前点集合
-    }
+    // if (currentSampleLayer.value?.geometryType === 'Point') {
+    //     pointLayerCounter.value++;  // 增加计数器
+    //     // pointFeatures.value = [];   // 清空当前点集合
+    // }
 };
 
 const toggleStudyArea = async (layer) => {
@@ -985,7 +983,7 @@ const confirmExport = async () => {
                 exportScale.value
             )
         }
-        
+
         showExportDialog.value = false
         currentExportLayer.value.isExporting = false
     } catch (error) {
@@ -1001,6 +999,11 @@ onUnmounted(() => {
         map.value.off('click');
     }
 });
+
+// 添加锁定/解锁图层的方法
+const handleLayerLock = (layer) => {
+    toolManager.toggleLayerLock(layer, layers, pointLayerCounter);
+};
 
 </script>
 

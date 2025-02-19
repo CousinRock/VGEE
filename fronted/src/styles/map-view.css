@@ -68,7 +68,7 @@
     max-height: calc(100vh - 450px);
     overflow-y: auto;
     z-index: 1000;
-    
+
     scrollbar-width: thin;
     scrollbar-color: #909399 #f5f7fa;
 }
@@ -108,7 +108,8 @@
 
 .layer-item.drag-over {
     border: 2px dashed #409EFF;
-    padding: 3px;  /* 补偿边框宽度 */
+    padding: 3px;
+    /* 补偿边框宽度 */
 }
 
 /* 拖拽时的视觉反馈 */
@@ -511,17 +512,17 @@
 
 /* 重命名对话框样式 */
 .rename-dialog .el-input {
-  margin: 10px 0;
+    margin: 10px 0;
 }
 
 /* 调整下拉菜单项的图标样式 */
 .el-dropdown-menu__item i.fa-edit {
-  color: #409EFF;
+    color: #409EFF;
 }
 
 /* 确保对话框正确显示 */
 .el-dialog.rename-dialog {
-  margin-top: 15vh !important;
+    margin-top: 15vh !important;
 }
 
 /* 导出按钮样式 */
@@ -543,6 +544,7 @@
     0% {
         transform: rotate(0deg);
     }
+
     100% {
         transform: rotate(360deg);
     }
@@ -763,5 +765,24 @@
 }
 
 .location-search button:hover {
+    color: #409EFF;
+}
+
+/* 锁定按钮基础样式 */
+.layer-action-btn {
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    color: #666;
+}
+
+/* 锁定按钮悬停效果 */
+.layer-action-btn:hover {
+    color: #409EFF;
+}
+
+/* 锁定按钮激活状态 */
+.layer-action-btn.active {
     color: #409EFF;
 }
