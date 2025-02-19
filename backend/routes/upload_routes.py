@@ -721,3 +721,50 @@ def add_sentinel_timeseries():
             'message': str(e)
         }), 500
 
+@upload_bp.route('/delete-asset', methods=['POST'])
+def delete_asset():
+    try:
+        data = request.json
+        asset_id = data.get('asset_id')
+        print('upload_routes.py - delete_asset-data:', data)
+        
+        if not asset_id:
+            raise ValueError("未提供资产ID")
+
+        def delete_asset_recursive(asset_path):
+            try:
+                # 获取资产信息
+                asset_info = ee.data.getAsset(asset_path)
+                asset_type = asset_info['type']
+                print(f"Deleting asset: {asset_path}, type: {asset_type}")
+
+                # 如果是文件夹，递归删除子资产
+                if asset_type == 'FOLDER':
+                    children = ee.data.listAssets({'parent': asset_path})
+                    if 'assets' in children and children['assets']:
+                        for child in children['assets']:
+                            delete_asset_recursive(child['id'])
+                
+                # 删除当前资产
+                ee.data.deleteAsset(asset_path)
+                print(f"Successfully deleted: {asset_path}")
+                
+            except Exception as e:
+                print(f"Error deleting {asset_path}: {str(e)}")
+                raise e
+
+        # 递归删除资产及其子资产
+        delete_asset_recursive(asset_id)
+        
+        return jsonify({
+            'success': True,
+            'message': '资产已成功删除'
+        })
+        
+    except Exception as e:
+        print(f"Error in delete_asset: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+

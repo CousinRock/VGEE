@@ -126,7 +126,7 @@ const handleVectorAsset = async (selectedAsset, mapView) => {
             throw new Error(data.message)
         }
         console.log('upload.js - handleVectorAsset - data:', data);
-        
+
         // 创建新图层对象
         const newLayer = {
             id: selectedAsset.id,
@@ -192,7 +192,7 @@ const handleImageAsset = async (selectedAsset, mapView) => {
 
         const data = await response.json()
         console.log('upload.js - handleImageAsset - data:', data);
-        
+
         if (!data.success) {
             throw new Error(data.message)
         }
@@ -225,7 +225,7 @@ const handleImageAsset = async (selectedAsset, mapView) => {
         // 添加到地图
         newLayer.leafletLayer = imageLayer
         console.log('upload.js - handleImageAsset - newLayer:', newLayer);
-        
+
         mapView.layers.push(newLayer)
         imageLayer.addTo(mapView.map)
 
@@ -261,7 +261,7 @@ export const onSubmitTimeseries = async (form, mapView, showTimeseriesDialog, is
 
     try {
         isSubmitting.value = true
-        
+
         // 从工具配置中获取对应的工具配置
         const toolConfig = TOOLS_CONFIG.getToolById(toolId)
         if (!toolConfig || !toolConfig.endpoint) {
@@ -277,7 +277,7 @@ export const onSubmitTimeseries = async (form, mapView, showTimeseriesDialog, is
             interval: form.value.interval || 1,
             apply_fmask: form.value.apply_fmask
         })
-        
+
         const response = await fetch(toolConfig.endpoint, {
             method: 'POST',
             headers: {
@@ -285,10 +285,10 @@ export const onSubmitTimeseries = async (form, mapView, showTimeseriesDialog, is
             },
             body: JSON.stringify(params)
         })
-        
+
         const data = await response.json()
         console.log(`upload.js - onSubmitTimeseries - ${toolConfig.label} data:`, data)
-        
+
         if (data.success) {
             ElMessage.success(data.message)
             showTimeseriesDialog.value = false
@@ -355,3 +355,50 @@ export const onSubmitTimeseries = async (form, mapView, showTimeseriesDialog, is
         isSubmitting.value = false
     }
 }
+
+//删除资产的方法
+export const onDeleteAsset = async (asset, isLoadingAssets, assetsList) => {
+    try {
+        console.log('upload.js - onDeleteAsset - asset:', asset);
+
+        // 显示加载中的消息
+        const loadingMessage = ElMessage({
+            message: `正在删除 ${asset.name}${asset.type === 'FOLDER' ? ' 及其内容' : ''}...`,
+            type: 'info',
+            duration: 0  // 设置为0表示不自动关闭
+        });
+
+        isLoadingAssets.value = true;  // 设置加载状态
+
+        const response = await fetch(`${API_ROUTES.UPLOAD.DELETE_ASSET}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                asset_id: asset.id
+            })
+        });
+
+        const data = await response.json();
+        console.log('upload.js - onDeleteAsset - data:', data);
+
+        // 关闭加载中的消息
+        loadingMessage.close();
+
+        if (data.success) {
+            ElMessage.success(`成功删除 ${asset.name}`);
+            // 刷新资产列表
+            await refreshAssets(isLoadingAssets, assetsList);
+        } else {
+            ElMessage.error(data.message || '删除失败');
+        }
+    } catch (error) {
+        console.error('Error deleting asset:', error);
+        ElMessage.error('删除资产时出错');
+    } finally {
+        isLoadingAssets.value = false;  // 清除加载状态
+    }
+}
+
+

@@ -2,14 +2,9 @@
     <div class="upload-data-content">
         <!-- 添加资产选择对话框 -->
         <el-dialog v-model="showAssetsDialog" :title="selectedAsset ? `选择资产: ${selectedAsset.name}` : '选择资产'"
-            :width="'400px'" >
+            :width="'400px'">
             <div class="assets-header">
-                <el-button 
-                    @click="refreshAssetsList" 
-                    :loading="isLoadingAssets"
-                    type="primary"
-                    size="small"
-                >
+                <el-button @click="refreshAssetsList" :loading="isLoadingAssets" type="primary" size="small">
                     <i class="fas fa-sync-alt"></i> 刷新
                 </el-button>
             </div>
@@ -24,9 +19,21 @@
                                 <i :class="data.type === 'FOLDER' ? 'el-icon-folder' : 'el-icon-document'" />
                                 {{ data.name }}
                             </span>
-                            <el-tooltip v-if="data.description" :content="data.description" placement="right">
-                                <i class="el-icon-info" />
-                            </el-tooltip>
+                            <span class="asset-actions">
+                                <el-tooltip v-if="data.description" :content="data.description" placement="right">
+                                    <i class="el-icon-info" />
+                                </el-tooltip>
+                                <el-popconfirm
+                                    :title="`确定要删除 ${data.name} ${data.type === 'FOLDER' ? '及其所有内容' : ''} 吗？`"
+                                    @confirm="deleteAsset(data)">
+                                    <template #reference>
+                                        <el-button type="text" size="small" class="delete-btn"
+                                            :loading="isLoadingAssets" :disabled="isLoadingAssets">
+                                            <i class="fas fa-trash"></i>
+                                        </el-button>
+                                    </template>
+                                </el-popconfirm>
+                            </span>
                         </span>
                     </template>
                 </el-tree>
@@ -43,11 +50,7 @@
         </el-dialog>
 
         <!-- 时间序列对话框 -->
-        <el-dialog 
-            v-model="showTimeseriesDialog" 
-            :title="`添加 ${satelliteType} 时间序列`" 
-            width="400px"
-        >
+        <el-dialog v-model="showTimeseriesDialog" :title="`添加 ${satelliteType} 时间序列`" width="400px">
             <div class="upload-form">
                 <el-form :model="form" label-width="100px">
                     <el-form-item label="时间频率">
@@ -58,43 +61,25 @@
                     </el-form-item>
 
                     <el-form-item label="时间间隔">
-                        <el-input-number 
-                            v-model="form.interval" 
-                            :min="1" 
-                            :max="12"
-                            :step="1"
-                            controls-position="right"
-                        />
+                        <el-input-number v-model="form.interval" :min="1" :max="12" :step="1"
+                            controls-position="right" />
                     </el-form-item>
 
                     <el-form-item label="开始日期">
-                        <el-date-picker 
-                            v-model="form.startDate"
-                            type="date"
-                            placeholder="选择开始日期"
-                            format="YYYY-MM-DD"
+                        <el-date-picker v-model="form.startDate" type="date" placeholder="选择开始日期" format="YYYY-MM-DD"
                             value-format="YYYY-MM-DD">
                         </el-date-picker>
                     </el-form-item>
-                    
+
                     <el-form-item label="结束日期">
-                        <el-date-picker 
-                            v-model="form.endDate"
-                            type="date"
-                            placeholder="选择结束日期"
-                            format="YYYY-MM-DD"
+                        <el-date-picker v-model="form.endDate" type="date" placeholder="选择结束日期" format="YYYY-MM-DD"
                             value-format="YYYY-MM-DD">
                         </el-date-picker>
                     </el-form-item>
 
                     <el-form-item label="云量设置" class="cloud-settings">
                         <div class="cloud-control-group">
-                            <el-slider 
-                                v-model="form.cloudCover"
-                                :min="0"
-                                :max="100"
-                                :step="1"
-                                class="cloud-slider">
+                            <el-slider v-model="form.cloudCover" :min="0" :max="100" :step="1" class="cloud-slider">
                             </el-slider>
                             <div class="cloud-mask-option">
                                 <el-checkbox v-model="form.apply_fmask">
@@ -123,14 +108,16 @@
 
 <script setup>
 import { ref, defineProps } from 'vue'
-import { 
-    onLoadAssets, 
-    onHandleAssetSelect, 
+import {
+    onLoadAssets,
+    onHandleAssetSelect,
     onConfirmAssetSelect,
     onSubmitTimeseries,
-    refreshAssets
+    refreshAssets,
+    onDeleteAsset
 } from '../../service/headTools/upload'
 import { TOOL_IDS } from '../../config/tools-config'
+import { ElMessage } from 'element-plus'
 
 
 // 定义 props
@@ -197,13 +184,18 @@ const showTimeseriesDialogMethod = (toolId) => {
 // 提交表单
 const submitForm = async () => {
     await onSubmitTimeseries(
-        form, 
-        props.mapView, 
-        showTimeseriesDialog, 
+        form,
+        props.mapView,
+        showTimeseriesDialog,
         isSubmitting,
         currentToolId.value,  // 传递工具ID
     )
 }
+
+// 添加删除资产方法
+const deleteAsset = async (asset) => {
+    await onDeleteAsset(asset, isLoadingAssets, assetsList)
+};
 
 // 暴露方法和状态给父组件
 defineExpose({
@@ -268,5 +260,28 @@ defineExpose({
 .current-path {
     font-size: 14px;
     color: #666;
+}
+
+.custom-tree-node {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 8px;
+}
+
+.asset-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.delete-btn {
+    color: #F56C6C;
+    padding: 2px 4px;
+}
+
+.delete-btn:hover {
+    color: #f89898;
 }
 </style>

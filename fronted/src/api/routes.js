@@ -41,7 +41,8 @@ export const API_ROUTES = {
         ADD_VECTOR_ASSET: `${BASE_URL}/upload/add-vector-asset`,
         ADD_IMAGE_ASSET: `${BASE_URL}/upload/add-image-asset`,
         ADD_LANDSAT_TIMESERIES: `${BASE_URL}/upload/add-landsat-timeseries`,
-        ADD_SENTINEL_TIMESERIES: `${BASE_URL}/upload/add-sentinel-timeseries`
+        ADD_SENTINEL_TIMESERIES: `${BASE_URL}/upload/add-sentinel-timeseries`,
+        DELETE_ASSET: `${BASE_URL}/upload/delete-asset`
     },
 
     // 工具相关
