@@ -915,27 +915,6 @@ export const toolManager = {
             });
         }
     },
-    // 添加锁定/解锁图层的方法
-    toggleLayerLock: (layer) => {
-        layer.locked = !layer.locked;
-
-        // if (layer.geometryType === 'Point') {
-        //     // 获取所有点图层
-        //     const pointLayers = layers.value.filter(l =>
-        //         l.type === 'manual' &&
-        //         l.geometryType === 'Point'
-        //     );
-
-        //     // 检查是否有未锁定的图层
-        //     const unlockedLayers = pointLayers.filter(l => !l.locked);
-
-        //     // 如果所有图层都被锁定，创建新图层
-        //     if (unlockedLayers.length === 0) {
-        //         // 使用 ref 对象的 value 属性
-        //         pointLayerCounter.value = pointLayerCounter.value + 1;
-        //     }
-        // }
-    },
     getPointLayer: (layers, e, map) => {
         // 提取更新图层的公共方法
         const updatePointLayer = (layer, features) => {

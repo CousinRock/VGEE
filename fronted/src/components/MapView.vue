@@ -58,7 +58,7 @@
                         <div class="layer-actions">
                             <!-- 添加锁定按钮，只对点图层显示 -->
                             <button v-if="layer.geometryType === 'Point'" class="layer-action-btn"
-                                :class="{ 'active': layer.locked }" @click="handleLayerLock(layer)"
+                                :class="{ 'active': layer.locked }" @click="layer.locked = !layer.locked"
                                 :title="layer.locked ? '解锁图层' : '锁定图层'">
                                 <i :class="layer.locked ? 'fas fa-lock' : 'fas fa-lock-open'"></i>
                             </button>
@@ -999,11 +999,6 @@ onUnmounted(() => {
         map.value.off('click');
     }
 });
-
-// 添加锁定/解锁图层的方法
-const handleLayerLock = (layer) => {
-    toolManager.toggleLayerLock(layer, layers, pointLayerCounter);
-};
 
 </script>
 
