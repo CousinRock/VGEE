@@ -940,6 +940,17 @@ export const toolManager = {
             }
         };
 
+        // 清理所有popup的函数
+        const cleanupAllPopups = () => {
+            map.value.eachLayer((layer) => {
+                if (layer instanceof L.Popup) {
+                    map.value.removeLayer(layer);
+                }
+            });
+            // 清除地图上的popup引用
+            map.value._popup = null;
+        };
+
         const pointLayers = layers.value.filter(layer =>
             layer.type === 'manual' && layer.geometryType === 'Point'
         );
@@ -955,102 +966,62 @@ export const toolManager = {
                         const distance = clickPoint.distanceTo(markerPoint);
 
                         if (distance <= pointLayer.visParams.radius + 2) {
+                            // 在创建新popup前清理所有现有popup
+                            cleanupAllPopups();
+
                             const actionButton = L.popup({
                                 closeButton: false,
                                 className: 'point-action-popup',
-                                // 禁用动画以避免缩放问题
-                                animate: false,
-                                autoPan: false // 禁用自动平移
+                                autoPan: false
                             })
                                 .setLatLng(markerLatLng)
                                 .setContent(`
-                                    <div class="point-action-container">
+                                    <div class="point-action-container">                                     
                                         <button class="point-move-btn">
-                                            <i class="fas fa-arrows-alt"></i> 移动到其他图层
+                                            <i class="fas fa-arrows-alt"></i>
+                                            移动到其他图层
                                         </button>
-                                        <button class="point-delete-btn">
-                                            <i class="fas fa-trash"></i> 删除点位
-                                        </button>                                   
+                                         <button class="point-delete-btn">
+                                            <i class="fas fa-trash"></i>
+                                            删除点位
+                                        </button>
                                     </div>
                                 `);
 
                             const popup = actionButton.addTo(map.value);
 
-                            // 添加图层可见性变化监听
-                            const visibilityHandler = () => {
-                                if (popup && popup._map) {
-                                    safeCleanupPopup(map.value, popup);
-                                }
-                            };
-
-                            // 监听图层移除事件
-                            pointLayer.leafletLayer.on('remove', visibilityHandler);
-
-                            // 缩放开始时清理
-                            const zoomHandler = () => {
-                                if (popup && popup._map) {
-                                    safeCleanupPopup(map.value, popup);
-                                }
-                            };
-
-                            // 使用once避免事件堆积
-                            map.value.once('zoomstart', zoomHandler);
-
-                            // 在popup关闭时清理事件监听
-                            popup.on('remove', () => {
-                                map.value.off('zoomstart', zoomHandler);
-                                pointLayer.leafletLayer.off('remove', visibilityHandler);
+                            // 添加缩放开始时的清理
+                            map.value.once('zoomstart', () => {
+                                cleanupAllPopups();
                             });
 
-                            // 处理删除操作
+                            // 删除点位的处理
                             const deleteBtn = document.querySelector('.point-delete-btn');
                             if (deleteBtn) {
                                 deleteBtn.onclick = () => {
+                                    cleanupAllPopups();
                                     const pointIndex = pointLayer.features.findIndex(
                                         point => point.coordinates[0] === markerLatLng.lng
                                             && point.coordinates[1] === markerLatLng.lat
                                     );
 
-                                    if (pointIndex > -1 && !pointLayer.isSample) {
-                                        // 先清理popup
-                                        safeCleanupPopup(map.value, popup);
-
-                                        // 然后删除点位
+                                    if (pointIndex > -1) {
                                         pointLayer.features.splice(pointIndex, 1);
-
-                                        // 使用 requestAnimationFrame 延迟更新图层
-                                        requestAnimationFrame(() => {
-                                            updatePointLayer(pointLayer, pointLayer.features);
-                                            if (pointLayer.features.length === 0) {
-                                                ElMessage.warning('该点图层已无点位，建议删除图层');
-                                            }
-                                        });
-                                    } else {
-                                        ElMessage.warning('该点位为样本点，无法删除');
+                                        updatePointLayer(pointLayer, pointLayer.features);
                                     }
                                 };
                             }
 
-                            // 处理移动操作
+                            // 移动点位的处理
                             const moveBtn = document.querySelector('.point-move-btn');
                             if (moveBtn) {
                                 moveBtn.onclick = () => {
-                                    // 先清理当前popup
-                                    safeCleanupPopup(map.value, popup);
+                                    cleanupAllPopups();
 
-                                    const otherLayers = pointLayers.filter(layer =>
-                                        layer.id !== pointLayer.id
-                                    );
-
-                                    if (otherLayers.length === 0) {
-                                        ElMessage.warning('没有其他可用的点图层');
-                                        return;
-                                    }
-
+                                    const otherLayers = pointLayers.filter(l => l.id !== pointLayer.id);
                                     const layerSelectPopup = L.popup({
-                                        closeButton: true,
+                                        closeButton: false,
                                         className: 'layer-select-popup',
-                                        animate: false,
                                         autoPan: false
                                     })
                                         .setLatLng(markerLatLng)
@@ -1071,9 +1042,7 @@ export const toolManager = {
 
                                     // 为选择图层的popup添加缩放处理
                                     map.value.once('zoomstart', () => {
-                                        if (selectPopup && selectPopup._map) {
-                                            safeCleanupPopup(map.value, selectPopup);
-                                        }
+                                        cleanupAllPopups();
                                     });
 
                                     document.querySelectorAll('.layer-select-btn').forEach(btn => {
@@ -1088,8 +1057,7 @@ export const toolManager = {
                                                 );
 
                                                 if (pointIndex > -1) {
-                                                    // 清理选择图层的popup
-                                                    safeCleanupPopup(map.value, selectPopup);
+                                                    cleanupAllPopups();
 
                                                     const point = pointLayer.features.splice(pointIndex, 1)[0];
 

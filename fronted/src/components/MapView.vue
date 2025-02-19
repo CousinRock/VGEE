@@ -852,11 +852,11 @@ const initDrawControl = () => {
         toolManager.createShape(event, layers, drawnItems, map, pointLayerCounter)
     });
 
-    // // 添加地图点击事件
-    // map.value.on('click', (e) => {
-    //     toolManager.getPointLayer(layers,e,map)
+    // 添加地图点击事件
+    map.value.on('click', (e) => {
+        toolManager.getPointLayer(layers, e, map)
 
-    // });
+    });
 }
 
 // 在 script setup 中添加
@@ -871,10 +871,6 @@ const toggleSample = (layer) => {
 // 确认设置样本
 const confirmSetSample = async () => {
     await handleSample.confirmSetSample(sampleForm, currentSampleLayer, showSampleDialog);
-    // if (currentSampleLayer.value?.geometryType === 'Point') {
-    //     pointLayerCounter.value++;  // 增加计数器
-    //     // pointFeatures.value = [];   // 清空当前点集合
-    // }
 };
 
 const toggleStudyArea = async (layer) => {
