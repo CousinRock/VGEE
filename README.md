@@ -6,8 +6,7 @@
 ## 主要功能
 
 ### 数据源支持
-- Landsat 系列 (5/7/8/9)
-- Sentinel-2 系列 (MSI)
+- Google Earth Engine中大部分数据集
 
 ### DEMO
 ### 添加图层
@@ -46,7 +45,7 @@ python app.py
 ## Vercel部署（推荐）
 - 前端地址：https://vgee-wrjwrjwrjwrjwrjs-projects.vercel.app/
 - 下载后端代码，在backend文件夹中进行
-- 创建conda环境：conda create --name VGEE python=3.13 -y
+- 创建conda环境：conda create --name VGEE python=3.10 -y
 - 激活conda环境：conda activate VGEE/VGEE(Windows下将bin文件夹添加到环境变量中)
 - 安装依赖：pip install -r requirements.txt
 - 在系统环境变量中创建名为PROXY_CONFIG的变量，值为本机的代理端口:GEE项目地址,例如：1080:ee-project
