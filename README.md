@@ -1,98 +1,99 @@
-# 遥感影像处理系统
+# Remote Sensing Image Processing System
 
-一个基于 Google Earth Engine 平台，使用 Vue 3 和 Flask 的遥感影像处理系统。系统提供了丰富的遥感影像处理和分析功能，支持多源遥感数据的处理和分析。
+A remote sensing image processing system based on Google Earth Engine platform, built with Vue 3 and Flask. The system provides rich remote sensing image processing and analysis capabilities, supporting multi-source remote sensing data processing and analysis.
 ![image](images/demo1.jpg)
 
-## 主要功能
+## Key Features
 
-### 数据源支持
-- Google Earth Engine中大部分数据集
+### Data Source Support
+- Most datasets from Google Earth Engine
 
 ### DEMO
-### 添加图层
+### Add Layer
 ![image](images/addLayer.gif)
-### 影像处理
+### Image Processing
 ![image](images/process.gif)
 
-## 技术栈
+## Tech Stack
 
-### 前端
+### Frontend
 - Vue 3
 - Leaflet
 
-### 后端
+### Backend
 - Flask
 - Google Earth Engine Python API
 - Flask-CORS
 
-## 安装说明
+## Installation Guide
 
-### 前端安装
+### Frontend Installation
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### 后端安装
+### Backend Installation
 ```bash
 cd backend
-conda activate vgee/vgee(Windows下将bin文件夹添加到环境变量中)
+conda activate vgee/vgee (For Windows, add bin folder to environment variables)
 pip install -r requirements.txt
 python app.py
 ```
 
-## Vercel部署（推荐）
-- 前端地址：https://vgee-wrjwrjwrjwrjwrjs-projects.vercel.app/
-- 下载后端代码，在backend文件夹中进行
-- 创建conda环境：conda create --name VGEE python=3.10 -y
-- 激活conda环境：conda activate VGEE/VGEE(Windows下将bin文件夹添加到环境变量中)
-- 安装依赖：pip install -r requirements.txt
-- 在系统环境变量中创建名为PROXY_CONFIG的变量，值为本机的代理端口:GEE项目地址,例如：1080:ee-project
-- 启动服务：python app.py
+## Vercel Deployment (Recommended)
+- Frontend URL: https://vgee-wrjwrjwrjwrjwrjs-projects.vercel.app/
+- Download backend code and navigate to the backend folder
+- Create conda environment: conda create --name VGEE python=3.10 -y
+- Activate conda environment: conda activate VGEE/VGEE (For Windows, add bin folder to environment variables)
+- Install dependencies: pip install -r requirements.txt
+- Create a system environment variable named PROXY_CONFIG with value as local proxy port:GEE project address, e.g., 1080:ee-project
+- Start service: python app.py
 
+## Docker Deployment (Not Recommended - Currently unable to resolve service account export image issues)
 
-## Docker 部署（不推荐，目前无法解决服务账号导出影像问题）
+## Configuration Guide
 
-## 配置说明
+1. Copy configuration file template:
+Download service account credentials JSON file from Google Cloud to backend/config directory
 
-1. 复制配置文件模板：
-从Google Cloud 获取服务账号凭证，下载json文件到backend/config目录下
-
-2. 构建并启动服务：
+2. Build and start services:
 ```bash
-# 构建镜像
+# Build image
 docker-compose build --no-cache
-如果构建失败，尝试手动拉取镜像：docker pull python:3.11-slim
+If build fails, try manually pulling image: docker pull python:3.11-slim
 
-# 启动服务
+# Start services
 docker-compose up
 ```
-## Docker 安装
-Windows下安装Docker Desktop
-- 参考：[here](https://blog.csdn.net/qq_60750453/article/details/128636298)
-- 镜像使用参考：[here](https://blog.csdn.net/weixin_50160384/article/details/139861337)
 
-## Google服务账号申请[here](https://console.cloud.google.com)
+## Docker Installation
+Docker Desktop Installation for Windows
+- Reference: [here](https://blog.csdn.net/qq_60750453/article/details/128636298)
+- Image usage reference: [here](https://blog.csdn.net/weixin_50160384/article/details/139861337)
+
+## Google Service Account Application [here](https://console.cloud.google.com)
 ```bash
-1、选择IAM和管理,给主账号添加权限：
+1. Select IAM & Admin, add permissions to main account:
 - Earth Engine Apps Publisher
 - Earth Engine Resource Admin
 - Earth Engine Resource Viewer
 - Earth Engine Resource Writer
 - Service Usage Consumer
 
-2、选择服务账号，如果没有就创建服务账号，创建好之后点击右边三个点选择管理密钥，创建密钥，下载json文件到backend/config目录下
+2. Select Service Accounts, create one if none exists. After creation, click the three dots on the right, select Manage Keys, create a key, and download the JSON file to backend/config directory
 ```
-服务启动后：
-- 前端访问地址：http://localhost:8080
-- 后端访问地址：http://localhost:5000
 
-## 注意事项
+After service startup:
+- Frontend access: http://localhost:8080
+- Backend access: http://localhost:5000
 
-- 需要有效的 Google Earth Engine 服务账号
-- 确保服务账号具有足够的权限
-- 大范围数据处理可能需要较长时间
+## Important Notes
 
-## 作者
+- Requires valid Google Earth Engine service account
+- Ensure service account has sufficient permissions
+- Large-scale data processing may require extended time
+
+## Author
 Renjie Wu

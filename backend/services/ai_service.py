@@ -40,43 +40,47 @@ def text_segment_img(url, image_bounds, params, dimensions='1024x1024'):
         # 执行分割
         sam.predict(url, text_prompt, box_threshold=threshold, text_threshold=threshold)
         
-        # 将边界框转换为地理坐标
-        coordinates = []
-        if sam.boxes is not None and len(sam.boxes) > 0:
-            # 获取图像边界
+        # 存储所有掩膜结果
+        all_masks = []
+        
+        if sam.masks is not None:
             min_x, min_y, max_x, max_y = image_bounds
             
-            for box in sam.boxes:
-                box = box.cpu().numpy()
+            # 遍历每个掩膜
+            for mask in sam.masks:
+                mask = mask.cpu().numpy()
                 
-                # 将像素坐标转换为地理坐标，并转换为 Python float
-                geo_x1 = float(min_x + (box[0] / img_width) * (max_x - min_x))
-                geo_y1 = float(max_y - (box[1] / img_height) * (max_y - min_y))
-                geo_x2 = float(min_x + (box[2] / img_width) * (max_x - min_x))
-                geo_y2 = float(max_y - (box[3] / img_height) * (max_y - min_y))
+                # 处理掩膜轮廓
+                contours, _ = cv2.findContours(
+                    mask.astype(np.uint8), 
+                    cv2.RETR_EXTERNAL, 
+                    cv2.CHAIN_APPROX_SIMPLE
+                )
                 
-                # 创建矩形坐标，确保所有值都是 Python float
-                rect_coords = [
-                    [geo_x1, geo_y1],  # 左上
-                    [geo_x2, geo_y1],  # 右上
-                    [geo_x2, geo_y2],  # 右下
-                    [geo_x1, geo_y2],  # 左下
-                    [geo_x1, geo_y1]   # 闭合多边形
-                ]
-                coordinates.append(rect_coords)
+                # 转换每个轮廓为地理坐标
+                for contour in contours:
+                    geo_coords = []
+                    for point in contour:
+                        x, y = point[0]
+                        geo_x = float(min_x + (x / img_width) * (max_x - min_x))
+                        geo_y = float(max_y - (y / img_height) * (max_y - min_y))
+                        geo_coords.append([geo_x, geo_y])
+                    
+                    # 确保多边形闭合
+                    if geo_coords[0] != geo_coords[-1]:
+                        geo_coords.append(geo_coords[0])
+                        
+                    all_masks.append(geo_coords)
         
         # 清理临时文件
         cleanup_temp_files()
         
-        return coordinates
+        return all_masks
         
     except Exception as e:
         cleanup_temp_files()
         print(f"Error in segment_img: {str(e)}")
-        return {
-            'success': False,
-            'error': str(e)
-        }
+        return None
 
 def text_single_layer(layer_id, datasets, datasetsNames, params, vis_params):
     """处理单个语义识别的函数"""
@@ -116,29 +120,33 @@ def text_single_layer(layer_id, datasets, datasetsNames, params, vis_params):
         })
 
         print(f"Generated URL for layer {layer_id}: {url}")
-        coordinates = text_segment_img(url, image_bounds, {
+        mask_coords = text_segment_img(url, image_bounds, {
             'textPrompt': text_prompt,
             'threshold': threshold
         }, dimensions)
         
-        if coordinates is None:
+        if mask_coords is None or len(mask_coords) == 0:
             return None
 
-        return {
-            'layer_id': f'sam_prediction_{layer_id}_{int(time.time())}',
-            'name': f'{image_name}_SAM预测结果',
+        # 创建掩膜图层
+        mask_layer = {
+            'layer_id': f'{layer_id}_mask_{int(time.time())}',  # 包含原始layer_id
+            'name': f'{image_name}_mask',
             'type': 'vector',
             'geometryType': 'Polygon',
-            'coordinates': coordinates,
+            'coordinates': mask_coords,
             'visParams': {
                 'color': '#ff0000',
                 'weight': 2,
                 'opacity': 1,
-                'fillOpacity': 0.5
+                'fillOpacity': 0.3
             }
         }
+
+        return mask_layer
     except Exception as e:
         print(f"Error processing layer {layer_id}: {str(e)}")
+        traceback.print_exc()  # 添加详细的错误跟踪
         return None
     
     
@@ -274,7 +282,7 @@ def point_single_layer(layer_id, datasets, datasetsNames, samples, vis_params):
 
         return {
             'layer_id': f'sam_prediction_{layer_id}_{int(time.time())}',
-            'name': f'{image_name}_SAM点分割结果',
+            'name': f'{image_name}_SAM_point_prediction',
             'type': 'vector',
             'geometryType': 'Polygon',
             'coordinates': coordinates,
