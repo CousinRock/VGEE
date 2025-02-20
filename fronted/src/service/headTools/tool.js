@@ -90,7 +90,7 @@ export const updateMapLayer = async (layerResult, mapView) => {
             newLeafletLayer.setZIndex(layer.zIndex)
         }
     } else {
-        // 处理新图层
+        // 处理新图层  
         const [originalId] = layerResult.layer_id.split('_')
         const originalLayer = mapView.layers.find(l => l.id === originalId)
 

@@ -48,7 +48,7 @@ python app.py
 - Create conda environment: conda create --name VGEE python=3.10 -y
 - Activate conda environment: conda activate VGEE/VGEE (For Windows, add bin folder to environment variables)
 - Install dependencies: pip install -r requirements.txt
-- Create a system environment variable named PROXY_CONFIG with value as local proxy port:GEE project address, e.g., 1080:ee-project
+- Create a system environment variable named PROJECT with value as GEE project address, e.g. ee-project
 - Start service: python app.py
 
 ## Docker Deployment (Not Recommended - Currently unable to resolve service account export image issues)
