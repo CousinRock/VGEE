@@ -28,13 +28,12 @@ A remote sensing image processing system based on Google Earth Engine platform, 
 
 ## Vercel Deployment (Recommended)
 - Frontend URL: https://vgee-wrjwrjwrjwrjwrjs-projects.vercel.app/
-```bash
-# Download and setup environment
-git clone -b main --single-branch --depth 1 https://github.com/CousinRock/VGEE.git && cd VGEE/backend && conda create -n VGEE python=3.10 -y && conda activate VGEE && pip install -r requirements.txt
-
-# Set project and run
-set PROJECT=your-gee-project-id && python app.py
-```
+- Download backend code and navigate to the backend folder
+- conda create --name VGEE python=3.10 -y
+- conda activate VGEE/VGEE (For Windows, add bin folder to environment variables)
+- pip install -r requirements.txt
+- Create a system environment variable named PROJECT with value as GEE project address, e.g. ee-project
+- python app.py
 
 ## Docker Deployment (Not Recommended - Currently unable to resolve service account export image issues)
 
