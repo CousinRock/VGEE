@@ -1,16 +1,16 @@
 <template>
     <div class="mac-lea-classify">
-        <h4>分类设置</h4>
+        <h4>Classification Settings</h4>
 
         <!-- K-means 分类设置 -->
         <div v-if="currentTool === TOOL_IDS.CLASSIFICATION.KMEANS">
-            <h5>K-means 分类设置</h5>
+            <h5>K-means Classification Settings</h5>
             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
                 <div class="layer-name">
-                    {{ availableLayers.find(l => l.id === layerId)?.name }}
+                    {{availableLayers.find(l => l.id === layerId)?.name}}
                 </div>
                 <div class="option-item">
-                    <label>分类数量：</label>
+                    <label>Number of Clusters:</label>
                     <el-slider v-model="classifyParams.clusterCounts[layerId]" :min="2" :max="20" :step="1" show-input
                         :marks="{
                             2: '2',
@@ -24,13 +24,13 @@
 
         <!-- 随机森林分类设置 -->
         <div v-if="currentTool === TOOL_IDS.CLASSIFICATION.RANDOM_FOREST">
-            <h5>随机森林设置</h5>
+            <h5>Random Forest Settings</h5>
             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
                 <div class="layer-name">
-                    {{ availableLayers.find(l => l.id === layerId)?.name }}
+                    {{availableLayers.find(l => l.id === layerId)?.name}}
                 </div>
                 <div class="option-item">
-                    <label>决策树数量：</label>
+                    <label>Number of Decision Trees:</label>
                     <el-slider v-model="classifyParams.rfParams[layerId].numberOfTrees" :min="10" :max="200" :step="1"
                         show-input :marks="{
                             10: '10',
@@ -43,7 +43,7 @@
                 <div class="option-item">
 
 
-                    <label>训练集比例：</label>
+                    <label>Training Set Ratio:</label>
                     <el-slider v-model="classifyParams.rfParams[layerId].trainRatio" :min="0.1" :max="0.9" :step="0.1"
                         show-input :marks="{
                             0.5: '50%',
@@ -56,13 +56,13 @@
 
         <!-- SVM 分类设置 -->
         <div v-if="currentTool === TOOL_IDS.CLASSIFICATION.SVM">
-            <h5>支持向量机设置</h5>
+            <h5>Support Vector Machine Settings</h5>
             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
                 <div class="layer-name">
-                    {{ availableLayers.find(l => l.id === layerId)?.name }}
+                    {{availableLayers.find(l => l.id === layerId)?.name}}
                 </div>
                 <div class="option-item">
-                    <label>核函数类型：</label>
+                    <label>Kernel Function Type:</label>
                     <el-select v-model="classifyParams.svmParams[layerId].kernel" size="small">
                         <el-option label="RBF" value="RBF" />
                         <el-option label="Linear" value="Linear" />
@@ -70,7 +70,7 @@
                     </el-select>
                 </div>
                 <div class="option-item">
-                    <label>训练集比例：</label>
+                    <label>Training Set Ratio:</label>
                     <el-slider v-model="classifyParams.svmParams[layerId].trainRatio" :min="0.1" :max="0.9" :step="0.1"
                         show-input :marks="{
                             0.5: '50%',

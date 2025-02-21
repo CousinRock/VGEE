@@ -36,7 +36,7 @@
                         <input type="checkbox" v-model="baseLayerVisible" id="baseLayer">
                         <label for="baseLayer">
                             <i class="fas fa-map"></i>
-                            <span>底图</span>
+                            <span>Base Map</span>
                         </label>
                         <button class="layer-settings" @click="showBaseMapSettings = true">
                             <i class="fas fa-cog"></i>
@@ -59,12 +59,13 @@
                             <!-- 添加锁定按钮，只对点图层显示 -->
                             <button v-if="layer.geometryType === 'Point'" class="layer-action-btn"
                                 :class="{ 'active': layer.locked }" @click="layer.locked = !layer.locked"
-                                :title="layer.locked ? '解锁图层' : '锁定图层'">
+                                :title="layer.locked ? 'Unlock Layer' : 'Lock Layer'">
                                 <i :class="layer.locked ? 'fas fa-lock' : 'fas fa-lock-open'"></i>
                             </button>
                             <template v-if="layer.type === 'vector' || layer.type === 'manual'">
                                 <el-dropdown trigger="click" :teleported="false">
-                                    <button class="layer-settings" title="图层设置" :disabled="layer.isSettingStudyArea">
+                                    <button class="layer-settings" title="Layer Settings"
+                                        :disabled="layer.isSettingStudyArea">
                                         <i :class="[
                                             'fas',
                                             layer.isSettingStudyArea || layer.isExporting ? 'fa-spinner fa-spin' : 'fa-cog'
@@ -78,28 +79,28 @@
                                                 @click="toggleStudyArea(layer)" tabindex="0">
                                                 <i
                                                     :class="layer.isStudyArea ? MENU_ICONS.STUDY_AREA_ACTIVE : MENU_ICONS.STUDY_AREA"></i>
-                                                {{ layer.isStudyArea ? '取消研究区域' : '设为研究区域' }}
+                                                {{ layer.isStudyArea ? 'Cancel Study Area' : 'Set as Study Area' }}
                                             </el-dropdown-item>
                                             <el-dropdown-item
                                                 v-if="layer.geometryType === 'Polygon' || layer.type === 'vector' || layer.geometryType === 'Point'"
                                                 @click="toggleSample(layer)" tabindex="0">
                                                 <i
                                                     :class="layer.isSample ? MENU_ICONS.SAMPLE_ACTIVE : MENU_ICONS.SAMPLE"></i>
-                                                {{ layer.isSample ? '取消样本' : '设为样本' }}
+                                                {{ layer.isSample ? 'Cancel Sample' : 'Set as Sample' }}
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="openVectorStyleSettings(layer)" tabindex="0">
                                                 <i :class="MENU_ICONS.STYLE"></i>
-                                                样式设置
+                                                Style Settings
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="openRenameDialog(layer)" tabindex="0">
                                                 <i :class="MENU_ICONS.EDIT"></i>
-                                                重命名
+                                                Rename
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="exportLayer(layer)" tabindex="0">
                                                 <i :class="[
                                                     layer.isExporting ? 'fas fa-spinner fa-spin' : MENU_ICONS.EXPORT
                                                 ]"></i>
-                                                导出
+                                                Export
                                             </el-dropdown-item>
                                         </el-dropdown-menu>
                                     </template>
@@ -107,7 +108,7 @@
                             </template>
                             <template v-else>
                                 <el-dropdown trigger="click" :teleported="false">
-                                    <button class="layer-settings" title="图层设置"
+                                    <button class="layer-settings" title="Layer settings"
                                         :disabled="layer.isLoadingProperties || layer.isExporting">
                                         <i :class="[
                                             'fas',
@@ -118,27 +119,27 @@
                                         <el-dropdown-menu>
                                             <el-dropdown-item @click="openRenameDialog(layer)" tabindex="0">
                                                 <i :class="MENU_ICONS.EDIT"></i>
-                                                重命名
+                                                Rename
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="openLayerSettings(layer)" tabindex="0">
                                                 <i :class="MENU_ICONS.SETTINGS"></i>
-                                                显示设置
+                                                Display Settings
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="showLayerProperties(layer)" tabindex="0">
                                                 <i :class="MENU_ICONS.INFO"></i>
-                                                属性信息
+                                                Property Information
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="exportLayer(layer)" tabindex="0">
                                                 <i :class="[
                                                     layer.isExporting ? 'fas fa-spinner fa-spin' : MENU_ICONS.EXPORT
                                                 ]"></i>
-                                                导出
+                                                Export
                                             </el-dropdown-item>
                                         </el-dropdown-menu>
                                     </template>
                                 </el-dropdown>
                             </template>
-                            <button class="remove-layer" @click="removeLayer(layer.id)" title="移除图层">
+                            <button class="remove-layer" @click="removeLayer(layer.id)" title="Remove Layer">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -150,10 +151,10 @@
         </div>
 
         <!-- 底图设置对话框 -->
-        <el-dialog v-model="showBaseMapSettings" title="底图设置" width="300px">
+        <el-dialog v-model="showBaseMapSettings" title="Base Map Settings" width="300px">
             <div class="basemap-settings">
                 <div class="setting-item">
-                    <label>底图类型</label>
+                    <label>Base Map Type</label>
                     <el-select v-model="selectedBaseMap" @change="changeBaseMap">
                         <el-option v-for="map in baseMaps" :key="map.id" :label="map.name" :value="map.id" />
                     </el-select>
@@ -162,7 +163,7 @@
         </el-dialog>
 
         <!-- 修改图层设置对话框 -->
-        <el-dialog v-model="showLayerSettings" title="图层设置" width="500px">
+        <el-dialog v-model="showLayerSettings" title="Layer Settings" width="500px">
             <div class="layer-settings-content" v-if="currentLayer">
                 <!-- 波段显示模式选择 -->
                 <div class="band-mode-selector">
@@ -268,120 +269,123 @@
         </el-dialog>
 
         <!-- 添加矢量样式设置对话框 -->
-        <el-dialog v-model="showVectorStyleDialog" title="矢量图层样式设置" width="400px">
+        <el-dialog v-model="showVectorStyleDialog" title="Vector Layer Style Settings" width="400px">
             <div class="vector-style-settings">
                 <div class="style-item">
-                    <span>边框颜色</span>
+                    <span>Border Color</span>
                     <el-color-picker v-model="vectorStyle.color" show-alpha popper-class="color-picker-popper" />
                 </div>
                 <div class="style-item">
-                    <span>边框宽度</span>
+                    <span>Border Width</span>
                     <el-slider v-model="vectorStyle.weight" :min="0" :max="10" :step="0.01" />
                 </div>
                 <div class="style-item">
-                    <span>边框透明度</span>
+                    <span>Border Opacity</span>
                     <el-slider v-model="vectorStyle.opacity" :min="0" :max="1" :step="0.01" />
                 </div>
                 <div class="style-item">
-                    <span>填充透明度</span>
+                    <span>Fill Opacity</span>
                     <el-slider v-model="vectorStyle.fillOpacity" :min="0" :max="1" :step="0.01" />
                 </div>
             </div>
             <template #footer>
                 <span class="dialog-footer">
-                    <el-button @click="showVectorStyleDialog = false">取消</el-button>
+                    <el-button @click="showVectorStyleDialog = false">Cancel</el-button>
                     <el-button type="primary" @click="applyVectorStyle" :loading="isApplyingStyle">
-                        {{ isApplyingStyle ? '应用中...' : '应用' }}
+                        {{ isApplyingStyle ? 'Applying...' : 'Apply' }}
                     </el-button>
                 </span>
             </template>
         </el-dialog>
 
         <!-- 添加样本类别输入对话框 -->
-        <el-dialog v-model="showSampleDialog" title="设置样本类别" width="400px">
+        <el-dialog v-model="showSampleDialog" title="Set Sample Class" width="400px">
             <div class="sample-settings">
                 <el-form :model="sampleForm">
-                    <el-form-item label="样本类别">
-                        <el-input v-model="sampleForm.className" placeholder="请输入样本类别（如：水体、建筑、植被等）"></el-input>
+                    <el-form-item label="Sample Class">
+                        <el-input v-model="sampleForm.className"
+                            placeholder="Please enter the sample class (e.g., water, building, vegetation, etc.)"></el-input>
                     </el-form-item>
                 </el-form>
             </div>
             <template #footer>
                 <span class="dialog-footer">
-                    <el-button @click="showSampleDialog = false">取消</el-button>
-                    <el-button type="primary" @click="confirmSetSample">确定</el-button>
+                    <el-button @click="showSampleDialog = false">Cancel</el-button>
+                    <el-button type="primary" @click="confirmSetSample">Confirm</el-button>
                 </span>
             </template>
         </el-dialog>
 
         <!-- 添加属性查看对话框 -->
-        <el-dialog v-model="showPropertiesDialog" :title="`${currentLayer?.name || ''} 属性`" width="600px">
+        <el-dialog v-model="showPropertiesDialog" :title="`${currentLayer?.name || ''} Properties`" width="600px">
             <div class="properties-container" v-if="layerProperties">
                 <el-table :data="layerProperties" style="width: 100%">
-                    <el-table-column prop="name" label="属性名" width="200" />
-                    <el-table-column prop="value" label="属性值" />
+                    <el-table-column prop="name" label="Property Name" width="200" />
+                    <el-table-column prop="value" label="Property Value" />
                 </el-table>
             </div>
         </el-dialog>
 
         <!-- 添加重命名对话框 -->
-        <el-dialog v-model="showRenameDialog" title="重命名图层" width="300px">
-            <el-input v-model="newLayerName" placeholder="请输入新的图层名称" />
+        <el-dialog v-model="showRenameDialog" title="Rename Layer" width="300px">
+            <el-input v-model="newLayerName" placeholder="Please enter the new layer name" />
             <template #footer>
                 <span class="dialog-footer">
-                    <el-button @click="showRenameDialog = false">取消</el-button>
-                    <el-button type="primary" @click="renameLayer">确定</el-button>
+                    <el-button @click="showRenameDialog = false">Cancel</el-button>
+                    <el-button type="primary" @click="renameLayer">Confirm</el-button>
                 </span>
             </template>
         </el-dialog>
 
         <!-- 添加导出设置对话框 -->
-        <el-dialog v-model="showExportDialog" title="导出图层" width="400px">
+        <el-dialog v-model="showExportDialog" title="Export Layer" width="400px">
             <div class="export-form">
                 <el-form label-width="100px">
                     <!-- 添加导出类型选择 -->
-                    <el-form-item label="导出类型">
+                    <el-form-item label="Export Type">
                         <el-radio-group v-model="exportType">
-                            <el-radio label="drive">导出到云盘</el-radio>
-                            <el-radio label="asset">导出到资产</el-radio>
+                            <el-radio label="drive">Export to Cloud Drive</el-radio>
+                            <el-radio label="asset">Export to Asset</el-radio>
                         </el-radio-group>
                     </el-form-item>
 
                     <!-- 云盘导出选项 -->
                     <template v-if="exportType === 'drive'">
-                        <el-form-item label="导出文件夹">
-                            <el-input v-model="exportFolder" placeholder="请输入导出文件夹名称" />
+                        <el-form-item label="Export Folder">
+                            <el-input v-model="exportFolder" placeholder="Please enter the export folder name" />
                         </el-form-item>
                     </template>
 
                     <!-- 资产导出选项 -->
                     <template v-if="exportType === 'asset'">
-                        <el-form-item label="资产ID">
-                            <el-input v-model="assetId" placeholder="请输入资产ID" />
+                        <el-form-item label="Asset ID">
+                            <el-input v-model="assetId" placeholder="Please enter the asset ID" />
                         </el-form-item>
-                        <el-form-item label="描述">
-                            <el-input v-model="assetDescription" placeholder="请输入描述" />
+                        <el-form-item label="Description">
+                            <el-input v-model="assetDescription" placeholder="Please enter the description" />
                         </el-form-item>
                     </template>
 
                     <!-- 添加分辨率选择 -->
-                    <el-form-item label="导出分辨率">
-                        <el-select v-model="exportScale" placeholder="选择分辨率">
-                            <el-option label="10米" :value="10" />
-                            <el-option label="20米" :value="20" />
-                            <el-option label="30米" :value="30" />
-                            <el-option label="60米" :value="60" />
-                            <el-option label="100米" :value="100" />
+                    <el-form-item label="Export Resolution">
+                        <el-select v-model="exportScale" placeholder="Select Resolution">
+                            <el-option label="10m" :value="10" />
+                            <el-option label="20m" :value="20" />
+                            <el-option label="30m" :value="30" />
+                            <el-option label="60m" :value="60" />
+                            <el-option label="100m" :value="100" />
                         </el-select>
-                        <div class="scale-hint">注: 不同卫星数据源支持的最小分辨率可能不同</div>
+                        <div class="scale-hint">Note: The minimum resolution supported by different satellite data
+                            sources may
+                            be different</div>
                     </el-form-item>
                 </el-form>
             </div>
             <template #footer>
                 <span class="dialog-footer">
-                    <el-button @click="showExportDialog = false">取消</el-button>
+                    <el-button @click="showExportDialog = false">Cancel</el-button>
                     <el-button type="primary" @click="confirmExport" :loading="currentExportLayer?.isExporting">
-                        {{ currentExportLayer?.isExporting ? '导出中...' : '确认导出' }}
+                        {{ currentExportLayer?.isExporting ? 'Exporting...' : 'Confirm Export' }}
                     </el-button>
                 </span>
             </template>

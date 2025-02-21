@@ -1,21 +1,21 @@
 <template>
   <div class="rename-bands-container">
-    <h3>重命名波段</h3>
+    <h3>Rename Bands</h3>
     <div v-for="(band, index) in renameBandsParams.bands" :key="index" class="band-row">
-      <el-select v-model="band.original" placeholder="选择原始波段名">
+      <el-select v-model="band.original" placeholder="Select Original Band Name">
         <el-option v-for="option in availableBands" :key="option" :label="option" :value="option" />
       </el-select>
-      <el-select v-model="band.new" placeholder="选择新波段名">
+      <el-select v-model="band.new" placeholder="Select New Band Name">
         <el-option v-for="option in newBandNames" :key="option" :label="option" :value="option" />
-        <el-option label="自定义" value="custom" />
+        <el-option label="Custom" value="custom" />
       </el-select>
-      <el-input v-if="band.new === 'custom'" v-model="band.customName" placeholder="输入自定义名称" />
+      <el-input v-if="band.new === 'custom'" v-model="band.customName" placeholder="Enter Custom Name" />
       <el-button @click="removeBand(index)" type="danger" circle class="delete-btn">
         ×
       </el-button>
     </div>
     <div class="button-group">
-      <el-button @click="addBand">添加波段</el-button>
+      <el-button @click="addBand">Add Band</el-button>
     </div>
   </div>
 </template>

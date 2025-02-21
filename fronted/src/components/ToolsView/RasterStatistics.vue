@@ -1,34 +1,35 @@
 <template>
     <div class="statistics-container">
         <el-form :model="statisticsParams" label-width="120px">
-            <el-form-item label="分辨率(米)">
+            <el-form-item label="Scale">
                 <el-input-number v-model="statisticsParams.resolution" :min="1" :max="1000" :step="1"
                     class="resolution-input" />
                 <div class="parameter-hint">
-                    计算精度，数值越小精度越高，但计算时间会更长
+                    Calculation accuracy, the smaller the value, the higher the accuracy, but the calculation time will
+                    be longer
                 </div>
             </el-form-item>
 
-            <!-- 面积统计模式的参数 -->
+            <!-- Area statistics mode parameters -->
             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
                 <div class="layer-name">
                     {{availableLayers.find(l => l.id === layerId)?.name}}
                 </div>
-                <!-- 波段选择 -->
-                <el-form-item label="统计波段">
+                <!-- Band selection -->
+                <el-form-item label="Statistical Band">
                     <el-select v-model="statisticsParams.params[layerId].band" class="band-select">
                         <el-option v-for="band in layerBands[layerId]" :key="band" :label="band" :value="band" />
                     </el-select>
                 </el-form-item>
 
-                <!-- 目标值输入 -->
-                <el-form-item label="目标值">
+                <!-- Target value input -->
+                <el-form-item label="Target Value">
                     <el-input-number v-model="statisticsParams.params[layerId].value" :step="1" />
                 </el-form-item>
             </div>
         </el-form>
 
-        <!-- 统计结果展示 -->
+        <!-- Statistics result display -->
         <div v-if="statisticsResult" class="statistics-result">
             <div class="result-header">
                 <h3>Statistics Result</h3>

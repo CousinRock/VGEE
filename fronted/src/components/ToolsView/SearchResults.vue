@@ -1,16 +1,16 @@
 <template>
   <div class="search-results-container" v-show="searchState.showResults || searchState.activeSearchId">
-    <h2>搜索结果</h2>
+    <h2>Search Results</h2>
     <el-button @click="closeResults" type="danger" class="close-button">
       <i class="fas fa-times"></i>
     </el-button>
 
     <!-- 自定义ID搜索框 -->
     <div v-if="searchState.activeSearchId" class="id-search">
-      <el-input v-model="searchState.customId" placeholder="输入数据集ID" size="small" @keyup.enter="handleCustomIdSearch"
-        class="search-input">
+      <el-input v-model="searchState.customId" placeholder="Enter Dataset ID" size="small"
+        @keyup.enter="handleCustomIdSearch" class="search-input">
         <template #append>
-          <el-button @click="handleCustomIdSearch">搜索</el-button>
+          <el-button @click="handleCustomIdSearch">Search</el-button>
         </template>
       </el-input>
     </div>
@@ -18,7 +18,7 @@
     <!-- 只在有搜索结果时显示表格 -->
     <el-table v-if="searchState.results.length > 0" :data="searchState.results" style="width: 100%" height="400" stripe>
       <!-- 缩略图列 -->
-      <el-table-column label="预览图" width="120">
+      <el-table-column label="Preview Image" width="120">
         <template #default="scope">
           <el-image v-if="scope.row.thumbnail_url" :src="scope.row.thumbnail_url"
             :preview-src-list="[scope.row.thumbnail_url]" fit="cover" class="thumbnail-image">
@@ -32,7 +32,7 @@
       </el-table-column>
 
       <!-- 标题列 -->
-      <el-table-column prop="title" label="标题" min-width="200">
+      <el-table-column prop="title" label="Title" min-width="200">
         <template #default="scope">
           <div class="title-cell">
             <span class="dataset-title">{{ scope.row.title }}</span>
@@ -44,10 +44,10 @@
       </el-table-column>
 
       <!-- 提供者列 -->
-      <el-table-column prop="provider" label="提供者" width="150" />
+      <el-table-column prop="provider" label="Provider" width="150" />
 
       <!-- 数据类型列 -->
-      <el-table-column prop="type" label="类型" width="120">
+      <el-table-column prop="type" label="Type" width="120">
         <template #default="scope">
           <el-tag :type="getTypeTagType(scope.row.type)">
             {{ formatType(scope.row.type) }}
@@ -56,7 +56,7 @@
       </el-table-column>
 
       <!-- 时间范围列 -->
-      <el-table-column label="时间范围" width="200">
+      <el-table-column label="Time Range" width="200">
         <template #default="scope">
           <div class="date-range">
             {{ scope.row.start_date }} 至 {{ scope.row.end_date || '至今' }}
@@ -65,10 +65,10 @@
       </el-table-column>
 
       <!-- 操作列 -->
-      <el-table-column label="操作" width="100" fixed="right">
+      <el-table-column label="Operation" width="100" fixed="right">
         <template #default="scope">
           <el-button @click="selectDataset(scope.row)" type="primary" size="small">
-            import
+            Import
           </el-button>
         </template>
       </el-table-column>

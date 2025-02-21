@@ -1,11 +1,11 @@
 <template>
     <div class="upload-data-content">
         <!-- 添加资产选择对话框 -->
-        <el-dialog v-model="showAssetsDialog" :title="selectedAsset ? `选择资产: ${selectedAsset.name}` : '选择资产'"
-            :width="'400px'">
+        <el-dialog v-model="showAssetsDialog"
+            :title="selectedAsset ? `Select Asset: ${selectedAsset.name}` : 'Select Asset'" :width="'400px'">
             <div class="assets-header">
                 <el-button @click="refreshAssetsList" :loading="isLoadingAssets" type="primary" size="small">
-                    <i class="fas fa-sync-alt"></i> 刷新
+                    <i class="fas fa-sync-alt"></i> Refresh
                 </el-button>
             </div>
             <div class="assets-select-content">
@@ -24,7 +24,7 @@
                                     <i class="el-icon-info" />
                                 </el-tooltip>
                                 <el-popconfirm
-                                    :title="`确定要删除 ${data.name} ${data.type === 'FOLDER' ? '及其所有内容' : ''} 吗？`"
+                                    :title="`Are you sure you want to delete ${data.name} ${data.type === 'FOLDER' ? 'and all its contents' : ''}?`"
                                     @confirm="deleteAsset(data)">
                                     <template #reference>
                                         <el-button type="text" size="small" class="delete-btn"
@@ -41,51 +41,53 @@
 
             <template #footer>
                 <span class="dialog-footer">
-                    <el-button @click="showAssetsDialog = false">取消</el-button>
+                    <el-button @click="showAssetsDialog = false">Cancel</el-button>
                     <el-button type="primary" :loading="isLoadingAssets" @click="confirmAssetSelect">
-                        {{ isLoadingAssets ? '添加中...' : '确定' }}
+                        {{ isLoadingAssets ? 'Adding...' : 'Confirm' }}
                     </el-button>
                 </span>
             </template>
         </el-dialog>
 
         <!-- 时间序列对话框 -->
-        <el-dialog v-model="showTimeseriesDialog" :title="`添加 ${satelliteType} 时间序列`" width="400px">
+        <el-dialog v-model="showTimeseriesDialog" :title="`Add ${satelliteType} Time Series`" width="400px">
             <div class="upload-form">
                 <el-form :model="form" label-width="100px">
-                    <el-form-item label="时间频率">
-                        <el-select v-model="form.frequency" placeholder="选择时间频率">
-                            <el-option label="年度" value="year" />
-                            <el-option label="月度" value="month" />
+                    <el-form-item label="Time Frequency">
+                        <el-select v-model="form.frequency" placeholder="Select Time Frequency">
+                            <el-option label="Yearly" value="year" />
+                            <el-option label="Monthly" value="month" />
                         </el-select>
                     </el-form-item>
 
-                    <el-form-item label="时间间隔">
+                    <el-form-item label="Time Interval">
                         <el-input-number v-model="form.interval" :min="1" :max="12" :step="1"
                             controls-position="right" />
                     </el-form-item>
 
-                    <el-form-item label="开始日期">
-                        <el-date-picker v-model="form.startDate" type="date" placeholder="选择开始日期" format="YYYY-MM-DD"
-                            value-format="YYYY-MM-DD">
+                    <el-form-item label="Start Date">
+                        <el-date-picker v-model="form.startDate" type="date" placeholder="Select Start Date"
+                            format="YYYY-MM-DD" value-format="YYYY-MM-DD">
                         </el-date-picker>
                     </el-form-item>
 
-                    <el-form-item label="结束日期">
-                        <el-date-picker v-model="form.endDate" type="date" placeholder="选择结束日期" format="YYYY-MM-DD"
-                            value-format="YYYY-MM-DD">
+                    <el-form-item label="End Date">
+                        <el-date-picker v-model="form.endDate" type="date" placeholder="Select End Date"
+                            format="YYYY-MM-DD" value-format="YYYY-MM-DD">
                         </el-date-picker>
                     </el-form-item>
 
-                    <el-form-item label="云量设置" class="cloud-settings">
+                    <el-form-item label="Cloud Cover Settings" class="cloud-settings">
                         <div class="cloud-control-group">
                             <el-slider v-model="form.cloudCover" :min="0" :max="100" :step="1" class="cloud-slider">
                             </el-slider>
                             <div class="cloud-mask-option">
                                 <el-checkbox v-model="form.apply_fmask">
-                                    启用除云
+                                    Enable Cloud Mask
                                 </el-checkbox>
-                                <el-tooltip content="对于Landsat和Sentinel-2数据自动进行云掩膜处理" placement="right">
+                                <el-tooltip
+                                    content="For Landsat and Sentinel-2 data, the cloud mask will be automatically applied"
+                                    placement="right">
                                     <i class="fas fa-question-circle"></i>
                                 </el-tooltip>
                             </div>
@@ -96,9 +98,9 @@
 
             <template #footer>
                 <span class="dialog-footer">
-                    <el-button @click="showTimeseriesDialog = false">取消</el-button>
+                    <el-button @click="showTimeseriesDialog = false">Cancel</el-button>
                     <el-button type="primary" @click="submitForm" :loading="isSubmitting">
-                        {{ isSubmitting ? '添加中...' : '确定' }}
+                        {{ isSubmitting ? 'Adding...' : 'Confirm' }}
                     </el-button>
                 </span>
             </template>

@@ -8,7 +8,7 @@ export const TOOL_IDS = {
         ROOT: 'upload-vector',
         ASSET: 'upload-asset',
         LANDSAT_TIMESERIES: 'upload-landsat-timeseries',
-        SENTINEL2_TIMESERIES:'upload-sentinel2-timeseries'
+        SENTINEL2_TIMESERIES: 'upload-sentinel2-timeseries'
     },
     SEARCH: {
         ROOT: 'search-data',
@@ -19,8 +19,8 @@ export const TOOL_IDS = {
         DEM: 'search-data-dem',
         ID: 'search-data-id'
     },
-    LOCATION:{
-        ROOT:'location'
+    LOCATION: {
+        ROOT: 'location'
     },
 
     // 工具箱菜单
@@ -86,11 +86,11 @@ export const TOOLS_CONFIG = {
     // 菜单配置
     file: {
         id: TOOL_IDS.FILE,
-        label: '文件',
+        label: 'File',
         children: {
             uploadVector: {
                 id: TOOL_IDS.UPLOAD.ROOT,
-                label: '添加数据',
+                label: 'Add Data',
                 children: {
                     Assets: {
                         id: TOOL_IDS.UPLOAD.ASSET,
@@ -110,7 +110,7 @@ export const TOOLS_CONFIG = {
                     },
                     landsatTimeseries: {
                         id: TOOL_IDS.UPLOAD.LANDSAT_TIMESERIES,
-                        label: 'Landsat时间序列',
+                        label: 'Landsat Timeseries',
                         requireLayers: false,
                         endpoint: API_ROUTES.UPLOAD.ADD_LANDSAT_TIMESERIES,
                         processParams: (params) => ({
@@ -119,12 +119,12 @@ export const TOOLS_CONFIG = {
                         }),
                         defaultParams: {
                             startDate: '',
-                            endDate: '' 
+                            endDate: ''
                         }
                     },
                     sentinelTimeseries: {
                         id: TOOL_IDS.UPLOAD.SENTINEL2_TIMESERIES,
-                        label: 'Sentinel时间序列',
+                        label: 'Sentinel Timeseries',
                         requireLayers: false,
                         endpoint: API_ROUTES.UPLOAD.ADD_SENTINEL_TIMESERIES,
                         processParams: (params) => ({
@@ -140,7 +140,7 @@ export const TOOLS_CONFIG = {
             },
             searchData: {
                 id: TOOL_IDS.SEARCH.ROOT,
-                label: '搜索数据',
+                label: 'Search Data',
                 children: {
                     landsat: {
                         id: TOOL_IDS.SEARCH.LANDSAT,
@@ -245,19 +245,19 @@ export const TOOLS_CONFIG = {
     },
     tools: {
         id: TOOL_IDS.TOOLS,
-        label: '工具箱',
+        label: 'Tools',
         children: {
             preprocessing: {
                 id: TOOL_IDS.PREPROCESSING.ROOT,
-                label: '预处理工具',
+                label: 'Preprocessing Tools',
                 children: {
                     cloudRemoval: {
                         id: TOOL_IDS.PREPROCESSING.CLOUD_REMOVAL,
-                        label: '影像除云',
+                        label: 'Cloud Removal',
                         icon: 'fas fa-cloud-sun',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CLOUD_REMOVAL,
-                        description: '去除影像中的云层',
+                        description: 'Remove clouds from images',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
                             vis_params: mapView.layers
@@ -270,11 +270,11 @@ export const TOOLS_CONFIG = {
                     },
                     imageFilling: {
                         id: TOOL_IDS.PREPROCESSING.IMAGE_FILLING,
-                        label: '影像填补',
+                        label: 'Image Filling',
                         icon: 'fas fa-fill-drip',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.IMAGE_FILLING,
-                        description: '填补影像中的缺失数据',
+                        description: 'Fill missing data in images',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
                             vis_params: mapView.layers
@@ -287,12 +287,12 @@ export const TOOLS_CONFIG = {
                     },
                     imageBandsRename: {
                         id: TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME,
-                        label: '影像波段重命名',
+                        label: 'Image Bands Rename',
                         icon: 'fas fa-palette',
                         component: 'RenameBands',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.RENAME_BANDS,
-                        description: '重命名影像波段',
+                        description: 'Rename image bands',
                         processParams: (selectedLayers, mapView, params) => ({
                             layer_ids: selectedLayers,
                             vis_params: mapView.layers
@@ -306,7 +306,7 @@ export const TOOLS_CONFIG = {
                     },
                     histogramEqualization: {
                         id: TOOL_IDS.PREPROCESSING.HISTOGRAM_EQUALIZATION,
-                        label: '直方图均值化',
+                        label: 'Histogram Equalization',
                         icon: 'fas fa-chart-line',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.HISTOGRAM_EQUALIZATION,
@@ -325,15 +325,15 @@ export const TOOLS_CONFIG = {
             },
             indices: {
                 id: TOOL_IDS.INDICES.ROOT,
-                label: '指数计算',
+                label: 'Index Calculation',
                 children: {
                     ndvi: {
                         id: TOOL_IDS.INDICES.NDVI,
-                        label: '植被指数(NDVI)',
+                        label: 'NDVI',
                         icon: 'fas fa-leaf',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        description: '归一化植被指数，用于评估植被覆盖和生长状况',
+                        description: 'Normalized Difference Vegetation Index, used to assess vegetation coverage and growth',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
                             vis_params: mapView.layers
@@ -347,11 +347,11 @@ export const TOOLS_CONFIG = {
                     },
                     evi: {
                         id: TOOL_IDS.INDICES.EVI,
-                        label: '增强植被指数(EVI)',
+                        label: 'EVI',
                         icon: 'fas fa-seedling',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        description: '增强型植被指数',
+                        description: 'Enhanced Vegetation Index, used to assess vegetation coverage and growth',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
                             vis_params: mapView.layers
@@ -365,11 +365,11 @@ export const TOOLS_CONFIG = {
                     },
                     savi: {
                         id: TOOL_IDS.INDICES.SAVI,
-                        label: '土壤植被指数(SAVI)',
+                        label: 'SAVI',
                         icon: 'fas fa-mountain',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        description: '土壤调节植被指数，考虑了土壤背景的影响',
+                        description: 'Soil Adjusted Vegetation Index, considering the influence of soil background',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
                             vis_params: mapView.layers
@@ -383,11 +383,11 @@ export const TOOLS_CONFIG = {
                     },
                     ndwi: {
                         id: TOOL_IDS.INDICES.NDWI,
-                        label: '水体指数(NDWI)',
+                        label: 'NDWI',
                         icon: 'fas fa-water',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        description: '归一化水体指数，用于提取水体信息',
+                        description: 'Normalized Difference Water Index, used to extract water information',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
                             vis_params: mapView.layers
@@ -457,16 +457,16 @@ export const TOOLS_CONFIG = {
             },
             classification: {
                 id: TOOL_IDS.CLASSIFICATION.ROOT,
-                label: '分类工具',
+                label: 'Classification Tools',
                 children: {
                     kmeans: {
                         id: TOOL_IDS.CLASSIFICATION.KMEANS,
-                        label: 'K-means聚类',
+                        label: 'K-means Clustering',
                         icon: 'fas fa-brain',
                         component: 'MacLeaClassify',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.KMEANS_CLUSTERING,
-                        description: '使用K-means算法进行无监督分类',
+                        description: 'Use K-means algorithm for unsupervised classification',
                         defaultParams: {
                             clusterCount: 5
                         },
@@ -483,12 +483,12 @@ export const TOOLS_CONFIG = {
                     },
                     randomForest: {
                         id: TOOL_IDS.CLASSIFICATION.RANDOM_FOREST,
-                        label: '随机森林',
+                        label: 'Random Forest',
                         icon: 'fas fa-brain',
                         component: 'MacLeaClassify',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.RANDOM_FOREST,
-                        description: '使用随机森林算法进行监督分类',
+                        description: 'Use Random Forest algorithm for supervised classification',
                         defaultParams: {
                             numberOfTrees: 50,
                             trainRatio: 0.7
@@ -506,12 +506,12 @@ export const TOOLS_CONFIG = {
                     },
                     svm: {
                         id: TOOL_IDS.CLASSIFICATION.SVM,
-                        label: '支持向量机',
+                        label: 'Support Vector Machine',
                         icon: 'fas fa-brain',
                         component: 'MacLeaClassify',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.SVM,
-                        description: '使用支持向量机算法进行监督分类',
+                        description: 'Use Support Vector Machine algorithm for supervised classification',
                         defaultParams: {
                             kernel: 'RBF',
                             trainRatio: 0.7
@@ -531,16 +531,16 @@ export const TOOLS_CONFIG = {
             },
             rasterOperation: {
                 id: TOOL_IDS.RASTER_OPERATION.ROOT,
-                label: '栅格操作',
+                label: 'Raster Operation',
                 children: {
                     rasterCalculator: {
                         id: TOOL_IDS.RASTER_OPERATION.CALCULATOR,
-                        label: '栅格计算器',
+                        label: 'Raster Calculator',
                         icon: 'fas fa-calculator',
                         component: 'RasterCalculator',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.RASTER_CALCULATOR,
-                        description: '进行栅格代数运算',
+                        description: 'Perform raster algebra operations',
                         defaultParams: {
                             calculatorMode: 'single',
                             calculatorExpression: ''
@@ -567,11 +567,11 @@ export const TOOLS_CONFIG = {
                     },
                     mosaic: {
                         id: TOOL_IDS.RASTER_OPERATION.MOSAIC,
-                        label: '影像拼接',
+                        label: 'Mosaic',
                         icon: 'fas fa-image',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.MOSAIC,
-                        description: '将多张影像拼接成一张大图',
+                        description: 'Mosaic multiple images into a large image',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
                             vis_params: mapView.layers
@@ -584,11 +584,11 @@ export const TOOLS_CONFIG = {
                     },
                     clip: {
                         id: TOOL_IDS.RASTER_OPERATION.CLIP,
-                        label: '影像裁剪',
+                        label: 'Clip',
                         icon: 'fas fa-crop-alt',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CLIP,
-                        description: '使用矢量边界裁剪影像',
+                        description: 'Use vector boundaries to clip images',
                         processParams: (selectedLayers, mapView, params) => ({
                             layer_ids: selectedLayers,
                             vis_params: mapView.layers
@@ -597,17 +597,17 @@ export const TOOLS_CONFIG = {
                                     id: l.id,
                                     visParams: l.visParams
                                 })),
-                            geometry: params?.clipLayer?.geometry || params?.clipLayer?.features?.[0]?.geometry||params?.clipLayer
+                            geometry: params?.clipLayer?.geometry || params?.clipLayer?.features?.[0]?.geometry || params?.clipLayer
                         })
                     },
                     statistics: {
                         id: TOOL_IDS.RASTER_OPERATION.STATISTICS,
-                        label: '栅格统计',
+                        label: 'Raster Statistics',
                         icon: 'fas fa-chart-bar',
                         component: 'RasterStatistics',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.STATISTICS,
-                        description: '统计栅格数据的像素值和面积',
+                        description: 'Statistics the pixel values and area of raster data',
                         keepWindowOpen: true,
                         processParams: (selectedLayers, mapView, params) => ({
                             layer_ids: selectedLayers,
@@ -629,15 +629,15 @@ export const TOOLS_CONFIG = {
             },
             terrainOperation: {
                 id: TOOL_IDS.TERRAIN_OPERATION.ROOT,
-                label: '地形工具',
+                label: 'Terrain Tools',
                 children: {
                     terrain: {
                         id: TOOL_IDS.TERRAIN_OPERATION.TERRAIN,
-                        label: '地形',
+                        label: 'Terrain',
                         icon: 'fas fa-mountain',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.TERRAIN,
-                        description: '计算地形',
+                        description: 'Calculate terrain',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
                             vis_params: mapView.layers
@@ -652,11 +652,11 @@ export const TOOLS_CONFIG = {
             },
             location: {
                 id: TOOL_IDS.LOCATION.ROOT,
-                label: '位置搜索',
+                label: 'Location Search',
                 children: {
                     localize: {
                         id: TOOL_IDS.LOCATION.LOCALIZE,
-                        label: '定位',
+                        label: 'Localize',
                         icon: 'fas fa-map-marker-alt',
                         component: 'LocationSearch',
                         requireLayers: false
@@ -667,7 +667,7 @@ export const TOOLS_CONFIG = {
     },
     aiTools: {
         id: TOOL_IDS.AI_TOOLS,
-        label: 'AI工具',
+        label: 'AI Tools',
         icon: 'fas fa-robot',
         children: {
             Segment: {
@@ -681,7 +681,7 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-brain',
                         requireLayers: true,
                         endpoint: API_ROUTES.AI.TEXT_SEGMENT,
-                        description: '使用SAM模型进行地理空间分割',
+                        description: 'Use SAM model for geographic spatial segmentation',
 
 
                         processParams: (selectedLayers, mapView, params) => {
@@ -712,7 +712,7 @@ export const TOOLS_CONFIG = {
                         icon: 'fas fa-map-marker-alt',
                         requireLayers: true,
                         endpoint: API_ROUTES.AI.POINT_SEGMENT,
-                        description: '使用点提示进行地理空间分割',
+                        description: 'Use point prompt for geographic spatial segmentation',
                         processParams: (selectedLayers, mapView) => {
                             // 获取所有选中图层的显示参数
                             const layerVisParams = selectedLayers.reduce((acc, layerId) => {
@@ -738,21 +738,21 @@ export const TOOLS_CONFIG = {
     },
     help: {
         id: TOOL_IDS.HELP,
-        label: '帮助',
+        label: 'Help',
         children: {
             about: {
                 id: TOOL_IDS.HELP_ITEMS.ABOUT,
-                label: '关于',
+                label: 'About',
                 icon: 'fas fa-info-circle'
             },
             docs: {
                 id: TOOL_IDS.HELP_ITEMS.DOCS,
-                label: '文档',
+                label: 'Docs',
                 icon: 'fas fa-book'
             },
             tutorial: {
                 id: TOOL_IDS.HELP_ITEMS.TUTORIAL,
-                label: '教程',
+                label: 'Tutorial',
                 icon: 'fas fa-graduation-cap'
             }
         }

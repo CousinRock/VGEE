@@ -1,49 +1,49 @@
 <template>
     <div class="calculator-options">
-        <h4>栅格计算器</h4>
+        <h4>Raster Calculator</h4>
 
         <!-- 添加计算模式选择 -->
         <div class="calc-mode">
-            <h5>计算模式:</h5>
+            <h5>Calculation Mode:</h5>
             <el-radio-group v-model="calculatorParams.mode">
-                <el-radio label="single">单波段计算</el-radio>
-                <el-radio label="multi">多图层计算</el-radio>
-                <el-radio label="all_bands">多波段计算</el-radio>
+                <el-radio label="single">Single Band Calculation</el-radio>
+                <el-radio label="multi">Multi-Layer Calculation</el-radio>
+                <el-radio label="all_bands">Multi-Band Calculation</el-radio>
             </el-radio-group>
             <div class="mode-hint">
                 <template v-if="calculatorParams.mode === 'single'">
-                    将同一公式应用到每个选中的波段 (如: B4-B3)
+                    Apply the same formula to each selected band (e.g., B4-B3)
                 </template>
                 <template v-if="calculatorParams.mode === 'multi'">
-                    多个图层之间的计算，生成一个结果 (如: layer1.B4-layer2.B3)
+                    Calculation between multiple layers, generating a result (e.g., layer1.B4-layer2.B3)
                 </template>
                 <template v-if="calculatorParams.mode === 'all_bands'">
-                    将同一公式应用到所选图层的所有波段 (使用 x 表示波段值，如:
-                    {'x*2': ['B1','B2','B3'], 'x/2': ['B5','B6','B7']})
+                    Apply the same formula to all bands of the selected layers (use x to represent band values,
+                    e.g., {'x*2': ['B1','B2','B3'], 'x/2': ['B5','B6','B7']})
                 </template>
             </div>
         </div>
 
         <!-- 添加结果处理选项 -->
-        <el-form-item v-if="calculatorParams.mode === 'single'" label="结果处理">
+        <el-form-item v-if="calculatorParams.mode === 'single'" label="Result Processing">
             <el-radio-group v-model="calculatorParams.resultMode">
-                <el-radio label="new">创建新图层</el-radio>
-                <el-radio label="append">添加到原图层</el-radio>
+                <el-radio label="new">Create New Layer</el-radio>
+                <el-radio label="append">Add to Original Layer</el-radio>
             </el-radio-group>
         </el-form-item>
 
         <!-- 如果选择添加到原图层，显示新波段名称输入 -->
-        <el-form-item v-if="calculatorParams.resultMode === 'append'" label="新波段名称">
-            <el-input v-model="calculatorParams.newBandName" placeholder="请输入新波段名称" />
+        <el-form-item v-if="calculatorParams.resultMode === 'append'" label="New Band Name">
+            <el-input v-model="calculatorParams.newBandName" placeholder="Please enter the new band name" />
         </el-form-item>
 
         <!-- 波段列表 -->
         <div class="bands-list">
-            <h5>可用波段:</h5>
+            <h5>Available Bands:</h5>
             <div class="bands-container">
                 <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-bands">
                     <div class="layer-name">
-                        {{ availableLayers.find(l => l.id === layerId)?.name }}
+                        {{availableLayers.find(l => l.id === layerId)?.name}}
                     </div>
                     <div class="band-buttons">
                         <el-button v-for="band in layerBands[layerId]" :key="band" size="small"
@@ -57,10 +57,10 @@
 
         <!-- 运算符 -->
         <div class="operators">
-            <h5>运算符:</h5>
+            <h5>Operators:</h5>
             <div class="operator-buttons">
                 <div class="operator-group">
-                    <h6>算术运算符:</h6>
+                    <h6>Arithmetic Operators:</h6>
                     <el-button size="small" @click="insertOperator('+')">+</el-button>
                     <el-button size="small" @click="insertOperator('-')">-</el-button>
                     <el-button size="small" @click="insertOperator('*')">×</el-button>
@@ -69,7 +69,7 @@
                     <el-button size="small" @click="insertOperator(')')">)</el-button>
                 </div>
                 <div class="operator-group">
-                    <h6>比较运算符:</h6>
+                    <h6>Comparison Operators:</h6>
                     <el-button size="small" @click="insertOperator('==')">=</el-button>
                     <el-button size="small" @click="insertOperator('!=')">&ne;</el-button>
                     <el-button size="small" @click="insertOperator('>')">&gt;</el-button>
@@ -78,7 +78,7 @@
                     <el-button size="small" @click="insertOperator('<=')">&le;</el-button>
                 </div>
                 <div class="operator-group">
-                    <h6>逻辑运算符:</h6>
+                    <h6>Logical Operators:</h6>
                     <el-button size="small" @click="insertOperator('&&')">AND</el-button>
                     <el-button size="small" @click="insertOperator('||')">OR</el-button>
                 </div>
@@ -87,7 +87,7 @@
 
         <!-- 常用函数 -->
         <div class="functions">
-            <h5>常用函数:</h5>
+            <h5>Common Functions:</h5>
             <div class="function-buttons">
                 <el-button size="small" @click="insertFunction('sqrt')">sqrt</el-button>
                 <el-button size="small" @click="insertFunction('pow')">pow</el-button>
@@ -99,12 +99,12 @@
 
         <!-- 计算表达式输入框 -->
         <div class="expression-input">
-            <h5>计算表达式:</h5>
+            <h5>Calculation Expression:</h5>
             <el-input v-model="calculatorParams.expression" type="textarea" :rows="4"
-                placeholder="点击波段和运算符按钮生成表达式，可手动输入数字" />
+                placeholder="Click the band and operator buttons to generate the expression, or manually enter the number" />
             <div class="expression-actions">
-                <el-button size="small" @click="clearExpression">清除</el-button>
-                <el-button size="small" @click="backspace">回退</el-button>
+                <el-button size="small" @click="clearExpression">Clear</el-button>
+                <el-button size="small" @click="backspace">Backspace</el-button>
             </div>
         </div>
     </div>

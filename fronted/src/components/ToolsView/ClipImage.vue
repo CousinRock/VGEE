@@ -1,34 +1,20 @@
 <template>
     <div class="clip-settings">
         <div class="clip-boundary-select">
-            <h4>选择裁剪边界</h4>
-            <el-select 
-                v-model="selectedBoundary" 
-                placeholder="请选择裁剪边界"
-                class="boundary-select"
-            >
-                <el-option
-                    v-for="layer in vectorLayers"
-                    :key="layer.id"
-                    :label="layer.name"
-                    :value="layer.id"
-                >
+            <h4>Select Clip Boundary</h4>
+            <el-select v-model="selectedBoundary" placeholder="Select Clip Boundary" class="boundary-select">
+                <el-option v-for="layer in vectorLayers" :key="layer.id" :label="layer.name" :value="layer.id">
                     <span style="float: left">{{ layer.name }}</span>
                     <span style="float: right; color: #8492a6; font-size: 13px">
-                        {{ layer.type === 'vector' ? '矢量' : layer.type === 'Raster' ? '栅格' : '手绘多边形' }}
+                        {{ layer.type === 'vector' ? 'Vector' : layer.type === 'Raster' ? 'Raster' : 'Manual Polygon' }}
                     </span>
                 </el-option>
             </el-select>
         </div>
 
         <div class="no-boundary-tip" v-if="vectorLayers.length === 0">
-            <el-alert
-                title="没有可用的裁剪边界"
-                type="warning"
-                description="请先添加矢量图层或绘制多边形"
-                show-icon
-                :closable="false"
-            />
+            <el-alert title="No available clip boundaries" type="warning"
+                description="Please add vector layers or draw a polygon first" show-icon :closable="false" />
         </div>
     </div>
 </template>
@@ -48,8 +34,8 @@ const selectedBoundary = ref('')
 
 // 获取所有可用的矢量图层和栅格图层
 const vectorLayers = computed(() => {
-    return props.mapView.layers.filter(layer => 
-        layer.type === 'vector' || 
+    return props.mapView.layers.filter(layer =>
+        layer.type === 'vector' ||
         layer.type === 'Raster' ||  // 添加栅格图层
         (layer.type === 'manual' && layer.geometryType === 'Polygon')
     )
@@ -105,4 +91,4 @@ defineExpose({
 .no-boundary-tip {
     margin-top: 20px;
 }
-</style> 
+</style>

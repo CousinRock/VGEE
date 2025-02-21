@@ -84,7 +84,7 @@ def return_new_layer(layer_ids, results, original_names, message, result_type=''
             timestamp = int(time.time())
             new_id = f"{result_type}_{timestamp}" if result_type else f"new_{timestamp}"
             original_name = original_names.get(layer_ids[i], f'Layer_{layer_ids[i]}')
-            new_name = f"{original_name} ({result_type}结果)" if result_type else f"{original_name} (处理结果)"
+            new_name = f"{original_name} ({result_type} result)" if result_type else f"{original_name} (result)"
             
             # 获取波段信息
             bandNames = result.bandNames().getInfo()

@@ -19,10 +19,10 @@
                             <span>{{ tool.label }}</span>
                             <!-- 为 search-data-id 添加输入框，只在激活时显示 -->
                             <div v-if="tool.id === 'search-data-id' && activeSearchId" class="id-search" @click.stop>
-                                <el-input v-model="customDatasetId" placeholder="输入数据集ID" size="small"
+                                <el-input v-model="customDatasetId" placeholder="Enter Dataset ID" size="small"
                                     @keyup.enter="handleCustomIdSearch">
                                     <template #append>
-                                        <el-button @click="handleCustomIdSearch">搜索</el-button>
+                                        <el-button @click="handleCustomIdSearch">Search</el-button>
                                     </template>
                                 </el-input>
                             </div>
@@ -35,10 +35,10 @@
     </div>
 
     <!-- 修改图层选择对话框 -->
-    <el-dialog v-model="showLayerSelect" :title="'选择需要处理的图层'" :width="[TOOL_IDS.CLASSIFICATION.KMEANS,
+    <el-dialog v-model="showLayerSelect" :title="'Select the layers to process'" :width="[TOOL_IDS.CLASSIFICATION.KMEANS,
     TOOL_IDS.RASTER_OPERATION.CALCULATOR,
     TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME,
-    TOOL_IDS.SEGMENT.TEXT_SEGMENT,TOOL_IDS].includes(currentTool?.id) ? '800px' : '400px'" width="800px">
+    TOOL_IDS.SEGMENT.TEXT_SEGMENT, TOOL_IDS].includes(currentTool?.id) ? '800px' : '400px'" width="800px">
         <div class="layer-select-content" :class="{
             'with-settings': [TOOL_IDS.CLASSIFICATION.KMEANS,
             TOOL_IDS.RASTER_OPERATION.CALCULATOR,
@@ -50,7 +50,7 @@
                 <div class="select-all-option">
                     <el-checkbox v-model="selectAll" @change="handleSelectAllChange" :indeterminate="isIndeterminate"
                         :disabled="!availableLayers.length">
-                        全选
+                        Select All
                     </el-checkbox>
                 </div>
 
@@ -111,12 +111,8 @@
 
                 <!-- 栅格统计设置 -->
                 <div v-if="currentTool?.id === TOOL_IDS.RASTER_OPERATION.STATISTICS">
-                    <RasterStatistics 
-                        ref="rasterStatisticsRef" 
-                        :selectedLayerName="selectedLayerName"
-                        :availableLayers="availableLayers" 
-                        :layerBands="layerBands"
-                    />
+                    <RasterStatistics ref="rasterStatisticsRef" :selectedLayerName="selectedLayerName"
+                        :availableLayers="availableLayers" :layerBands="layerBands" />
                 </div>
 
             </div>
@@ -124,9 +120,9 @@
 
         <template #footer>
             <span class="dialog-footer">
-                <el-button @click="showLayerSelect = false">取消</el-button>
+                <el-button @click="showLayerSelect = false">Cancel</el-button>
                 <el-button type="primary" :loading="isProcessing" @click="handleLayerSelect">
-                    {{ isProcessing ? '处理中...' : '确定' }}
+                    {{ isProcessing ? 'Processing...' : 'Confirm' }}
                 </el-button>
             </span>
         </template>
@@ -331,7 +327,7 @@ const commonMethod = async (tool) => {
 // 图层选择处理
 const handleLayerSelect = async () => {
     if (!selectedLayerName.value.length) {
-        ElMessage.warning('请选择至少一个图层')
+        ElMessage.warning('Please select at least one layer')
         return
     }
 
@@ -352,7 +348,7 @@ const handleLayerSelect = async () => {
         }
     } catch (error) {
         console.error('Error handling layer select:', error)
-        ElMessage.error('处理失败')
+        ElMessage.error('Processing failed')
     }
 }
 
@@ -394,7 +390,7 @@ watch(showLayerSelect, (newVal) => {
 watch(selectedLayerName, async (newVal) => {
     if (currentTool.value?.id === TOOL_IDS.RASTER_OPERATION.CALCULATOR
         || currentTool.value?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME
-    || currentTool.value?.id == TOOL_IDS.RASTER_OPERATION.STATISTICS) {
+        || currentTool.value?.id == TOOL_IDS.RASTER_OPERATION.STATISTICS) {
         for (const layerId of newVal) {
             if (!layerBands.value[layerId]) {
 

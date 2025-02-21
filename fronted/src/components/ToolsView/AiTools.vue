@@ -1,24 +1,24 @@
 <template>
     <div class="ai-tools">
-        <h4>AI 工具</h4>
+        <h4>AI Tools</h4>
         <div v-if="currentTool === TOOL_IDS.SEGMENT.TEXT_SEGMENT">
             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
                 <div class="layer-name">
-                    {{ availableLayers.find(l => l.id === layerId)?.name }}
+                    {{availableLayers.find(l => l.id === layerId)?.name}}
 
                 </div>
 
                 <div class="option-group">
-                    <h5>LangSAM 设置</h5>
+                    <h5>LangSAM Settings</h5>
 
                     <div class="option-item">
-                        <label>文本提示：</label>
+                        <label>Text Prompt:</label>
                         <el-input v-model="aiParams.langSam[layerId].textPrompt"
-                            placeholder="输入要识别的目标，如：house, tree, water..." />
+                            placeholder="Enter the target to be recognized, such as: house, tree, water..." />
                     </div>
 
                     <div class="option-item">
-                        <label>置信度阈值：</label>
+                        <label>Confidence Threshold:</label>
                         <el-slider v-model="aiParams.langSam[layerId].threshold" :min="0" :max="1" :step="0.01"
                             show-input :marks="{
                                 0.2: '0.2',

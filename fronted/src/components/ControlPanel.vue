@@ -1,18 +1,14 @@
 <template>
     <div class="control-panel">
-        <h3>遥感影像查询</h3>
+        <h3>Remote Sensing Image Query</h3>
 
         <div class="control-section">
-            <h4>卫星选择</h4>
+            <h4>Satellite Selection</h4>
             <div class="control-item">
-                <el-select v-model="satellite" placeholder="选择数据集" @change="handleSatelliteChange">
+                <el-select v-model="satellite" placeholder="Select Dataset" @change="handleSatelliteChange">
                     <el-option-group v-for="group in satelliteOptions" :key="group.label" :label="group.label">
-                        <el-option 
-                            v-for="item in group.options" 
-                            :key="item.value" 
-                            :label="item.label"
-                            :value="item.value"
-                        />
+                        <el-option v-for="item in group.options" :key="item.value" :label="item.label"
+                            :value="item.value" />
                     </el-option-group>
                 </el-select>
                 <div v-if="selectedSatelliteInfo" class="selected-satellite-info">
@@ -24,37 +20,33 @@
         </div>
 
         <div class="control-section">
-            <h4>时间范围</h4>
+            <h4>Time Range</h4>
             <div class="date-range-info">
                 {{ getDateRangeText }}
             </div>
             <div class="control-item">
-                <label>开始日期</label>
+                <label>Start Date</label>
                 <input type="date" v-model="startDate" :min="minDate" :max="endDate">
             </div>
 
             <div class="control-item">
-                <label>结束日期</label>
+                <label>End Date</label>
                 <input type="date" v-model="endDate" :min="startDate" :max="maxDate">
             </div>
         </div>
 
         <div class="control-section">
-            <h4>合成方式</h4>
+            <h4>Composite Method</h4>
             <div class="control-item">
-                <el-select v-model="compositeMethod" placeholder="选择合成方式">
-                    <el-option
-                        v-for="item in compositeMethods"
-                        :key="item.value"
-                        :label="item.label"
-                        :value="item.value"
-                    />
+                <el-select v-model="compositeMethod" placeholder="Select Composite Method">
+                    <el-option v-for="item in compositeMethods" :key="item.value" :label="item.label"
+                        :value="item.value" />
                 </el-select>
             </div>
         </div>
 
         <div class="control-section">
-            <h4>云量设置</h4>
+            <h4>Cloud Cover Settings</h4>
             <div class="control-item">
                 <div class="range-container">
                     <input type="range" v-model="cloudCover" min="0" max="100" step="5">
@@ -64,15 +56,16 @@
         </div>
 
         <div class="control-section">
-            <h4>图层设置</h4>
+            <h4>Layer Settings</h4>
             <div class="control-item">
-                <label>图层名称</label>
-                <input type="text" v-model="layerName" placeholder="请输入图层名称" class="layer-name-input">
+                <label>Layer Name</label>
+                <input type="text" v-model="layerName" placeholder="Please enter the layer name"
+                    class="layer-name-input">
             </div>
             <div class="control-item">
                 <button class="add-layer-btn" @click="addNewLayer" :disabled="!layerName.trim()">
                     <i class="fas fa-plus"></i>
-                    添加图层
+                    Add Layer
                 </button>
             </div>
         </div>
@@ -80,7 +73,7 @@
         <div v-for="layer in layers" :key="layer.id" class="layer-item">
             <div class="layer-controls">
                 <div class="vis-params-control">
-                    <el-form-item label="显示范围">
+                    <el-form-item label="Display Range">
                         <el-input-number v-model="layer.visParams.min" :step="0.1" @change="updateLayer(layer)" />
                         <el-input-number v-model="layer.visParams.max" :step="0.1" @change="updateLayer(layer)" />
                     </el-form-item>
@@ -139,7 +132,7 @@ onMounted(() => {
     // 监听事件总线的事件
     eventBus.on('dataset-selected', (dataset) => {
         console.log('ControlPanel.vue - Received dataset:', dataset)
-        satelliteManager.addDataToSatelliteConfig(dataset,satelliteOptions)
+        satelliteManager.addDataToSatelliteConfig(dataset, satelliteOptions)
 
     })
 })
@@ -166,7 +159,7 @@ const getDateRangeText = computed(() => {
 // 添加新图层
 const addNewLayer = async () => {
     if (!layerName.value || !layerName.value.trim()) {
-        alert('请输入图层名称')
+        alert('Please enter the layer name')
         return
     }
     console.log('ControlPanel.vue - satellite:', satellite.value)
@@ -195,7 +188,7 @@ const addNewLayer = async () => {
         const mapData = await response.json()
         console.log('ControlPanel.vue - mapData:', mapData);
         if (!mapData?.overlayLayers?.length) {
-            alert('未找到符合条件的影像数据')
+            alert('No matching image data found')
             return
         }
 
@@ -207,13 +200,13 @@ const addNewLayer = async () => {
 
     } catch (error) {
         console.error('ControlPanel.vue - Error adding layer:', error)
-        alert('添加图层失败，请重试')
+        alert('Failed to add layer, please try again')
     } finally {
         // 恢复按钮状态
         const addButton = document.querySelector('.add-layer-btn')
         if (addButton) {
             addButton.disabled = false
-            addButton.innerHTML = '<i class="fas fa-plus"></i> 添加图层'
+            addButton.innerHTML = '<i class="fas fa-plus"></i> Add Layer'
         }
     }
 }
@@ -232,10 +225,10 @@ const handleSatelliteChange = (value) => {
 // 添加数据类型格式化函数
 const formatType = (type) => {
     const typeMap = {
-        'image_collection': '影像集合',
-        'image': '影像',
-        'feature_collection': '矢量集合',
-        'feature': '矢量'
+        'image_collection': 'Image Collection',
+        'image': 'Image',
+        'feature_collection': 'Feature Collection',
+        'feature': 'Feature'
     }
     return typeMap[type] || type
 }

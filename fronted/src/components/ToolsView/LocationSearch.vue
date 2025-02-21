@@ -1,12 +1,8 @@
 <template>
-    <el-dialog v-model="showDialog" title="位置搜索" width="400px">
+    <el-dialog v-model="showDialog" title="Location Search" width="400px">
         <div class="location-search-container">
             <div class="search-box">
-                <el-input 
-                    v-model="searchQuery"
-                    placeholder="输入地点名称..."
-                    @keyup.enter="handleSearch"
-                >
+                <el-input v-model="searchQuery" placeholder="Enter location name..." @keyup.enter="handleSearch">
                     <template #append>
                         <el-button @click="handleSearch" :loading="isSearching">
                             <i class="fas fa-search"></i>
@@ -17,23 +13,18 @@
 
             <div class="search-history" v-if="searchHistory.length > 0">
                 <div class="history-header">
-                    <h4>搜索历史</h4>
+                    <h4>Search History</h4>
                     <el-button type="text" @click="clearHistory">
-                        清空历史
+                        Clear History
                     </el-button>
                 </div>
                 <el-scrollbar height="200px">
                     <ul>
-                        <li v-for="(item, index) in searchHistory" 
-                            :key="index"
-                            class="history-item">
+                        <li v-for="(item, index) in searchHistory" :key="index" class="history-item">
                             <span @click="handleHistoryClick(item)">
                                 {{ item.address }}
                             </span>
-                            <el-button 
-                                type="text" 
-                                @click="removeHistory(index)"
-                                class="delete-btn">
+                            <el-button type="text" @click="removeHistory(index)" class="delete-btn">
                                 <i class="fas fa-times"></i>
                             </el-button>
                         </li>
@@ -66,11 +57,11 @@ const isSearching = ref(false)
 // 使用 Nominatim API 搜索位置
 const handleSearch = async () => {
     if (!props.mapView?.map) {
-        ElMessage.error('地图未初始化')
+        ElMessage.error('Map not initialized')
         return
     }
     if (!searchQuery.value) {
-        ElMessage.warning('请输入搜索内容')
+        ElMessage.warning('Please enter search content')
         return
     }
 
@@ -83,12 +74,12 @@ const handleSearch = async () => {
 
         if (data && data.length > 0) {
             console.log(data);
-            
+
             const location = data[0]
-            
+
             // 移动地图到搜索位置
             props.mapView.map.setView([location.lat, location.lon], 15)
-            
+
             // 添加到搜索历史
             const historyItem = {
                 address: location.display_name,
@@ -96,8 +87,8 @@ const handleSearch = async () => {
                 lon: location.lon
             }
 
-            console.log('LocationSearch.vue-handleSearch-historyItem',historyItem);
-            
+            console.log('LocationSearch.vue-handleSearch-historyItem', historyItem);
+
             if (!searchHistory.value.some(item => item.address === historyItem.address)) {
                 searchHistory.value.unshift(historyItem)
                 // 限制历史记录数量
@@ -109,14 +100,14 @@ const handleSearch = async () => {
             }
 
             searchQuery.value = '' // 清空搜索框
-            ElMessage.success('位置已找到')
+            ElMessage.success('Location found')
             showDialog.value = false
         } else {
-            ElMessage.error('未找到该位置')
+            ElMessage.error('Location not found')
         }
     } catch (error) {
         console.error('Location search error:', error)
-        ElMessage.error('搜索位置时出错')
+        ElMessage.error('Error searching location')
     } finally {
         isSearching.value = false
     }
@@ -204,4 +195,4 @@ defineExpose({
 .delete-btn:hover {
     color: #f56c6c;
 }
-</style> 
+</style>
