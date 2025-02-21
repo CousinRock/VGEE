@@ -225,16 +225,16 @@ export const TOOLS_CONFIG = {
                     },
                     id: {
                         id: TOOL_IDS.SEARCH.ID,
-                        label: '输入id',
+                        label: 'Input ID',
                         icon: 'fas fa-search',
                         requireLayers: false,
-                        description: '通过ID搜索数据',
+                        description: 'Search data by ID',
                         processParams: (id) => ({
                             dataset_id: id
                         }),
                         validate: (id) => {
                             if (!id) {
-                                throw new Error('请输入数据集ID')
+                                throw new Error('Please input dataset ID')
                             }
                             return true
                         }
@@ -672,7 +672,7 @@ export const TOOLS_CONFIG = {
         children: {
             Segment: {
                 id: TOOL_IDS.SEGMENT.ROOT,
-                label: 'Segment',
+                label: 'SAM',
                 children: {
                     textSegment: {
 

@@ -59,7 +59,7 @@
       <el-table-column label="Time Range" width="200">
         <template #default="scope">
           <div class="date-range">
-            {{ scope.row.start_date }} 至 {{ scope.row.end_date || '至今' }}
+            {{ scope.row.start_date }} to {{ scope.row.end_date || 'xxx' }}
           </div>
         </template>
       </el-table-column>
@@ -89,10 +89,10 @@ const searchState = ref({
   customId: '',
   activeSearchId: false,
   typeMap: {
-    'image_collection': '影像集合',
-    'image': '影像',
-    'feature_collection': '矢量集合',
-    'feature': '矢量'
+    'image_collection': 'Image Collection',
+    'image': 'Image',
+    'feature_collection': 'Feature Collection',
+    'feature': 'Feature'
   },
   tagTypeMap: {
     'image_collection': 'success',
@@ -120,7 +120,7 @@ const selectDataset = async (dataset) => {
     // 通知已经在 handleDatasetSelect 中完成
   } catch (error) {
     console.error('Error selecting dataset:', error)
-    ElMessage.error('选择数据集失败')
+    ElMessage.error('Failed to select dataset')
   }
 }
 
