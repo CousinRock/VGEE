@@ -33,7 +33,6 @@ A remote sensing image processing system based on Google Earth Engine platform, 
 - conda create --name VGEE python=3.10 -y
 - conda activate VGEE/VGEE (For Windows, add bin folder to environment variables)
 - pip install -r requirements.txt
-
 - python app.py
 
 ## Docker Deployment (Not Recommended - Currently unable to resolve service account export image issues)
