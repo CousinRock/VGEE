@@ -25,21 +25,23 @@ A remote sensing image processing system based on Google Earth Engine platform, 
 - Google Earth Engine Python API
 - Flask-CORS
 
-## Installation Guide
+## Quick Start
 
 ### Frontend
 ```bash
-cd frontend
-npm install
-npm run dev
+cd frontend && npm install && npm run dev
 ```
 
 ### Backend
 ```bash
-cd backend
-conda activate vgee/vgee (For Windows, add bin folder to environment variables)
-pip install -r requirements.txt
-python app.py
+# Create and activate conda environment
+conda create -n VGEE python=3.10 -y && conda activate VGEE
+
+# Install from GitHub
+pip install git+https://github.com/CousinRock/VGEE/tree/c57d35164433d7f08abfcdd0c1f86aa2da49cae9/backend
+
+
+
 ```
 
 ## Vercel Deployment (Recommended)
