@@ -24,10 +24,11 @@ A remote sensing image processing system based on Google Earth Engine platform, 
 - Flask
 - Google Earth Engine Python API
 - Flask-CORS
-```
 
-## Vercel Deployment (Recommended)
+
+## Deployment (Recommended)
 - Frontend URL: https://vgee-wrjwrjwrjwrjwrjs-projects.vercel.app/
+- Backend
 - git clone https://github.com/CousinRock/VGEE.git
 - Create a system environment variable named PROJECT with value as GEE project address, e.g. ee-project
 - conda create --name VGEE python=3.10 -y
