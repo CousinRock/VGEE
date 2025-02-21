@@ -32,6 +32,7 @@ A remote sensing image processing system based on Google Earth Engine platform, 
 - Create a system environment variable named PROJECT with value as GEE project address, e.g. ee-project
 - conda create --name VGEE python=3.10 -y
 - conda activate VGEE/VGEE (For Windows, add bin folder to environment variables)
+- cd backend
 - pip install -r requirements.txt
 - python app.py
 
