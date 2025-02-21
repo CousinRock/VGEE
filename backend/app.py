@@ -12,11 +12,11 @@ app = Flask(__name__)
 CORS(app)
 
 def init_app():
-    """初始化应用"""
-    # 初始化 Earth Engine
+    """Initialize the application"""
+    # Initialize Earth Engine
     init_earth_engine()
 
-    # 注册路由蓝图
+    # Register route blueprints
     app.register_blueprint(map_bp)
     app.register_blueprint(layer_bp)
     app.register_blueprint(tool_bp, url_prefix='/tools')

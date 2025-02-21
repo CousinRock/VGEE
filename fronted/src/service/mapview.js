@@ -824,7 +824,7 @@ export const toolManager = {
             // 多边形仍然创建独立图层
             const newLayer = {
                 id: `drawn_${Date.now()}`,
-                name: '绘制区域',
+                name: 'Polygon',
                 type: 'manual',
                 visible: true,
                 isStudyArea: false,
@@ -870,7 +870,7 @@ export const toolManager = {
                 pointLayerCounter.value++;
                 pointLayer = {
                     id: `points_layer_${pointLayerCounter.value}`,
-                    name: `点集合 ${pointLayerCounter.value + 1}`,
+                    name: `Points ${pointLayerCounter.value + 1}`,
                     icon: 'fas fa-map-marker-alt',
                     type: 'manual',
                     geometryType: 'Point',

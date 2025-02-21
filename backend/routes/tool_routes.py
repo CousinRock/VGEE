@@ -181,7 +181,7 @@ def cloud_removal():
         
         results = selected_images.map(PreprocessingTool.cloud_removal).toList(selected_images.size())
         
-        return return_origin_layer(layer_ids, results, vis_params, '除云处理完成')
+        return return_origin_layer(layer_ids, results, vis_params, 'Cloud removal completed')
         
     except Exception as e:
         print(f"Error in cloud_removal: {str(e)}")
@@ -237,7 +237,7 @@ def calculate_index():
         results = ee.List(ordered_results)
         
         # 使用原有的 common_process 处理结果
-        return return_origin_layer(layer_ids, results, vis_params, f'已添加 {index_type.upper()} 波段')
+        return return_origin_layer(layer_ids, results, vis_params, f'Added {index_type.upper()} band')
         
     except Exception as e:
         print(f"Error in calculate_index: {str(e)}")
@@ -271,7 +271,7 @@ def image_filling():
         #防止填补失败时出错
         print('Tool_routes.py - image_filling-results:',results.size().getInfo())
         # 使用 common_process 处理结果
-        return return_origin_layer(layer_ids, results, vis_params, '图像填补处理完成')
+        return return_origin_layer(layer_ids, results, vis_params, 'Image filling completed')
         
     except Exception as e:
         print(f"Error in image_filling: {str(e)}")
@@ -365,7 +365,7 @@ def kmeans_clustering():
             layer_ids=layer_ids,
             results=results,
             original_names=datasetsNames,
-            message='K-means聚类分析完成',
+            message='K-means clustering completed',
             result_type='kmeans'
         )
         
@@ -388,7 +388,7 @@ def histogram_equalization():
         results = selected_images.map(PreprocessingTool.histogram_equalization).toList(selected_images.size())
 
         
-        return return_origin_layer(layer_ids, results, vis_params, '直方图均衡化处理完成')
+        return return_origin_layer(layer_ids, results, vis_params, 'Histogram equalization completed')
         
     except Exception as e:
         print(f"Error in histogram_equalization: {str(e)}")
@@ -461,7 +461,7 @@ def random_forest():
             layer_ids=layer_ids,
             results=ordered_results,  # 直接使用 ordered_results
             original_names=datasetsNames,
-            message='随机森林分类完成',
+            message='Random forest classification completed',
             result_type='rf'
         )
 
@@ -494,7 +494,7 @@ def raster_calculator():
                 layer_ids=layer_ids,
                 results=results,
                 original_names=datasetsNames,
-                message='多图层计算完成',
+                message='Multi-layer calculation completed',
                 result_type='calc_multi'
             )
                 
@@ -538,7 +538,7 @@ def raster_calculator():
                 layer_ids=layer_ids,
                 results=results,
                 original_names=datasetsNames,
-                message='全波段计算完成',
+                message='All bands calculation completed',
                 result_type='calc_all'
             )
 
@@ -582,13 +582,13 @@ def raster_calculator():
                 results = ee.List(results)
                 vis_params = data.get('vis_params', [])
                 print('Tool_routes.py - raster_calculator-vis_params:', vis_params)
-                return return_origin_layer(layer_ids, results, vis_params, '单波段计算完成')
+                return return_origin_layer(layer_ids, results, vis_params, 'Single band calculation completed')
 
             return return_new_layer(
                 layer_ids=layer_ids,
                 results=results,
                 original_names=datasetsNames,
-                message='单波段计算完成',
+                message='Single band calculation completed',
                 result_type='calc'
             )
 
@@ -626,7 +626,7 @@ def rename_bands():
                 for b in vis_param['visParams']['bands']
             ]
         
-        return return_origin_layer(layer_ids, results, vis_params, '波段重命名完成')
+        return return_origin_layer(layer_ids, results, vis_params, 'Band renaming completed')
         
     except Exception as e:
         print(f"Error renaming bands: {str(e)}")
@@ -694,7 +694,7 @@ def svm_classification():
             layer_ids=layer_ids,
             results=results,
             original_names=datasetsNames,
-            message='SVM分类完成',
+            message='SVM classification completed',
             result_type='svm'
         )
         
@@ -725,7 +725,7 @@ def mosaic():
             layer_ids=layer_ids,
             results=[result],  # 拼接只有一个结果
             original_names=datasetsNames,
-            message='影像拼接完成',
+            message='Image mosaic completed',
             result_type='mosaic'
         )
 
@@ -784,7 +784,7 @@ def clip():
             layer_ids=layer_ids,
             results=results,
             original_names=datasetsNames,
-            message='影像裁剪完成',
+            message='Image clipping completed',
             result_type='clip'
         )
 
@@ -841,7 +841,7 @@ def terrain():
             layer_ids=layer_ids,
             results=results,
             original_names=datasetsNames,
-            message='地形分析完成',
+            message='Terrain analysis completed',
             result_type='terrain'
         )
 
@@ -953,7 +953,7 @@ def statistics():
         return jsonify({
             'success': True,
             'results': results,
-            'message': '统计完成'
+            'message': 'Statistics completed'
         })
 
     except Exception as e:

@@ -11,4 +11,4 @@ def init_earth_engine():
         ee.Authenticate()
         ee.Initialize(project=project)
     else:
-        print("PROJECT 环境变量未设置")
+        print("PROJECT environment variable is not set")

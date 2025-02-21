@@ -27,14 +27,14 @@ A remote sensing image processing system based on Google Earth Engine platform, 
 
 ## Installation Guide
 
-### Frontend Installation
+### Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### Backend Installation
+### Backend
 ```bash
 cd backend
 conda activate vgee/vgee (For Windows, add bin folder to environment variables)
