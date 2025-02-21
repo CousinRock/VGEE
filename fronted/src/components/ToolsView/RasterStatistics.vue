@@ -2,13 +2,8 @@
     <div class="statistics-container">
         <el-form :model="statisticsParams" label-width="120px">
             <el-form-item label="分辨率(米)">
-                <el-input-number 
-                    v-model="statisticsParams.resolution" 
-                    :min="1"
-                    :max="1000"
-                    :step="1"
-                    class="resolution-input"
-                />
+                <el-input-number v-model="statisticsParams.resolution" :min="1" :max="1000" :step="1"
+                    class="resolution-input" />
                 <div class="parameter-hint">
                     计算精度，数值越小精度越高，但计算时间会更长
                 </div>
@@ -17,20 +12,15 @@
             <!-- 面积统计模式的参数 -->
             <div v-for="layerId in selectedLayerName" :key="layerId" class="layer-option-item">
                 <div class="layer-name">
-                    {{ availableLayers.find(l => l.id === layerId)?.name }}
+                    {{availableLayers.find(l => l.id === layerId)?.name}}
                 </div>
                 <!-- 波段选择 -->
                 <el-form-item label="统计波段">
                     <el-select v-model="statisticsParams.params[layerId].band" class="band-select">
-                        <el-option 
-                            v-for="band in layerBands[layerId]" 
-                            :key="band" 
-                            :label="band" 
-                            :value="band" 
-                        />
+                        <el-option v-for="band in layerBands[layerId]" :key="band" :label="band" :value="band" />
                     </el-select>
                 </el-form-item>
-                
+
                 <!-- 目标值输入 -->
                 <el-form-item label="目标值">
                     <el-input-number v-model="statisticsParams.params[layerId].value" :step="1" />
@@ -41,59 +31,59 @@
         <!-- 统计结果展示 -->
         <div v-if="statisticsResult" class="statistics-result">
             <div class="result-header">
-                <h3>统计结果</h3>
+                <h3>Statistics Result</h3>
                 <div class="export-buttons">
                     <el-dropdown @command="handleExport">
                         <el-button type="primary" size="small">
-                            <i class="fas fa-download"></i> 导出
+                            <i class="fas fa-download"></i> Export
                             <i class="el-icon-arrow-down el-icon--right"></i>
                         </el-button>
                         <template #dropdown>
                             <el-dropdown-menu>
-                                <el-dropdown-item command="csv">导出为CSV</el-dropdown-item>
-                                <el-dropdown-item command="excel">导出为Excel</el-dropdown-item>
+                                <el-dropdown-item command="csv">Export as CSV</el-dropdown-item>
+                                <el-dropdown-item command="excel">Export as Excel</el-dropdown-item>
                             </el-dropdown-menu>
                         </template>
                     </el-dropdown>
                 </div>
             </div>
-            
-            <el-table :data="formatResults" border style="width: 100%">
-                <el-table-column prop="layerName" label="影像名称" />
-                <el-table-column prop="band" label="统计波段" />
-                <el-table-column prop="value" label="目标值" />
-                <el-table-column prop="totalArea" label="面积(km²)">
+
+            <el-table :data="formatResults" style="width: 100%">
+                <el-table-column prop="layerName" label="Image Name" />
+                <el-table-column prop="band" label="Statistical Band" />
+                <el-table-column prop="value" label="Target Value" />
+                <el-table-column prop="totalArea" label="Area(km²)">
                     <template #default="scope">
                         {{ Number(scope.row.totalArea).toFixed(2) }}
                     </template>
                 </el-table-column>
-                <el-table-column prop="count" label="像素数量" />
-                <el-table-column prop="mean" label="均值">
+                <el-table-column prop="count" label="Pixel Count" />
+                <el-table-column prop="mean" label="Mean">
                     <template #default="scope">
                         {{ Number(scope.row.mean).toFixed(2) }}
                     </template>
                 </el-table-column>
-                <el-table-column prop="median" label="中位值">
+                <el-table-column prop="median" label="Median">
                     <template #default="scope">
                         {{ Number(scope.row.median).toFixed(2) }}
                     </template>
                 </el-table-column>
-                <el-table-column prop="mode" label="众数">
+                <el-table-column prop="mode" label="Mode">
                     <template #default="scope">
                         {{ Number(scope.row.mode).toFixed(2) }}
                     </template>
                 </el-table-column>
-                <el-table-column prop="min" label="最小值">
+                <el-table-column prop="min" label="Minimum">
                     <template #default="scope">
                         {{ Number(scope.row.min).toFixed(2) }}
                     </template>
                 </el-table-column>
-                <el-table-column prop="max" label="最大值">
+                <el-table-column prop="max" label="Maximum">
                     <template #default="scope">
                         {{ Number(scope.row.max).toFixed(2) }}
                     </template>
                 </el-table-column>
-                <el-table-column prop="stdDev" label="标准差">
+                <el-table-column prop="stdDev" label="Standard Deviation">
                     <template #default="scope">
                         {{ Number(scope.row.stdDev).toFixed(2) }}
                     </template>
@@ -164,9 +154,9 @@ const statisticsResult = ref(null)
 // 格式化结果为表格数据
 const formatResults = computed(() => {
     console.log('statisticsResult', statisticsResult.value);
-    
+
     if (!statisticsResult.value) return []
-    
+
     return statisticsResult.value.map(result => ({
         layerName: props.availableLayers.find(l => l.id === result.layerId)?.name || result.layerId,
         band: result.band,
@@ -193,22 +183,22 @@ const handleExport = (type) => {
 
     const data = formatResults.value
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-    
+
     if (type === 'csv') {
-        exportCSV(data, `统计结果_${timestamp}.csv`)
+        exportCSV(data, `Statistics Result_${timestamp}.csv`)
     } else if (type === 'excel') {
-        exportExcel(data, `统计结果_${timestamp}.xlsx`)
+        exportExcel(data, `Statistics Result_${timestamp}.xlsx`)
     }
 }
 
 const exportCSV = (data, filename) => {
     // 获取表头
     const headers = [
-        '影像名称', '统计波段', '目标值', '面积(km²)', 
-        '像素数量', '均值', '中位值', '众数', 
-        '最小值', '最大值', '标准差', 'Q1', 'Q3'
+        'Image Name', 'Statistical Band', 'Target Value', 'Area(km²)',
+        'Pixel Count', 'Mean', 'Median', 'Mode',
+        'Minimum', 'Maximum', 'Standard Deviation', 'Q1', 'Q3'
     ]
-    
+
     // 转换数据为CSV格式
     const csvContent = [
         headers.join(','),
@@ -261,9 +251,9 @@ const exportExcel = async (data, filename) => {
 
         // 定义中文表头
         const headers = [
-            '影像名称', '统计波段', '目标值', '面积(km²)', 
-            '像素数量', '均值', '中位值', '众数', 
-            '最小值', '最大值', '标准差', 'Q1', 'Q3'
+            'Image Name', 'Statistical Band', 'Target Value', 'Area(km²)',
+            'Pixel Count', 'Mean', 'Median', 'Mode',
+            'Minimum', 'Maximum', 'Standard Deviation', 'Q1', 'Q3'
         ]
 
         // 在第一行插入中文表头
@@ -287,13 +277,13 @@ const exportExcel = async (data, filename) => {
         ]
         ws['!cols'] = colWidths
 
-        XLSX.utils.book_append_sheet(wb, ws, '统计结果')
+        XLSX.utils.book_append_sheet(wb, ws, 'Statistics Result')
         XLSX.writeFile(wb, filename)
-        
-        ElMessage.success('导出成功')
+
+        ElMessage.success('Export successfully')
     } catch (error) {
         console.error('Error exporting to Excel:', error)
-        ElMessage.error('导出Excel失败')
+        ElMessage.error('Export Excel failed')
     }
 }
 
@@ -311,32 +301,38 @@ defineExpose({
 .statistics-container {
     padding: 20px;
 }
+
 .statistics-result {
     margin-top: 20px;
     padding: 15px;
     border: 1px solid #dcdfe6;
     border-radius: 4px;
 }
+
 .result-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
 }
+
 .layer-option-item {
     margin-bottom: 20px;
     padding: 15px;
     background-color: #f5f7fa;
     border-radius: 4px;
 }
+
 .layer-name {
     font-weight: bold;
     margin-bottom: 10px;
     color: #409EFF;
 }
+
 .band-select {
     width: 200px;
 }
+
 :deep(.el-select) {
     width: 200px;
 }
