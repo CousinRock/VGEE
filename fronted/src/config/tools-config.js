@@ -401,11 +401,11 @@ export const TOOLS_CONFIG = {
                     },
                     mndwi: {
                         id: TOOL_IDS.INDICES.MNDWI,
-                        label: '改进水体指数(MNDWI)',
+                        label: 'MNDWI',
                         icon: 'fas fa-tint',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        description: '改进的归一化水体指数，更好地区分水体和建筑物',
+                        description: 'Improved Normalized Difference Water Index, better distinguish water and buildings',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
                             vis_params: mapView.layers
@@ -419,11 +419,11 @@ export const TOOLS_CONFIG = {
                     },
                     ndbi: {
                         id: TOOL_IDS.INDICES.NDBI,
-                        label: '建筑指数(NDBI)',
+                        label: 'NDBI',
                         icon: 'fas fa-building',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        description: '归一化建筑指数，用于提取建筑区域',
+                        description: 'Normalized Difference Built-up Index, used to extract built-up areas',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
                             vis_params: mapView.layers
@@ -437,11 +437,11 @@ export const TOOLS_CONFIG = {
                     },
                     bsi: {
                         id: TOOL_IDS.INDICES.BSI,
-                        label: '裸土指数(BSI)',
+                        label: 'BSI',
                         icon: 'fas fa-globe',
                         requireLayers: true,
                         endpoint: API_ROUTES.TOOLS.CALCULATE_INDEX,
-                        description: '裸土指数，用于识别裸露土壤区域',
+                        description: 'Bare Soil Index, used to identify bare soil areas',
                         processParams: (selectedLayers, mapView) => ({
                             layer_ids: selectedLayers,
                             vis_params: mapView.layers

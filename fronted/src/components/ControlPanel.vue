@@ -111,11 +111,11 @@ const layerName = ref('')
 
 // 添加合成方式选项
 const compositeMethods = [
-    { label: '中值', value: 'median' },
-    { label: '均值', value: 'mean' },
-    { label: '最大值', value: 'max' },
-    { label: '最小值', value: 'min' },
-    { label: '第一幅影像', value: 'first' }
+    { label: 'median', value: 'median' },
+    { label: 'mean', value: 'mean' },
+    { label: 'max', value: 'max' },
+    { label: 'min', value: 'min' },
+    { label: 'first', value: 'first' }
 ]
 const compositeMethod = ref('median') // 默认使用中值
 
@@ -150,10 +150,10 @@ const getDateRangeText = computed(() => {
 
     if (!satelliteConfig) return ''
 
-    const startDate = satelliteConfig.startDate || '未知'
-    const endDate = satelliteConfig.endDate || '至今'
+    const startDate = satelliteConfig.startDate || 'Unknown'
+    const endDate = satelliteConfig.endDate || 'Now'
 
-    return `${startDate} 至 ${endDate}`
+    return `${startDate} - ${endDate}`
 })
 
 // 添加新图层

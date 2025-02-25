@@ -8,7 +8,6 @@
         "USDA/NAIP/DOQQ",
         "USGS/SRTMGL1_003",
         "ESA/WorldCover/v100",
-        "ESA/WorldCover/v200",
-        "ESA/CCI/FireCCI/5_1"
+        "ESA/WorldCover/v200"
     ]
 }
