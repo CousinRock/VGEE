@@ -90,7 +90,7 @@ export const TOOLS_CONFIG = {
         children: {
             uploadVector: {
                 id: TOOL_IDS.UPLOAD.ROOT,
-                label: 'Add Data',
+                label: 'Load Data',
                 children: {
                     Assets: {
                         id: TOOL_IDS.UPLOAD.ASSET,

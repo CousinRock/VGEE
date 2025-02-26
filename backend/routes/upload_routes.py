@@ -405,15 +405,15 @@ def add_landsat_timeseries():
                     # 过滤特定年份的影像
                     year = int(date_str)
                     images_collection = collection.filter(ee.Filter.eq('year', year))
-                    name = f"Landsat {year}年影像"
+                    name = f"Landsat {year}"
                     collection_id = f"landsat_{year}_{int(time.time())}"
-                    save_name = f"Landsat时间序列_{year}"
+                    save_name = f"Landsat_{year}"
                 else:  # month
                     # 过滤特定日期的影像
                     images_collection = collection.filter(ee.Filter.eq('system:date', date_str))
-                    name = f"Landsat {date_str}影像"
+                    name = f"Landsat {date_str}"
                     collection_id = f"landsat_{date_str}_{int(time.time())}"
-                    save_name = f"Landsat时间序列_{date_str}"
+                    save_name = f"Landsat_{date_str}"
 
                 filtered_image = images_collection.median().clip(roi).set('date', date_str)
                 
@@ -653,15 +653,15 @@ def add_sentinel_timeseries():
                     # 过滤特定年份的影像
                     year = int(date_str)
                     images_collection = collection.filter(ee.Filter.eq('year', year))
-                    name = f"Sentinel2 {year}年影像"
+                    name = f"Sentinel2 {year}"
                     collection_id = f"sentinel2_{year}_{int(time.time())}"
-                    save_name = f"Sentinel2时间序列_{year}"
+                    save_name = f"Sentinel2_{year}"
                 else:  # month
                     # 过滤特定日期的影像
                     images_collection = collection.filter(ee.Filter.eq('system:date', date_str))
-                    name = f"Sentinel2 {date_str}影像"
+                    name = f"Sentinel2 {date_str}"
                     collection_id = f"sentinel2_{date_str}_{int(time.time())}"
-                    save_name = f"Sentinel2时间序列_{date_str}"
+                    save_name = f"Sentinel2_{date_str}"
 
                 filtered_image = images_collection.median().clip(roi).set('date', date_str)
                 
