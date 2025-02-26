@@ -555,7 +555,7 @@ def add_sentinel_timeseries():
                 qa.bitwiseAnd(cloud_bit_mask).eq(0)
                 .And(qa.bitwiseAnd(cirrus_bit_mask).eq(0))
             )
-            return image.updateMask(mask)
+            return image.updateMask(mask).divide(10000)
 
         def prep(image):
             orig = image
@@ -634,7 +634,7 @@ def add_sentinel_timeseries():
         vis_params = {
             'bands': bands[2::-1],
             'min': 0,
-            'max': 3000,
+            'max': 1,
             'gamma': 1.4
         }
 

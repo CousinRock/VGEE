@@ -90,7 +90,7 @@
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="openVectorStyleSettings(layer)" tabindex="0">
                                                 <i :class="MENU_ICONS.STYLE"></i>
-                                                Style Settings
+                                                Settings
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="openRenameDialog(layer)" tabindex="0">
                                                 <i :class="MENU_ICONS.EDIT"></i>
@@ -123,11 +123,11 @@
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="openLayerSettings(layer)" tabindex="0">
                                                 <i :class="MENU_ICONS.SETTINGS"></i>
-                                                Display Settings
+                                                Settings
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="showLayerProperties(layer)" tabindex="0">
                                                 <i :class="MENU_ICONS.INFO"></i>
-                                                Property Information
+                                                Properties
                                             </el-dropdown-item>
                                             <el-dropdown-item @click="exportLayer(layer)" tabindex="0">
                                                 <i :class="[
