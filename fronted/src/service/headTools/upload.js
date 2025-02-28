@@ -229,20 +229,20 @@ const handleImageAsset = async (selectedAsset, mapView) => {
         mapView.layers.push(newLayer)
         imageLayer.addTo(mapView.map)
 
-        // 使用返回的边界信息进行定位
-        if (data.bounds) {
-            // 转换坐标格式为 Leaflet 所需的格式
-            const bounds = L.latLngBounds([
-                [data.bounds[0][1], data.bounds[0][0]], // 西南角
-                [data.bounds[2][1], data.bounds[2][0]]  // 东北角
-            ])
+        // // 使用返回的边界信息进行定位
+        // if (data.bounds) {
+        //     // 转换坐标格式为 Leaflet 所需的格式
+        //     const bounds = L.latLngBounds([
+        //         [data.bounds[0][1], data.bounds[0][0]], // 西南角
+        //         [data.bounds[2][1], data.bounds[2][0]]  // 东北角
+        //     ])
 
-            // 定位到边界范围
-            mapView.map.fitBounds(bounds, {
-                padding: [50, 50],
-                maxZoom: 13
-            })
-        }
+        //     // 定位到边界范围
+        //     mapView.map.fitBounds(bounds, {
+        //         padding: [50, 50],
+        //         maxZoom: 13
+        //     })
+        // }
 
         return true
     } catch (error) {

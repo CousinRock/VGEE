@@ -140,7 +140,7 @@ def get_vis_params(result):
         stats = result.reduceRegion(
             reducer=ee.Reducer.minMax(),
             geometry=result.geometry(),
-            scale=150,
+            scale=50,
             maxPixels=1e13
         ).getInfo()
         

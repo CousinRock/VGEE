@@ -55,7 +55,7 @@
                 <el-table-column prop="value" label="Target Value" />
                 <el-table-column prop="totalArea" label="Area(km²)">
                     <template #default="scope">
-                        {{ Number(scope.row.totalArea).toFixed(2) }}
+                        {{ Number(scope.row.totalArea).toFixed(5) }}
                     </template>
                 </el-table-column>
                 <el-table-column prop="count" label="Pixel Count" />
@@ -200,6 +200,7 @@ const exportCSV = (data, filename) => {
         'Minimum', 'Maximum', 'Standard Deviation', 'Q1', 'Q3'
     ]
 
+    const num = 5;
     // 转换数据为CSV格式
     const csvContent = [
         headers.join(','),
@@ -207,16 +208,16 @@ const exportCSV = (data, filename) => {
             row.layerName,
             row.band,
             row.value,
-            Number(row.totalArea).toFixed(2),
+            Number(row.totalArea).toFixed(num),
             row.count,
-            Number(row.mean).toFixed(2),
-            Number(row.median).toFixed(2),
-            Number(row.mode).toFixed(2),
-            Number(row.min).toFixed(2),
-            Number(row.max).toFixed(2),
-            Number(row.stdDev).toFixed(2),
-            Number(row.q1).toFixed(2),
-            Number(row.q3).toFixed(2)
+            Number(row.mean).toFixed(num),
+            Number(row.median).toFixed(num),
+            Number(row.mode).toFixed(num),
+            Number(row.min).toFixed(num),
+            Number(row.max).toFixed(num),
+            Number(row.stdDev).toFixed(num),
+            Number(row.q1).toFixed(num),
+            Number(row.q3).toFixed(num)
         ].join(','))
     ].join('\n')
 
@@ -230,21 +231,22 @@ const exportCSV = (data, filename) => {
 }
 
 const exportExcel = async (data, filename) => {
+    const num = 5;
     try {
         const excelData = data.map(row => ({
             'layer_name': row.layerName,
             'band': row.band,
             'target_value': row.value,
-            'area': Number(row.totalArea).toFixed(2),
+            'area': Number(row.totalArea).toFixed(num),
             'pixel_count': row.count,
-            'mean': Number(row.mean).toFixed(2),
-            'median': Number(row.median).toFixed(2),
-            'mode': Number(row.mode).toFixed(2),
-            'min': Number(row.min).toFixed(2),
-            'max': Number(row.max).toFixed(2),
-            'std_dev': Number(row.stdDev).toFixed(2),
-            'q1': Number(row.q1).toFixed(2),
-            'q3': Number(row.q3).toFixed(2)
+            'mean': Number(row.mean).toFixed(num),
+            'median': Number(row.median).toFixed(num),
+            'mode': Number(row.mode).toFixed(num),
+            'min': Number(row.min).toFixed(num),
+            'max': Number(row.max).toFixed(num),
+            'std_dev': Number(row.stdDev).toFixed(num),
+            'q1': Number(row.q1).toFixed(num),
+            'q3': Number(row.q3).toFixed(num)
         }))
 
         const wb = XLSX.utils.book_new()

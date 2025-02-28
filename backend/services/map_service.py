@@ -61,7 +61,7 @@ def compute_image_stats(dataset, bands,region=None):
         stats = band_img.reduceRegion(
             reducer=ee.Reducer.minMax(),
             geometry=region,
-            scale=150,
+            scale=30,
             maxPixels=1e13
         )
         
@@ -77,8 +77,10 @@ def compute_image_stats(dataset, bands,region=None):
         max_values = max_keys.map(lambda key: ee.Number(ee.Dictionary(stats).get(key)))
         
          # 计算全局最小值和最大值
-        global_min = ee.Number(min_values.reduce(ee.Reducer.min())).multiply(ee.Number(0.8))
-        global_max = ee.Number(max_values.reduce(ee.Reducer.max())).multiply(ee.Number(1.2))
+        # global_min = ee.Number(min_values.reduce(ee.Reducer.min())).multiply(ee.Number(0.8))
+        # global_max = ee.Number(max_values.reduce(ee.Reducer.max())).multiply(ee.Number(1.2))
+        global_min = ee.Number(min_values.reduce(ee.Reducer.min()))
+        global_max = ee.Number(max_values.reduce(ee.Reducer.max()))
         
         # 返回全局最小值和最大值
         return ee.Dictionary({

@@ -551,6 +551,7 @@ def add_sentinel_timeseries():
             cloud_bit_mask = 1 << 10
             cirrus_bit_mask = 1 << 11
             
+            
             mask = (
                 qa.bitwiseAnd(cloud_bit_mask).eq(0)
                 .And(qa.bitwiseAnd(cirrus_bit_mask).eq(0))
