@@ -963,7 +963,90 @@ def statistics():
             'message': str(e)
         }), 500
 
+@tool_bp.route('/otsu',methods=['POST'])
+def otsu():
+    try:
+        data = request.json
+        layer_ids = data.get('layer_ids')
+        params = data.get('params', {})
+        vis_params = data.get('vis_params', [])
+        print('Tool_routes.py - otsu-data:', data)
 
+        # 创建一个有序字典来存储结果
+        results_dict = {}
+        def process_layer(layer_id):
+            try:
+                if layer_id not in datasets:
+                    return None
+                    
+                i = layer_ids.index(layer_id)
+                # 获取当前图层的参数
+                layer_params = params.get(layer_id, {})
+                band = layer_params.get('band')
+                scale = layer_params.get('scale')
+                maxArray = layer_params.get('maxArray')
+                minDis = layer_params.get('minDis')
+                
+                if not all([band, scale, maxArray, minDis]):
+                    raise ValueError(f"Missing required parameters for layer {layer_id}")
+                
+                # 获取图像并选择波段
+                image = ee.Image(datasets[layer_id]).select(band)
+                
+                # 计算阈值
+                threshold = RasterOperatorTool.Otsu(
+                    image=image,
+                    scale=scale,
+                    maxArray=maxArray,
+                    minDis=minDis
+                )
+                
+                # 根据阈值进行分割
+                result = image.gt(threshold)
+                
+                # 设置可视化参数
+                vis_params = {
+                    'min': 0,
+                    'max': 1,
+                    'palette': ['black', 'white']
+                }
+                result = result.set('vis_params', vis_params)
+                
+                results_dict[i] = result
+                return result
+                
+            except Exception as e:
+                print(f"Error processing layer {layer_id}: {str(e)}")
+                return None
+
+        # 使用通用的并行处理函数
+        ParallelProcessor.process_layers(
+            layer_ids=layer_ids,
+            process_func=process_layer,
+            max_workers=maxthread_num
+        )
+
+        # 检查是否有成功的结果
+        if not results_dict:
+            raise ValueError("No successful OTSU results")
+
+        # 按原始顺序重建结果列表
+        results = [results_dict[i] for i in range(len(layer_ids))]
+
+        return return_new_layer(
+            layer_ids=layer_ids,
+            results=results,
+            original_names=datasetsNames,
+            message='OTSU segmentation completed',
+            result_type='otsu'
+        )
+
+    except Exception as e:
+        print(f"Error in OTSU: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
 
 
 

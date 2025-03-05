@@ -70,7 +70,8 @@
                 || currentTool?.id === TOOL_IDS.RASTER_OPERATION.STATISTICS
                 || currentTool?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME
                 || currentTool?.id === TOOL_IDS.RASTER_OPERATION.CLIP
-                || currentTool?.id === TOOL_IDS.SEGMENT.TEXT_SEGMENT) && selectedLayerName.length > 0"
+                || currentTool?.id === TOOL_IDS.SEGMENT.TEXT_SEGMENT
+                || currentTool?.id === TOOL_IDS.RASTER_OPERATION.OTSU) && selectedLayerName.length > 0"
                 class="layer-select-right">
 
                 <!-- K-means 设置 -->
@@ -115,6 +116,15 @@
                         :availableLayers="availableLayers" :layerBands="layerBands" />
                 </div>
 
+                <!-- OTSU 设置 -->
+                <div v-if="currentTool?.id === TOOL_IDS.RASTER_OPERATION.OTSU">
+                    <Otsu 
+                        ref="otsuRef"
+                        :selectedLayerName="selectedLayerName"
+                        :layerBands="layerBands"
+                    />
+                </div>
+
             </div>
         </div>
 
@@ -155,6 +165,7 @@ import RenameBands from './ToolsView/RenameBands.vue'
 import AiTools from './ToolsView/AiTools.vue'
 import LocationSearch from './ToolsView/LocationSearch.vue'
 import ClipImage from './ToolsView/ClipImage.vue'
+import Otsu from './ToolsView/Otsu.vue'
 
 const props = defineProps({
     mapView: {
@@ -195,6 +206,8 @@ const locationSearchRef = ref(null)
 const clipImageRef = ref(null)
 // 添加统计组件的引用
 const rasterStatisticsRef = ref(null)
+// OTSU 组件
+const otsuRef = ref(null)
 
 // 添加 toolParams 计算属性
 const toolParams = computed(() => {
@@ -217,6 +230,8 @@ const toolParams = computed(() => {
             return aiToolsRef.value?.aiParams?.langSam || {}
         case TOOL_IDS.RASTER_OPERATION.CLIP:
             return clipImageRef.value?.getClipParams() || {}
+        case TOOL_IDS.RASTER_OPERATION.OTSU:
+            return otsuRef.value?.getParams() || {}
         default:
             return null
     }
@@ -390,7 +405,8 @@ watch(showLayerSelect, (newVal) => {
 watch(selectedLayerName, async (newVal) => {
     if (currentTool.value?.id === TOOL_IDS.RASTER_OPERATION.CALCULATOR
         || currentTool.value?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME
-        || currentTool.value?.id == TOOL_IDS.RASTER_OPERATION.STATISTICS) {
+        || currentTool.value?.id == TOOL_IDS.RASTER_OPERATION.STATISTICS
+        || currentTool.value?.id == TOOL_IDS.RASTER_OPERATION.OTSU) {
         for (const layerId of newVal) {
             if (!layerBands.value[layerId]) {
 

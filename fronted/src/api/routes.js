@@ -62,6 +62,7 @@ export const API_ROUTES = {
         MOSAIC: `${BASE_URL}/tools/mosaic`,
         CLIP: `${BASE_URL}/tools/clip`,
         STATISTICS: `${BASE_URL}/tools/statistics`,
+        OTSU:`${BASE_URL}/tools/otsu`,
         //terrain operation
         TERRAIN: `${BASE_URL}/tools/terrain`
     },

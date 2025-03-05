@@ -131,3 +131,58 @@ class RasterOperatorTool(BaseTool):
             
         except Exception as e:
             raise Exception(f"Error in clip: {str(e)}")
+
+    @staticmethod
+    def Otsu(image,scale,maxArray,minDis):
+        '''
+        最大类间方差法:返回一个阈值
+
+        image:传入的单波段图像
+        '''
+        def Otsu1(histogram):
+            #各组的频数
+            counts = ee.Array(ee.Dictionary(histogram).get('histogram')) 
+            #各组的值
+            means = ee.Array(ee.Dictionary(histogram).get('bucketMeans'))
+            #组数
+            size = means.length().get([0])
+            #总像元数量
+            total = counts.reduce(ee.Reducer.sum(),[0]).get([0])
+            #所有组的数之和
+            sums = means.multiply(counts).reduce(ee.Reducer.sum(),[0]).get([0])
+            #整幅影像的均值
+            mean = sums.divide(total)
+            
+            #与组数相同长度的索引
+            indices = ee.List.sequence(1, size)
+            #穷举法计算类内方差
+            def Cal(i):
+                aCounts = counts.slice(0,0,i)
+                aCount = aCounts.reduce(ee.Reducer.sum(),[0]).get([0])
+                aMeans = means.slice(0,0,i)
+                
+                #类别A均值
+                aMean = aMeans.multiply(aCounts).reduce(ee.Reducer.sum(), [0]).get([0]).divide(aCount)
+                
+                bCount = total.subtract(aCount)
+                
+                bMean = sums.subtract(aCount.multiply(aMean)).divide(bCount)
+                
+                #类间方差公式
+                return aCount.multiply(aMean.subtract(mean).pow(2)).add(
+                    bCount.multiply(bMean.subtract(mean).pow(2)))
+            bss = indices.map(Cal)
+            
+            #排序选出最适阈值
+            return means.sort(bss).get([-1])
+
+        histogram = image.reduceRegion(
+            reducer = ee.Reducer.histogram(maxArray, minDis),# 自行修改合适的最大组数，最小组距
+            geometry = image.geometry(),
+            scale = scale,
+            bestEffort = True
+        )
+        
+        # print("频数分布", histogram)
+        
+        return Otsu1(histogram.get(histogram.keys().get(0)))

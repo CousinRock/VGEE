@@ -7,7 +7,7 @@ def init_earth_engine():
     project = os.environ.get("PROJECT")
     if project:
         print(f"Project: {project}")
-        # geemap.set_proxy(port=port)
+        geemap.set_proxy(port=20171)
         ee.Authenticate()
         ee.Initialize(project=project)
     else:

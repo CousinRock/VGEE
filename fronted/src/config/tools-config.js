@@ -53,7 +53,8 @@ export const TOOL_IDS = {
         CALCULATOR: 'raster-calculator',
         MOSAIC: 'mosaic',
         CLIP: 'clip',
-        STATISTICS: 'statistics'
+        STATISTICS: 'statistics',
+        OTSU:'otsu'
     },
     TERRAIN_OPERATION: {
         ROOT: 'terrain-operation',
@@ -624,6 +625,24 @@ export const TOOLS_CONFIG = {
                                 refs.rasterStatisticsRef.setResult(data.results)
                             }
                         }
+                    },
+                    otsu: {
+                        id: TOOL_IDS.RASTER_OPERATION.OTSU,
+                        label: 'OTSU',
+                        icon: 'fas fa-adjust',
+                        requireLayers: true,
+                        endpoint: API_ROUTES.TOOLS.OTSU,
+                        description: 'Perform OTSU automatic threshold segmentation on images',
+                        processParams: (selectedLayers, mapView,params) => ({
+                            layer_ids: selectedLayers,
+                            vis_params: mapView.layers
+                                .filter(l => selectedLayers.includes(l.id))
+                                .map(l => ({
+                                    id: l.id,
+                                    visParams: l.visParams
+                                })),
+                            params:params
+                        })
                     }
                 }
             },
