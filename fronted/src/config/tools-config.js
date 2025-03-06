@@ -30,7 +30,8 @@ export const TOOL_IDS = {
         CLOUD_REMOVAL: 'cloud-removal',
         IMAGE_FILLING: 'image-filling',
         IMAGE_BANDS_RENAME: 'image-bands-rename',
-        HISTOGRAM_EQUALIZATION: 'histogram-equalization'
+        HISTOGRAM_EQUALIZATION: 'histogram-equalization',
+        GENERATE_RANDOM_POINTS:'random-points'
     },
     INDICES: {
         ROOT: 'indices',
@@ -320,6 +321,24 @@ export const TOOLS_CONFIG = {
                                     id: l.id,
                                     visParams: l.visParams
                                 }))
+                        })
+                    },
+                    randomPoints: {
+                        id: TOOL_IDS.PREPROCESSING.GENERATE_RANDOM_POINTS,
+                        label: 'Generate Random Points',
+                        icon: 'fas fa-map-pin',
+                        requireLayers: true,
+                        endpoint: API_ROUTES.TOOLS.GENERATE_RANDOM_POINTS,
+                        description: 'Generate random points within selected layer boundaries',
+                        processParams: (selectedLayers, mapView,params) => ({
+                            layer_ids: selectedLayers,
+                            vis_params: mapView.layers
+                                .filter(l => selectedLayers.includes(l.id))
+                                .map(l => ({
+                                    id: l.id,
+                                    visParams: l.visParams
+                                })),
+                            params:params
                         })
                     }
                 }

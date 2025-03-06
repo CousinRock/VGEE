@@ -47,12 +47,14 @@ export const API_ROUTES = {
 
     // 工具相关
     TOOLS: {
+        //preprocessing
         GET_LAYERS: `${BASE_URL}/tools/get-layers`,
         CLOUD_REMOVAL: `${BASE_URL}/tools/cloud-removal`,
         CALCULATE_INDEX: `${BASE_URL}/tools/calculate-index`,
         IMAGE_FILLING: `${BASE_URL}/tools/image-filling`,
         RENAME_BANDS: `${BASE_URL}/tools/rename-bands`,
         HISTOGRAM_EQUALIZATION: `${BASE_URL}/tools/histogram-equalization`,
+        GENERATE_RANDOM_POINTS:`${BASE_URL}/tools/generate-random-points`,
         //machine learning
         KMEANS_CLUSTERING: `${BASE_URL}/tools/kmeans-clustering`,
         RANDOM_FOREST: `${BASE_URL}/tools/random-forest`,

@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from services.map_service import save_dataset
+from services.map_service import save_dataset,get_dataset
 from routes.map_routes import get_study_areas
 import ee
 import time
@@ -100,8 +100,12 @@ def add_vector_asset():
         })
         print('Tool_routes.py - add_vector_asset-style_params:', style_params)
         
-        # 获取矢量数据
-        vector_asset = ee.FeatureCollection(asset_id)
+        layer = get_dataset(asset_id)
+        if layer:
+            vector_asset = layer
+        else:
+            # 获取矢量数据
+            vector_asset = ee.FeatureCollection(asset_id)
         
         # 准备 Earth Engine 样式参数
         # Earth Engine 只支持 color 和 opacity 的设置

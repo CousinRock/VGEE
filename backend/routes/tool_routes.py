@@ -288,7 +288,8 @@ def get_layers():
         landsat_layers = {}
         
         for layer_id, dataset in datasets.items():
-            # if 'LANDSAT' in layer_id.upper() or 'SENTINEL-2' in layer_id.upper():
+            if type(dataset) == ee.FeatureCollection:
+                continue
             layer_name = datasetsNames[layer_id]
             landsat_layers[layer_id] = {
                 'id': layer_id,
@@ -1048,7 +1049,100 @@ def otsu():
             'message': str(e)
         }), 500
 
+@tool_bp.route('/generate-random-points',methods=['POST'])
+def randomPoints():
+    try:
+        data = request.json
+        layer_ids = data.get('layer_ids')
+        params = data.get('params', {})
+        vis_params = data.get('vis_params', [])
+        print('Tool_routes.py - randomPoints-data:', data)
 
+        # 创建一个有序字典来存储结果
+        results_dict = {}
+        
+        def process_layer(layer_id):
+            try:
+                if layer_id not in datasets:
+                    return None
+                    
+                i = layer_ids.index(layer_id)
+                image = ee.Image(datasets[layer_id])
+                # 从参数中获取值，如果没有则使用默认值
+                numPixels = params.get('numPixels', 2000)
+                scale = params.get('scale', 30)
+                seed = params.get('seed', 0)
+                
+                # 对图像进行采样
+                points = image.selfMask().sample(
+                    region=image.geometry(),
+                    scale=scale,
+                    numPixels=numPixels,
+                    seed=seed,
+                    geometries=True
+                )
+                
+                # 设置点的样式
+                ee_style_params = {
+                    'color': '4a80f5',
+                    'pointSize': 3,
+                    'pointShape': 'circle'
+                }
+                
+                # 获取瓦片 URL
+                map_id = points.getMapId(ee_style_params)
+
+                id = f'random_points_{layer_id}_{int(time.time())}'
+                name = f'{datasetsNames.get(layer_id, "Layer")} (random points)'
+                
+                save_dataset(id, points, name)
+                
+                # 构建结果对象
+                result = {
+                    'layer_id': id,
+                    'name': name,
+                    'type': 'vector',
+                    'tileUrl': map_id['tile_fetcher'].url_format,
+                    'visParams': {
+                        'color': '#4a80f5',
+                        'weight': 2,
+                        'opacity': 1
+                    }
+                }
+                
+                results_dict[i] = result
+                return result
+                
+            except Exception as e:
+                print(f"Error processing layer {layer_id}: {str(e)}")
+                return None
+
+        # 使用通用的并行处理函数
+        ParallelProcessor.process_layers(
+            layer_ids=layer_ids,
+            process_func=process_layer,
+            max_workers=maxthread_num
+        )
+
+        # 检查是否有成功的结果
+        if not results_dict:
+            raise ValueError("No successful random points generation results")
+
+        # 按原始顺序重建结果列表
+        results = [results_dict[i] for i in range(len(layer_ids))]
+
+        return jsonify({
+            'success': True,
+            'message': 'Random points generation completed',
+            'results': results
+        })
+
+    except Exception as e:
+        print(f"Error in random points generation: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
 
 
 

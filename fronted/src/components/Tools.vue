@@ -71,7 +71,8 @@
                 || currentTool?.id === TOOL_IDS.PREPROCESSING.IMAGE_BANDS_RENAME
                 || currentTool?.id === TOOL_IDS.RASTER_OPERATION.CLIP
                 || currentTool?.id === TOOL_IDS.SEGMENT.TEXT_SEGMENT
-                || currentTool?.id === TOOL_IDS.RASTER_OPERATION.OTSU) && selectedLayerName.length > 0"
+                || currentTool?.id === TOOL_IDS.RASTER_OPERATION.OTSU
+                || currentTool?.id === TOOL_IDS.PREPROCESSING.GENERATE_RANDOM_POINTS) && selectedLayerName.length > 0"
                 class="layer-select-right">
 
                 <!-- K-means 设置 -->
@@ -124,6 +125,11 @@
                         :layerBands="layerBands"
                     />
                 </div>
+                <!-- 生成随机点 -->
+                <div v-if="currentTool?.id === TOOL_IDS.PREPROCESSING.GENERATE_RANDOM_POINTS">
+                    <RandomPoints ref="randomPointsRef" :selectedLayerName="selectedLayerName"
+                    :availableLayers="availableLayers"/>
+                </div>
 
             </div>
         </div>
@@ -166,6 +172,7 @@ import AiTools from './ToolsView/AiTools.vue'
 import LocationSearch from './ToolsView/LocationSearch.vue'
 import ClipImage from './ToolsView/ClipImage.vue'
 import Otsu from './ToolsView/Otsu.vue'
+import RandomPoints from './ToolsView/RandomPoints.vue'
 
 const props = defineProps({
     mapView: {
@@ -208,6 +215,8 @@ const clipImageRef = ref(null)
 const rasterStatisticsRef = ref(null)
 // OTSU 组件
 const otsuRef = ref(null)
+//生成随机点
+const randomPointsRef = ref(null)
 
 // 添加 toolParams 计算属性
 const toolParams = computed(() => {
@@ -232,6 +241,8 @@ const toolParams = computed(() => {
             return clipImageRef.value?.getClipParams() || {}
         case TOOL_IDS.RASTER_OPERATION.OTSU:
             return otsuRef.value?.getParams() || {}
+        case TOOL_IDS.PREPROCESSING.GENERATE_RANDOM_POINTS:
+            return randomPointsRef.value?.getParams()||{}
         default:
             return null
     }
