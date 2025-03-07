@@ -1,6 +1,6 @@
 from samgeo import SamGeo
 from samgeo.text_sam import LangSAM
-from .map_service import save_dataset
+from .map_service import save_dataset,get_dataset
 import time
 import os
 import numpy as np
@@ -9,6 +9,7 @@ import requests
 import tempfile
 import traceback
 import ee
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # 禁用所有 GPU
 
 def cleanup_temp_files():
     """清理临时文件"""
@@ -210,14 +211,28 @@ def point_segment_img(url, image_bounds, samples, dimensions='1024x1024'):
         # 转换样本数据格式
         point_coords = []
         point_labels = []
+        print('ai_service.py-point_segment_img-samples',samples)
+        # 检查samples是否为ee.FeatureCollection
+        # 获取FeatureCollection的坐标
         for layer_name, layer_data in samples.items():
-            for feature in layer_data['features']:
-                coords = feature['coordinates']
-                # 转换地理坐标到图像坐标
-                img_x = int((coords[0] - image_bounds[0]) / (image_bounds[2] - image_bounds[0]) * img_width)
-                img_y = int((image_bounds[3] - coords[1]) / (image_bounds[3] - image_bounds[1]) * img_height)
-                point_coords.append([img_x, img_y])
-                point_labels.append(1)  # 1 表示前景点
+            points = get_dataset(layer_name)
+            if isinstance(points,ee.FeatureCollection):
+                features = points.getInfo()['features']
+                for feature in features:
+                    coords = feature['geometry']['coordinates']
+                    # 转换地理坐标到图像坐标
+                    img_x = int((coords[0] - image_bounds[0]) / (image_bounds[2] - image_bounds[0]) * img_width)
+                    img_y = int((image_bounds[3] - coords[1]) / (image_bounds[3] - image_bounds[1]) * img_height)
+                    point_coords.append([img_x, img_y])
+                    point_labels.append(1)  # 1 表示前景点
+        # 原有的处理逻辑
+            else:
+                for feature in layer_data['features']:
+                    coords = feature['coordinates']
+                    img_x = int((coords[0] - image_bounds[0]) / (image_bounds[2] - image_bounds[0]) * img_width)
+                    img_y = int((image_bounds[3] - coords[1]) / (image_bounds[3] - image_bounds[1]) * img_height)
+                    point_coords.append([img_x, img_y])
+                    point_labels.append(1)  # 1 表示前景点
         
         point_coords = np.array(point_coords)
         point_labels = np.array(point_labels)

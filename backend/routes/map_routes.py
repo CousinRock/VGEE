@@ -574,7 +574,7 @@ def get_pixel_value():
         
         return jsonify({
             'success': True,
-            'message': '获取像素值成功',
+            'message': 'Get pixel value successfully',
             'pixel_values': pixel_values
         })
 

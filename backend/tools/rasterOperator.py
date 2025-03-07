@@ -9,6 +9,18 @@ class RasterOperatorTool(BaseTool):
             variables = {}
             layer_mapping = {}
             
+            # 获取第一个图层作为基础图层
+            base_image = datasets[layer_ids[0]]
+            
+            # 获取所有输入图层的几何范围交集
+            geometry = None
+            for layer_id in layer_ids:
+                layer_geom = datasets[layer_id].geometry()
+                if geometry is None:
+                    geometry = layer_geom
+                else:
+                    geometry = geometry.intersection(layer_geom)
+            
             for i, layer_id in enumerate(layer_ids, 1):
                 if layer_id not in datasets:
                     raise ValueError(f'Invalid layer ID: {layer_id}')
@@ -25,8 +37,17 @@ class RasterOperatorTool(BaseTool):
             # 替换逻辑运算符
             modified_expr = modified_expr.replace('&&', 'and').replace('||', 'or')
             
-            # 计算结果
-            return ee.Image(0).expression(modified_expr, variables)
+            # 使用第一个图层作为基础进行计算
+            result = base_image.expression(modified_expr, variables)
+            
+            # 确保结果被正确掩膜并裁剪到交集区域
+            # result = result.updateMask(result.gt(0))
+            result = result.clip(geometry)  # 裁剪到所有图层的交集区域
+            
+            # 保持原始投影信息
+            result = result.setDefaultProjection(base_image.projection())
+            
+            return result
             
         except Exception as e:
             raise Exception(f"Error in multi-layer calculation: {str(e)}")

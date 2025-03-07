@@ -1078,6 +1078,7 @@ def randomPoints():
                 seed = params.get('seed', 0)
                 
                 # 对图像进行采样
+                print('test',image.geometry().getInfo())
                 points = image.selfMask().sample(
                     region=image.geometry(),
                     scale=scale,
@@ -1085,7 +1086,7 @@ def randomPoints():
                     seed=seed,
                     geometries=True
                 )
-                
+                print('test',points.size().getInfo())
                 # 设置点的样式
                 ee_style_params = {
                     'color': '4a80f5',
