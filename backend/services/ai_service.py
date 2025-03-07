@@ -1,5 +1,6 @@
 from samgeo import SamGeo
 from samgeo.text_sam import LangSAM
+from .map_service import save_dataset
 import time
 import os
 import numpy as np
@@ -7,6 +8,7 @@ import cv2
 import requests
 import tempfile
 import traceback
+import ee
 
 def cleanup_temp_files():
     """清理临时文件"""
@@ -128,13 +130,43 @@ def text_single_layer(layer_id, datasets, datasetsNames, params, vis_params):
         if mask_coords is None or len(mask_coords) == 0:
             return None
 
+        # 将掩膜坐标转换为 FeatureCollection，添加验证
+        features = []
+        for coords in mask_coords:
+            # 验证坐标点数量
+            if len(coords) >= 4:  # 确保至少有4个点
+                try:
+                    feature = ee.Feature(ee.Geometry.Polygon([coords]))
+                    features.append(feature)
+                except Exception as e:
+                    print(f"Error creating polygon: {str(e)}")
+                    continue
+        
+        # 确保至少有一个有效的多边形
+        if not features:
+            print("No valid polygons found")
+            return None
+            
+        feature_collection = ee.FeatureCollection(features)
+        id = f'{layer_id}_mask_{int(time.time())}'
+        name = f'{image_name}_mask'
+        save_dataset(id,feature_collection,name)
+        
+        # 设置样式参数
+        ee_style_params = {
+            'color': 'ff0000',
+            'fillColor': 'ff000088'
+        }
+        
+        # 获取瓦片URL
+        map_id = feature_collection.getMapId(ee_style_params)
+        
         # 创建掩膜图层
         mask_layer = {
-            'layer_id': f'{layer_id}_mask_{int(time.time())}',  # 包含原始layer_id
-            'name': f'{image_name}_mask',
+            'layer_id':id ,
+            'name':name ,
             'type': 'vector',
-            'geometryType': 'Polygon',
-            'coordinates': mask_coords,
+            'tileUrl': map_id['tile_fetcher'].url_format,
             'visParams': {
                 'color': '#ff0000',
                 'weight': 2,
@@ -146,10 +178,9 @@ def text_single_layer(layer_id, datasets, datasetsNames, params, vis_params):
         return mask_layer
     except Exception as e:
         print(f"Error processing layer {layer_id}: {str(e)}")
-        traceback.print_exc()  # 添加详细的错误跟踪
+        traceback.print_exc()
         return None
-    
-    
+
 def point_segment_img(url, image_bounds, samples, dimensions='1024x1024'):
     '''
     点提示分割图像
@@ -246,7 +277,6 @@ def point_single_layer(layer_id, datasets, datasetsNames, samples, vis_params):
         image_name = datasetsNames[layer_id]
         print('ai_service-point_segment-image_name', image_name)
         
-        
         # 获取该图层的显示参数
         layer_vis = vis_params.get(layer_id, {})
         layer_min = layer_vis.get('min', 0)
@@ -255,7 +285,6 @@ def point_single_layer(layer_id, datasets, datasetsNames, samples, vis_params):
         # 获取图像边界
         bounds = image.geometry().bounds().getInfo()['coordinates'][0]
         print('ai_service-point_segment-bounds', bounds)
-
 
         image_bounds = [
             bounds[0][0],  # min_x
@@ -275,17 +304,47 @@ def point_single_layer(layer_id, datasets, datasetsNames, samples, vis_params):
 
         print(f"Generated URL for layer {layer_id}: {url}")
         coordinates = point_segment_img(url, image_bounds, samples, dimensions)
-        
 
         if coordinates is None:
             return None
 
+        # 将坐标转换为 FeatureCollection，添加验证
+        features = []
+        for coords in coordinates:
+            # 验证坐标点数量
+            if len(coords) >= 4:  # 确保至少有4个点
+                try:
+                    feature = ee.Feature(ee.Geometry.Polygon([coords]))
+                    features.append(feature)
+                except Exception as e:
+                    print(f"Error creating polygon: {str(e)}")
+                    continue
+        
+        # 确保至少有一个有效的多边形
+        if not features:
+            print("No valid polygons found")
+            return None
+            
+        feature_collection = ee.FeatureCollection(features)
+        id = f'sam_prediction_{layer_id}_{int(time.time())}'
+        name = f'{image_name}_SAM_point_prediction'
+        
+        save_dataset(id,feature_collection,name)
+        
+        # 设置样式参数
+        ee_style_params = {
+            'color': 'ff0000',
+            'fillColor': 'ff000088'
+        }
+        
+        # 获取瓦片URL
+        map_id = feature_collection.getMapId(ee_style_params)
+
         return {
-            'layer_id': f'sam_prediction_{layer_id}_{int(time.time())}',
-            'name': f'{image_name}_SAM_point_prediction',
+            'layer_id': id,
+            'name':name ,
             'type': 'vector',
-            'geometryType': 'Polygon',
-            'coordinates': coordinates,
+            'tileUrl': map_id['tile_fetcher'].url_format,
             'visParams': {
                 'color': '#ff0000',
                 'weight': 2,

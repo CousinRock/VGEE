@@ -46,9 +46,10 @@ defineExpose({
     getClipParams: () => {
         const selectedLayer = vectorLayers.value.find(l => l.id === selectedBoundary.value)
         if (!selectedLayer) return { clipLayer: null }
+        console.log('ClipImgae.vue-getClipParams-selectedLayer', selectedLayer);
 
         // 如果是栅格图层，只传递必要的信息
-        if (selectedLayer.type === 'Raster') {
+        if (selectedLayer.type === 'Raster' || selectedLayer.type === 'vector') {
             return {
                 clipLayer: {
                     id: selectedLayer.id,

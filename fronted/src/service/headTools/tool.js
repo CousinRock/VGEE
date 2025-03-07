@@ -108,8 +108,8 @@ export const updateMapLayer = async (layerResult, mapView) => {
 
         // 根据图层类型添加不同的属性
         if (layerResult.type === 'vector') {
-            console.log('tools.js-updateMapLayer-layerResult',layerResult);
-            
+            console.log('tools.js-updateMapLayer-layerResult', layerResult);
+
             // 矢量图层的属性
             newLayer.visParams = layerResult.visParams || {
                 color: '#ff0000',
@@ -120,7 +120,6 @@ export const updateMapLayer = async (layerResult, mapView) => {
             newLayer.geometryType = layerResult.geometryType
 
             if (layerResult.tileUrl) {
-                // 如果有 tileUrl，使用瓦片图层（用于随机点）
                 newLayer.leafletLayer = L.tileLayer(layerResult.tileUrl, {
                     opacity: newLayer.opacity,
                     maxZoom: 20,
@@ -130,26 +129,6 @@ export const updateMapLayer = async (layerResult, mapView) => {
                     updateWhenZooming: false,
                     keepBuffer: 2,
                     zIndex: newLayer.zIndex
-                });
-            } else {
-                // 其他矢量数据使用 GeoJSON
-                const geojsonData = {
-                    type: "FeatureCollection",
-                    features: layerResult.coordinates.map(coords => ({
-                        type: "Feature",
-                        geometry: {
-                            type: layerResult.geometryType,
-                            coordinates: [coords]
-                        },
-                        properties: {}
-                    }))
-                };
-
-                console.log('Tool.js - updateMapLayer - geojsonData:', geojsonData);
-
-                // 创建 GeoJSON 图层
-                newLayer.leafletLayer = L.geoJSON(geojsonData, {
-                    style: newLayer.visParams
                 });
             }
         } else {

@@ -753,9 +753,13 @@ def clip():
                     return None
                 i = layer_ids.index(layer_id)
                 image = ee.Image(datasets[layer_id])
-                if geometry.get('type') == 'Raster':
+                type = geometry.get('type')
+                if type == 'Raster':
                     mask = ee.Image(datasets[geometry.get('id')])
                     result = image.updateMask(mask)
+                elif type == 'vector':
+                    mask = ee.FeatureCollection(datasets[geometry.get('id')])
+                    result = image.clip(mask.geometry())
                 else:
                     result = RasterOperatorTool.img_clip(image, geometry)
                 # 设置裁剪结果的可视化参数

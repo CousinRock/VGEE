@@ -118,7 +118,10 @@ const handleVectorAsset = async (selectedAsset, mapView) => {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ asset_id: selectedAsset.id })
+            body: JSON.stringify({
+                asset_id: selectedAsset.id,
+                layer_name: selectedAsset.name
+            })
         })
 
         const data = await response.json()

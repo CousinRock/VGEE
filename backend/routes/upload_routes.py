@@ -98,7 +98,8 @@ def add_vector_asset():
             'opacity': 1,
             'fillOpacity': 0.5
         })
-        print('Tool_routes.py - add_vector_asset-style_params:', style_params)
+        layer_name = data.get('layer_name','')
+        print('Tool_routes.py - add_vector_asset-data:', data)
         
         layer = get_dataset(asset_id)
         if layer:
@@ -106,6 +107,7 @@ def add_vector_asset():
         else:
             # 获取矢量数据
             vector_asset = ee.FeatureCollection(asset_id)
+            save_dataset(asset_id,vector_asset,layer_name)
         
         # 准备 Earth Engine 样式参数
         # Earth Engine 只支持 color 和 opacity 的设置
