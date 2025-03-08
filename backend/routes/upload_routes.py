@@ -600,7 +600,7 @@ def add_sentinel_timeseries():
             endDate = startDate.advance(1, "month")
 
              # 过滤每个传感器的数据
-            merged = filter_collection(s2_collection, startDate, endDate).map(rename)
+            merged = filter_collection(s2_collection, startDate, endDate).map(prep)
 
             monthImg = merged.median()
             nBands = monthImg.bandNames().size()
@@ -770,6 +770,65 @@ def delete_asset():
         
     except Exception as e:
         print(f"Error in delete_asset: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@upload_bp.route('/rename-asset', methods=['POST'])
+def rename_asset():
+    try:
+        data = request.json
+        asset_id = data.get('asset_id')
+        new_name = data.get('new_name')
+        print('upload_routes.py - rename_asset-data:', data)
+        
+        if not asset_id or not new_name:
+            raise ValueError("Asset ID and new name are required")
+
+        try:
+            # 获取资产信息
+            asset_info = ee.data.getAsset(asset_id)
+            asset_type = asset_info['type']
+            
+            # 构建新的资产路径
+            parent_path = '/'.join(asset_id.split('/')[:-1])
+            new_asset_id = f"{parent_path}/{new_name}"
+            
+            if asset_type == 'FOLDER':
+                # 先创建新文件夹
+                ee.data.createAsset({
+                    'type': 'FOLDER',
+                    'name': new_asset_id
+                })
+                
+                # 获取所有子资产
+                children = ee.data.listAssets({'parent': asset_id})
+                if 'assets' in children and children['assets']:
+                    # 移动所有子资产到新文件夹
+                    for child in children['assets']:
+                        child_name = child['id'].split('/')[-1]
+                        new_child_id = f"{new_asset_id}/{child_name}"
+                        ee.data.renameAsset(child['id'], new_child_id)
+                
+                # 删除旧文件夹
+                ee.data.deleteAsset(asset_id)
+            else:
+                # 如果是文件，直接重命名
+                ee.data.renameAsset(asset_id, new_asset_id)
+            
+            return jsonify({
+                'success': True,
+                'message': 'Asset renamed successfully',
+                'new_asset_id': new_asset_id
+            })
+            
+        except Exception as e:
+            print(f"Error renaming asset {asset_id}: {str(e)}")
+            raise ValueError(f"Failed to rename asset: {str(e)}")
+            
+    except Exception as e:
+        print(f"Error in rename_asset: {str(e)}")
         return jsonify({
             'success': False,
             'message': str(e)

@@ -11,6 +11,7 @@
         "ESA/WorldCover/v200",
         "COPERNICUS/DEM/GLO30",
         "COPERNICUS/S2_SR_HARMONIZED",
-        "COPERNICUS/S2_CLOUD_PROBABILITY"
+        "COPERNICUS/S2_CLOUD_PROBABILITY",
+        "HYCOM/sea_surface_elevation"
     ]
 }

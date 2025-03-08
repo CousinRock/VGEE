@@ -366,7 +366,7 @@ export const onDeleteAsset = async (asset, isLoadingAssets, assetsList) => {
 
         // 显示加载中的消息
         const loadingMessage = ElMessage({
-            message: `正在删除 ${asset.name}${asset.type === 'FOLDER' ? ' 及其内容' : ''}...`,
+            message: `Deleting ${asset.name}${asset.type === 'FOLDER' ? ' and its contents' : ''}...`,
             type: 'info',
             duration: 0  // 设置为0表示不自动关闭
         });
@@ -390,17 +390,63 @@ export const onDeleteAsset = async (asset, isLoadingAssets, assetsList) => {
         loadingMessage.close();
 
         if (data.success) {
-            ElMessage.success(`成功删除 ${asset.name}`);
+            ElMessage.success(`Successfully deleted ${asset.name}`);
             // 刷新资产列表
             await refreshAssets(isLoadingAssets, assetsList);
         } else {
-            ElMessage.error(data.message || '删除失败');
+            ElMessage.error(data.message || 'Delete failed');
         }
     } catch (error) {
         console.error('Error deleting asset:', error);
-        ElMessage.error('删除资产时出错');
+        ElMessage.error('Error occurred while deleting asset');
     } finally {
         isLoadingAssets.value = false;  // 清除加载状态
+    }
+}
+
+// 重命名资产的方法
+export const onRenameAsset = async (asset, newName, isLoadingAssets, assetsList) => {
+    try {
+        console.log('upload.js - onRenameAsset - asset:', asset);
+        
+        // 显示加载中的消息
+        const loadingMessage = ElMessage({
+            message: `Renaming ${asset.name}...`,
+            type: 'info',
+            duration: 0
+        });
+
+        isLoadingAssets.value = true;
+
+        const response = await fetch(`${API_ROUTES.UPLOAD.RENAME_ASSET}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                asset_id: asset.id,
+                new_name: newName
+            })
+        });
+
+        const data = await response.json();
+        console.log('upload.js - onRenameAsset - data:', data);
+
+        // 关闭加载中的消息
+        loadingMessage.close();
+
+        if (data.success) {
+            ElMessage.success(`Successfully renamed to ${newName}`);
+            // 刷新资产列表
+            await refreshAssets(isLoadingAssets, assetsList);
+        } else {
+            ElMessage.error(data.message || 'Rename failed');
+        }
+    } catch (error) {
+        console.error('Error renaming asset:', error);
+        ElMessage.error('Error occurred while renaming asset');
+    } finally {
+        isLoadingAssets.value = false;
     }
 }
 

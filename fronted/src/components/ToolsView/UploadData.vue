@@ -23,6 +23,10 @@
                                 <el-tooltip v-if="data.description" :content="data.description" placement="right">
                                     <i class="el-icon-info" />
                                 </el-tooltip>
+                                <el-button type="text" size="small" @click.stop="openRenameDialog(data)"
+                                    :loading="isLoadingAssets" :disabled="isLoadingAssets">
+                                    <i class="fas fa-edit"></i>
+                                </el-button>
                                 <el-popconfirm
                                     :title="`Are you sure you want to delete ${data.name} ${data.type === 'FOLDER' ? 'and all its contents' : ''}?`"
                                     @confirm="deleteAsset(data)">
@@ -105,6 +109,23 @@
                 </span>
             </template>
         </el-dialog>
+
+        <!-- 重命名对话框 -->
+        <el-dialog v-model="showRenameDialog" title="Rename Asset" width="400px">
+            <el-form :model="renameForm">
+                <el-form-item label="New Name">
+                    <el-input v-model="renameForm.newName" placeholder="Enter new name"></el-input>
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <span class="dialog-footer">
+                    <el-button @click="showRenameDialog = false">Cancel</el-button>
+                    <el-button @click="handleRename" :loading="isLoadingAssets">
+                        Confirm
+                    </el-button>
+                </span>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -116,7 +137,8 @@ import {
     onConfirmAssetSelect,
     onSubmitTimeseries,
     refreshAssets,
-    onDeleteAsset
+    onDeleteAsset,
+    onRenameAsset
 } from '../../service/headTools/upload'
 import { TOOL_IDS } from '../../config/tools-config'
 import { ElMessage } from 'element-plus'
@@ -133,6 +155,7 @@ const props = defineProps({
 // 状态变量
 const showAssetsDialog = ref(false)
 const showTimeseriesDialog = ref(false)
+const showRenameDialog = ref(false)  // 对话框显示状态
 const assetsList = ref([])
 const selectedAsset = ref(null)
 const isLoadingAssets = ref(false)
@@ -151,6 +174,12 @@ const satelliteType = ref('Landsat')
 
 // 添加当前工具ID状态
 const currentToolId = ref(null)
+
+// 添加重命名相关的状态
+const renameForm = ref({
+    newName: '',
+    asset: null
+})
 
 // 添加刷新方法
 const refreshAssetsList = async () => {
@@ -198,6 +227,29 @@ const submitForm = async () => {
 const deleteAsset = async (asset) => {
     await onDeleteAsset(asset, isLoadingAssets, assetsList)
 };
+
+// 重命名为 openRenameDialog
+const openRenameDialog = (asset) => {
+    renameForm.value.newName = asset.name
+    renameForm.value.asset = asset
+    showRenameDialog.value = true
+}
+
+// 处理重命名
+const handleRename = async () => {
+    if (!renameForm.value.newName.trim()) {
+        ElMessage.warning('Please enter a new name')
+        return
+    }
+
+    await onRenameAsset(
+        renameForm.value.asset,
+        renameForm.value.newName,
+        isLoadingAssets,
+        assetsList
+    )
+    showRenameDialog.value = false
+}
 
 // 暴露方法和状态给父组件
 defineExpose({
@@ -278,9 +330,12 @@ defineExpose({
     gap: 8px;
 }
 
+.asset-actions .el-button {
+    padding: 2px 4px;
+}
+
 .delete-btn {
     color: #F56C6C;
-    padding: 2px 4px;
 }
 
 .delete-btn:hover {
