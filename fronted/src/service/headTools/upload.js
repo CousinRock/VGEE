@@ -331,19 +331,19 @@ export const onSubmitTimeseries = async (form, mapView, showTimeseriesDialog, is
                     imageLayer.addTo(mapView.map)
                 })
 
-                // 使用返回的边界信息进行定位
-                console.log('upload.js - onSubmitLandsatTimeseries - data.bounds:', data.bounds);
-                if (data.bounds && data.bounds[0]) {
-                    const coordinates = data.bounds[0];  // 获取第一个多边形的坐标
-                    const bounds = L.latLngBounds([
-                        [coordinates[0][1], coordinates[0][0]], // 西南角
-                        [coordinates[2][1], coordinates[2][0]]  // 东北角
-                    ]);
-                    mapView.map.fitBounds(bounds, {
-                        padding: [50, 50],
-                        maxZoom: 13
-                    });
-                }
+                // // 使用返回的边界信息进行定位
+                // console.log('upload.js - onSubmitLandsatTimeseries - data.bounds:', data.bounds);
+                // if (data.bounds && data.bounds[0]) {
+                //     const coordinates = data.bounds[0];  // 获取第一个多边形的坐标
+                //     const bounds = L.latLngBounds([
+                //         [coordinates[0][1], coordinates[0][0]], // 西南角
+                //         [coordinates[2][1], coordinates[2][0]]  // 东北角
+                //     ]);
+                //     mapView.map.fitBounds(bounds, {
+                //         padding: [50, 50],
+                //         maxZoom: 13
+                //     });
+                // }
             }
             return true
         } else {

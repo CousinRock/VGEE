@@ -1,4 +1,5 @@
 from .base_tool import BaseTool
+from services.map_service import get_dataset
 import ee
 
 class ClassificationTool(BaseTool):
@@ -54,7 +55,9 @@ class ClassificationTool(BaseTool):
                     
                 elif sample_data['geometry_type'] == 'Vector':
                     # 处理矢量数据
-                    vector_fc = ee.FeatureCollection(layer_id)
+                    data = get_dataset(layer_id)
+                    vector_fc = data if data else ee.FeatureCollection(layer_id)
+                    # vector_fc = ee.FeatureCollection(layer_id)
                     class_features = vector_fc.map(lambda f: f.set('class', class_index))
                     
                 else:
