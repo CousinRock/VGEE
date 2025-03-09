@@ -663,14 +663,14 @@ export const exportManager = {
 
             const data = await response.json();
             if (data.success) {
-                ElMessage.success('图层已成功导出到云端');
+                ElMessage.success('Layer successfully exported to cloud');
                 return true;
             } else {
-                throw new Error(data.message || '导出失败');
+                throw new Error(data.message || 'Failed to export');
             }
         } catch (error) {
             console.error('Error exporting layer:', error);
-            ElMessage.error(error.message || '导出图层失败');
+            ElMessage.error(error.message || 'Failed to export');
             return false;
         }
     },
@@ -707,14 +707,14 @@ export const exportManager = {
 
             const data = await response.json();
             if (data.success) {
-                ElMessage.success('图层已成功导出到资产');
+                ElMessage.success('Layer successfully exported to assets');
                 return true;
             } else {
-                throw new Error(data.message || '导出失败');
+                throw new Error(data.message || 'Failed to export');
             }
         } catch (error) {
             console.error('Error exporting layer:', error);
-            ElMessage.error(error.message || '导出图层失败');
+            ElMessage.error(error.message || 'Failed to export');
             return false;
         }
     }
