@@ -67,7 +67,8 @@ export const API_ROUTES = {
         STATISTICS: `${BASE_URL}/tools/statistics`,
         OTSU:`${BASE_URL}/tools/otsu`,
         //terrain operation
-        TERRAIN: `${BASE_URL}/tools/terrain`
+        TERRAIN: `${BASE_URL}/tools/terrain`,
+        EXTRACT: `${BASE_URL}/tools/extract`
     },
     AI: {
         TEXT_SEGMENT: `${BASE_URL}/ai/text_segment`,

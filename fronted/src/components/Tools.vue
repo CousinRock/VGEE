@@ -72,7 +72,8 @@
                 || currentTool?.id === TOOL_IDS.RASTER_OPERATION.CLIP
                 || currentTool?.id === TOOL_IDS.SEGMENT.TEXT_SEGMENT
                 || currentTool?.id === TOOL_IDS.RASTER_OPERATION.OTSU
-                || currentTool?.id === TOOL_IDS.PREPROCESSING.GENERATE_RANDOM_POINTS) && selectedLayerName.length > 0"
+                || currentTool?.id === TOOL_IDS.PREPROCESSING.GENERATE_RANDOM_POINTS
+                || currentTool?.id === TOOL_IDS.RASTER_OPERATION.EXTRACT) && selectedLayerName.length > 0"
                 class="layer-select-right">
 
                 <!-- K-means 设置 -->
@@ -130,6 +131,10 @@
                     <RandomPoints ref="randomPointsRef" :selectedLayerName="selectedLayerName"
                     :availableLayers="availableLayers"/>
                 </div>
+                <!-- 提取值组件 -->
+                <div v-if="currentTool?.id === TOOL_IDS.RASTER_OPERATION.EXTRACT">
+                    <ExtractValues ref="extractValuesRef" :mapView="props.mapView" />
+                </div>
 
             </div>
         </div>
@@ -150,6 +155,8 @@
     <UploadData ref="uploadDataRef" :mapView="mapView" />
     <!-- 定位组件 -->
     <LocationSearch ref="locationSearchRef" :mapView="props.mapView" />
+
+    
 </template>
 
 <script setup>
@@ -173,6 +180,7 @@ import LocationSearch from './ToolsView/LocationSearch.vue'
 import ClipImage from './ToolsView/ClipImage.vue'
 import Otsu from './ToolsView/Otsu.vue'
 import RandomPoints from './ToolsView/RandomPoints.vue'
+import ExtractValues from './ToolsView/ExtractValues.vue'
 
 const props = defineProps({
     mapView: {
@@ -217,6 +225,8 @@ const rasterStatisticsRef = ref(null)
 const otsuRef = ref(null)
 //生成随机点
 const randomPointsRef = ref(null)
+// 提取值组件
+const extractValuesRef = ref(null)
 
 // 添加 toolParams 计算属性
 const toolParams = computed(() => {
@@ -243,6 +253,8 @@ const toolParams = computed(() => {
             return otsuRef.value?.getParams() || {}
         case TOOL_IDS.PREPROCESSING.GENERATE_RANDOM_POINTS:
             return randomPointsRef.value?.getParams()||{}
+        case TOOL_IDS.RASTER_OPERATION.EXTRACT:
+            return extractValuesRef.value?.getParams() || {}
         default:
             return null
     }
@@ -364,7 +376,10 @@ const handleLayerSelect = async () => {
             props.mapView,
             toolParams.value,
             isProcessing,
-            { rasterStatisticsRef: rasterStatisticsRef.value }
+            { 
+                rasterStatisticsRef: rasterStatisticsRef.value,
+                extractValuesRef: extractValuesRef.value
+            }
         )
 
         // 根据工具配置决定是否关闭窗口

@@ -8,6 +8,7 @@ from tools.parallel_processor import ParallelProcessor
 from tools.rasterOperator import RasterOperatorTool
 from tools.terrainOperator import TerrainOperationTool
 import ee
+import geemap
 import time
 
 tool_bp = Blueprint('tool', __name__)
@@ -985,7 +986,6 @@ def otsu():
                     return None
                     
                 i = layer_ids.index(layer_id)
-                # 获取当前图层的参数
                 layer_params = params.get(layer_id, {})
                 band = layer_params.get('band')
                 scale = layer_params.get('scale')
@@ -995,7 +995,6 @@ def otsu():
                 if not all([band, scale, maxArray, minDis]):
                     raise ValueError(f"Missing required parameters for layer {layer_id}")
                 
-                # 获取图像并选择波段
                 image = ee.Image(datasets[layer_id]).select(band)
                 
                 # 计算阈值
@@ -1006,8 +1005,8 @@ def otsu():
                     minDis=minDis
                 )
                 
-                # 根据阈值进行分割
-                result = image.gt(threshold)
+                # 修改这里：使用 where 操作来保留原始值
+                result = image.where(image.gt(threshold), image).where(image.lte(threshold), 0)
                 
                 # 设置可视化参数
                 vis_params = {
@@ -1144,6 +1143,74 @@ def randomPoints():
 
     except Exception as e:
         print(f"Error in random points generation: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@tool_bp.route('/extract', methods=['POST'])
+def extract_values():
+    try:
+        data = request.json
+        layer_ids = data.get('layer_ids')
+        params = data.get('params', {})
+        
+        if not layer_ids:
+            raise ValueError("No layers selected")
+            
+        sample_layer_id = params.get('sampleLayerId')
+        if not sample_layer_id:
+            raise ValueError("No sample points layer selected")
+            
+        scale = params.get('scale', 30)
+        
+        # 获取样本点图层
+        sample_points = ee.FeatureCollection(datasets[sample_layer_id])
+        
+        results = []
+        for layer_id in layer_ids:
+            if layer_id not in datasets:
+                continue
+                
+            image = ee.Image(datasets[layer_id])
+            
+            # 直接提取像素值
+            values = image.sampleRegions(
+                collection=sample_points,
+                scale=scale,
+                geometries=True
+            )
+            
+            # 转换为 DataFrame
+            df = geemap.ee_to_df(values)
+            print('Tool_routes.py - extract-df:', df)
+            
+            # 获取所有列（除了系统属性）
+            columns = [col for col in df.columns if not col.startswith('system:')]
+            
+            # 遍历每一行数据
+            for index, row in df.iterrows():
+                result = {
+                    'pointId': f"Point_{index+1}",
+                    'layerId': layer_id,
+                    'layerName': datasetsNames.get(layer_id, 'Unknown Layer')
+                }
+                # 添加所有非系统属性列的值
+                for col in columns:
+                    result[col] = row[col]
+                results.append(result)
+        
+        if not results:
+            raise ValueError("No values extracted")
+            
+        return jsonify({
+            'success': True,
+            'message': 'Values extracted successfully',
+            'results': results
+        })
+        
+    except Exception as e:
+        print(f"Error in extract_values: {str(e)}")
         return jsonify({
             'success': False,
             'message': str(e)

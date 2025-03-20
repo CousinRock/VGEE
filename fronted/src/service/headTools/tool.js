@@ -196,6 +196,7 @@ export const processLayerSelect = async (selectedLayers, currentTool, mapView, p
         })
 
         const data = await response.json()
+        console.log('Tool.js - processLayerSelect - data', data);
 
         if (!data.success) {
             throw new Error(data.message || '处理失败')
