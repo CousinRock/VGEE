@@ -11,6 +11,10 @@
         "ESA/WorldCover/v200",
         "COPERNICUS/DEM/GLO30",
         "COPERNICUS/S2_SR_HARMONIZED",
-        "COPERNICUS/S2_CLOUD_PROBABILITY"
+        "COPERNICUS/S2_CLOUD_PROBABILITY",
+        "NOAA/CPC/Precipitation",
+        "UCSB-CHG/CHIRPS/DAILY",
+        "MODIS/061/MOD21A1D",
+        "HYCOM/sea_temp_salinity"
     ]
 }

@@ -16,7 +16,7 @@ export const satelliteManager = {
             }
         } catch (error) {
             console.error('Error fetching satellite config:', error)
-            ElMessage.error('获取卫星配置失败')
+            ElMessage.error('Failed to get satellite config')
             return null
         }
     },
@@ -57,12 +57,12 @@ export const satelliteManager = {
                 if (!data.success) {
                     console.error('Failed to add satellite:', data.message)
                     ElMessage({
-                        message: `添加卫星失败: ${data.message}`,
+                        message: `Failed to add satellite: ${data.message}`,
                         type: 'error'
                     })
                 }
                 ElMessage({
-                    message: '添加卫星成功',
+                    message: 'Add satellite successfully',
                     type: 'success'
                 })
 
@@ -70,14 +70,14 @@ export const satelliteManager = {
             .catch(error => {
                 console.error('Error adding satellite:', error)
                 ElMessage({
-                    message: `添加卫星失败: ${error}`,
+                    message: `Failed to add satellite: ${error}`,
                     type: 'error'
                 })
             })
     } else {
         console.log('Dataset already exists:', dataset.id)
         ElMessage({
-            message: `数据集已存在: ${dataset.id}`,
+            message: `Dataset already exists: ${dataset.id}`,
             type: 'warning'
         })
     }

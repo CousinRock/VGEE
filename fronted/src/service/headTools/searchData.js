@@ -16,12 +16,12 @@ export const searchData = async (datasetType) => {
         if (data.success) {
             return data.datasets
         } else {
-            ElMessage.error(data.message || '搜索数据失败')
+            ElMessage.error(data.message || 'Failed to search data')
             return []
         }
     } catch (error) {
         console.error('Error searching data:', error)
-        ElMessage.error('搜索数据失败')
+        ElMessage.error('Failed to search data')
         return []
     }
 }
@@ -45,7 +45,7 @@ export const handleIdSearch = async (datasetId) => {
         return datasets
     } catch (error) {
         console.error('Error searching dataset:', error)
-        ElMessage.error('搜索失败')
+        ElMessage.error('Failed to search dataset')
     }
 
 }

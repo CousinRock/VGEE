@@ -1188,16 +1188,21 @@ def extract_values():
             # 获取所有列（除了系统属性）
             columns = [col for col in df.columns if not col.startswith('system:')]
             
-            # 遍历每一行数据
+            # 遍历每一行数据，确保数值类型正确转换
             for index, row in df.iterrows():
                 result = {
                     'pointId': f"Point_{index+1}",
                     'layerId': layer_id,
                     'layerName': datasetsNames.get(layer_id, 'Unknown Layer')
                 }
-                # 添加所有非系统属性列的值
+                # 添加所有非系统属性列的值，并确保正确的类型转换
                 for col in columns:
-                    result[col] = row[col]
+                    value = row[col]
+                    # 将 numpy 类型转换为 Python 原生类型
+                    if hasattr(value, 'item'):
+                        result[col] = value.item()
+                    else:
+                        result[col] = value
                 results.append(result)
         
         if not results:
