@@ -138,7 +138,7 @@ export const handleStudyArea = {
             }
         } catch (error) {
             console.error('Error toggling study area:', error);
-            ElMessage.error('设置研究区域失败');
+            ElMessage.error('Fail to set study area');
         }
     }
 };
@@ -157,7 +157,7 @@ export const handleStyle = {
                 opacity: layer.visParams.opacity,
                 fillOpacity: layer.visParams.fillOpacity
             };
-        } else if (layer.geometryType === 'Polygon') {
+        } else if (layer.geometryType === 'Polygon' || layer.geometryType === 'Polyline') {
             vectorStyle.value = {
                 color: layer.visParams.color,
                 opacity: layer.visParams.opacity,
@@ -194,7 +194,7 @@ export const handleStyle = {
                 // 更新点图层
                 handleStyle.updatePointLayer(currentVectorLayer.value, map);
             }
-            else if (currentVectorLayer.value.geometryType === 'Polygon') {
+            else if (currentVectorLayer.value.geometryType === 'Polygon' || currentVectorLayer.value.geometryType === 'Polyline') {
                 const style = {
                     color: vectorStyle.value.color,
                     weight: vectorStyle.value.weight,
@@ -650,6 +650,11 @@ export const exportManager = {
                     requestBody.features = [{
                         coordinates: layer.geometry.coordinates[0]
                     }];
+                }else if (layer.geometryType === 'Polyline') {
+                    // 修改线要素的处理方式
+                    requestBody.features = layer.features.map(feature => ({
+                        coordinates: feature.coordinates
+                    }));
                 } else {
                     requestBody.features = layer.features;
                 }
@@ -676,7 +681,7 @@ export const exportManager = {
     },
     exportToAsset: async (layer, API_ROUTES, assetId, description, scale = 30) => {
         try {
-            console.log('MapView.vue - exportToCloud - layer:', layer);
+            console.log('MapView.vue - exportToAsset - layer:', layer);
 
             const requestBody = {
                 layer_id: layer.id,
@@ -694,7 +699,12 @@ export const exportManager = {
                     requestBody.features = [{
                         coordinates: layer.geometry.coordinates[0]
                     }];
-                } else {
+                } else if (layer.geometryType === 'Polyline') {
+                    // 修改线要素的处理方式
+                    requestBody.features = layer.features.map(feature => ({
+                        coordinates: feature.coordinates
+                    }));
+                } else if (layer.geometryType === 'Point') {
                     requestBody.features = layer.features;
                 }
             }
@@ -820,11 +830,10 @@ export const toolManager = {
             geometryType = 'Polygon';
             console.log('MapView.vue - initDrawControl - coordinates:', coordinates.coordinates);
 
-
             // 多边形仍然创建独立图层
             const newLayer = {
-                id: `drawn_${Date.now()}`,
-                name: 'Polygon',
+                id: `polygon_${Date.now()}`,
+                name: `Polygon ${layers.value.length + 1}`,
                 type: 'manual',
                 visible: true,
                 isStudyArea: false,
@@ -847,11 +856,34 @@ export const toolManager = {
 
             newLayer.leafletLayer = vectorLayer;
             layers.value.push(newLayer);
-            vectorLayer.addTo(map.value);
-        }
-        else if (layer instanceof L.Marker) {
+        } else if (layer instanceof L.Polyline) {
+            // 处理折线
+            coordinates = {
+                type: 'LineString',
+                coordinates: layer.getLatLngs().map(latLng => [latLng.lng, latLng.lat])
+            };
+            geometryType = 'LineString';
+            console.log('MapView.vue - initDrawControl - polyline coordinates:', coordinates.coordinates);
 
-            console.log('MapView.vue - createShape -  pointLayerCounter:', pointLayerCounter.value);
+            // 创建折线图层
+            const newLayer = {
+                id: `polyline_${Date.now()}`,
+                name: `Polyline ${layers.value.length + 1}`,
+                type: 'manual',
+                geometryType: 'Polyline',
+                visible: true,
+                opacity: 1,
+                leafletLayer: layer,
+                features: [coordinates],
+                visParams: {
+                    color: '#3388ff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.2
+                }
+            };
+            layers.value.push(newLayer);
+        } else if (layer instanceof L.Marker) {
             coordinates = {
                 type: 'Point',
                 coordinates: [layer.getLatLng().lng, layer.getLatLng().lat]

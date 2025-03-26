@@ -56,7 +56,8 @@ export const TOOL_IDS = {
         CLIP: 'clip',
         STATISTICS: 'statistics',
         OTSU:'otsu',
-        EXTRACT: 'extract'
+        EXTRACT: 'extract',
+        CANNY: 'canny'
     },
     TERRAIN_OPERATION: {
         ROOT: 'terrain-operation',
@@ -664,7 +665,6 @@ export const TOOLS_CONFIG = {
                             params:params
                         })
                     },
-                    // 在 RASTER_OPERATION 的 children 中修改 extract 配置
                     extract: {
                         id: TOOL_IDS.RASTER_OPERATION.EXTRACT,
                         label: 'Extract Values',
@@ -689,6 +689,25 @@ export const TOOLS_CONFIG = {
                                 refs.extractValuesRef.setResult(data.results)
                             }
                         }
+                    },
+                    canny: {
+                        id: TOOL_IDS.RASTER_OPERATION.CANNY,
+                        label: 'Canny Edge Detection',
+                        icon: 'fas fa-border-all',
+                        component: 'CannyEdge',
+                        requireLayers: true,
+                        endpoint: API_ROUTES.TOOLS.CANNY,
+                        description: 'Apply Canny edge detection algorithm to detect edges in images',
+                        processParams: (selectedLayers, mapView, params) => ({
+                            layer_ids: selectedLayers,
+                            vis_params: mapView.layers
+                                .filter(l => selectedLayers.includes(l.id))
+                                .map(l => ({
+                                    id: l.id,
+                                    visParams: l.visParams
+                                })),
+                            params: params
+                        })
                     }
                 }
             },

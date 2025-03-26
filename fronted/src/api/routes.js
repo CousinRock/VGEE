@@ -66,9 +66,11 @@ export const API_ROUTES = {
         CLIP: `${BASE_URL}/tools/clip`,
         STATISTICS: `${BASE_URL}/tools/statistics`,
         OTSU:`${BASE_URL}/tools/otsu`,
+        EXTRACT: `${BASE_URL}/tools/extract`,
+        CANNY: `${BASE_URL}/tools/canny`,
         //terrain operation
-        TERRAIN: `${BASE_URL}/tools/terrain`,
-        EXTRACT: `${BASE_URL}/tools/extract`
+        TERRAIN: `${BASE_URL}/tools/terrain`
+        
     },
     AI: {
         TEXT_SEGMENT: `${BASE_URL}/ai/text_segment`,

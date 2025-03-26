@@ -73,7 +73,8 @@
                 || currentTool?.id === TOOL_IDS.SEGMENT.TEXT_SEGMENT
                 || currentTool?.id === TOOL_IDS.RASTER_OPERATION.OTSU
                 || currentTool?.id === TOOL_IDS.PREPROCESSING.GENERATE_RANDOM_POINTS
-                || currentTool?.id === TOOL_IDS.RASTER_OPERATION.EXTRACT) && selectedLayerName.length > 0"
+                || currentTool?.id === TOOL_IDS.RASTER_OPERATION.EXTRACT
+                || currentTool?.id === TOOL_IDS.RASTER_OPERATION.CANNY) && selectedLayerName.length > 0"
                 class="layer-select-right">
 
                 <!-- K-means 设置 -->
@@ -136,6 +137,15 @@
                     <ExtractValues ref="extractValuesRef" :mapView="props.mapView" />
                 </div>
 
+                <!-- Canny 边缘检测设置 -->
+                <div v-if="currentTool?.id === TOOL_IDS.RASTER_OPERATION.CANNY">
+                    <CannyEdge 
+                        ref="cannyEdgeRef"
+                        :selectedLayerName="selectedLayerName"
+                        :layerBands="layerBands"
+                    />
+                </div>
+
             </div>
         </div>
 
@@ -181,6 +191,7 @@ import ClipImage from './ToolsView/ClipImage.vue'
 import Otsu from './ToolsView/Otsu.vue'
 import RandomPoints from './ToolsView/RandomPoints.vue'
 import ExtractValues from './ToolsView/ExtractValues.vue'
+import CannyEdge from './ToolsView/CannyEdge.vue'
 
 const props = defineProps({
     mapView: {
@@ -227,6 +238,8 @@ const otsuRef = ref(null)
 const randomPointsRef = ref(null)
 // 提取值组件
 const extractValuesRef = ref(null)
+// Canny 边缘检测组件
+const cannyEdgeRef = ref(null)
 
 // 添加 toolParams 计算属性
 const toolParams = computed(() => {
@@ -255,6 +268,8 @@ const toolParams = computed(() => {
             return randomPointsRef.value?.getParams()||{}
         case TOOL_IDS.RASTER_OPERATION.EXTRACT:
             return extractValuesRef.value?.getParams() || {}
+        case TOOL_IDS.RASTER_OPERATION.CANNY:
+            return cannyEdgeRef.value?.getParams() || {}
         default:
             return null
     }

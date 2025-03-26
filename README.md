@@ -35,6 +35,8 @@ A remote sensing image processing system based on Google Earth Engine platform, 
 - conda activate VGEE/VGEE (For Windows, add bin folder to environment variables)
 - cd backend
 - pip install -r requirements.txt
+- conda install -c conda-forge mamba
+- mamba install -c conda-forge groundingdino-py
 - python app.py
 
 ## Docker Deployment (Not Recommended - Currently unable to resolve service account export image issues)

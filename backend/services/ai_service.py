@@ -9,7 +9,8 @@ import requests
 import tempfile
 import traceback
 import ee
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # 禁用所有 GPU
+import torch
+# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # 禁用所有 GPU
 
 def cleanup_temp_files():
     """清理临时文件"""
@@ -26,8 +27,9 @@ def text_segment_img(url, image_bounds, params, dimensions='1024x1024'):
     语义分割图像
     '''
     try:
-        # 使用单例模型实例
+        # 初始化 LangSAM 模型
         sam = LangSAM()
+        print('ai_service.py-text_segment_img-sam', sam.device)
 
         # 从参数中获取文本提示和阈值
         text_prompt = params.get('textPrompt', "house")
@@ -41,7 +43,13 @@ def text_segment_img(url, image_bounds, params, dimensions='1024x1024'):
             img_width, img_height = 1024, 1024  # 默认值
 
         # 执行分割
-        sam.predict(url, text_prompt, box_threshold=threshold, text_threshold=threshold)
+        sam.predict(
+            image=url,
+            text_prompt=text_prompt,
+            box_threshold=threshold,
+            text_threshold=threshold,
+            return_results=True
+        )
         
         # 存储所有掩膜结果
         all_masks = []
@@ -83,6 +91,7 @@ def text_segment_img(url, image_bounds, params, dimensions='1024x1024'):
     except Exception as e:
         cleanup_temp_files()
         print(f"Error in segment_img: {str(e)}")
+        traceback.print_exc()
         return None
 
 def text_single_layer(layer_id, datasets, datasetsNames, params, vis_params):

@@ -1221,6 +1221,80 @@ def extract_values():
             'message': str(e)
         }), 500
 
+@tool_bp.route('/canny', methods=['POST'])
+def canny_edge_detection():
+    try:
+        data = request.json
+        layer_ids = data.get('layer_ids')
+        params = data.get('params', {})
+        vis_params = data.get('vis_params', [])
+        print('Tool_routes.py - canny-data:', data)
+
+        # 创建一个有序字典来存储结果
+        results_dict = {}
+        def process_layer(layer_id):
+            try:
+                if layer_id not in datasets:
+                    return None
+                    
+                i = layer_ids.index(layer_id)
+                layer_params = params.get(layer_id, {})
+                threshold = layer_params.get('threshold', 0.5)
+                sigma = layer_params.get('sigma', 1.0)
+                
+                image = ee.Image(datasets[layer_id])
+                
+                # 应用 Canny 边缘检测
+                result = ee.Algorithms.CannyEdgeDetector(
+                    image=image,
+                    threshold=threshold,
+                    sigma=sigma
+                )
+                
+                # 设置可视化参数
+                vis_params = {
+                    'min': 0,
+                    'max': 1,
+                    'palette': ['black', 'white']
+                }
+                result = result.set('vis_params', vis_params)
+                
+                results_dict[i] = result
+                return result
+                
+            except Exception as e:
+                print(f"Error processing layer {layer_id}: {str(e)}")
+                return None
+
+        # 使用通用的并行处理函数
+        ParallelProcessor.process_layers(
+            layer_ids=layer_ids,
+            process_func=process_layer,
+            max_workers=maxthread_num
+        )
+
+        # 检查是否有成功的结果
+        if not results_dict:
+            raise ValueError("No successful Canny edge detection results")
+
+        # 按原始顺序重建结果列表
+        results = [results_dict[i] for i in range(len(layer_ids))]
+
+        return return_new_layer(
+            layer_ids=layer_ids,
+            results=results,
+            original_names=datasetsNames,
+            message='Canny edge detection completed',
+            result_type='canny'
+        )
+
+    except Exception as e:
+        print(f"Error in Canny edge detection: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 
 
 
