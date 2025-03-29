@@ -74,7 +74,8 @@
                 || currentTool?.id === TOOL_IDS.RASTER_OPERATION.OTSU
                 || currentTool?.id === TOOL_IDS.PREPROCESSING.GENERATE_RANDOM_POINTS
                 || currentTool?.id === TOOL_IDS.RASTER_OPERATION.EXTRACT
-                || currentTool?.id === TOOL_IDS.RASTER_OPERATION.CANNY) && selectedLayerName.length > 0"
+                || currentTool?.id === TOOL_IDS.RASTER_OPERATION.CANNY
+                || currentTool?.id === TOOL_IDS.RASTER_OPERATION.TIF2VECTOR) && selectedLayerName.length > 0"
                 class="layer-select-right">
 
                 <!-- K-means 设置 -->
@@ -146,6 +147,11 @@
                     />
                 </div>
 
+                <!-- TIF to Vector 设置 -->
+                <div v-if="currentTool?.id === TOOL_IDS.RASTER_OPERATION.TIF2VECTOR">
+                    <Tif2Vec ref="tif2VecRef" :selectedLayerName="selectedLayerName" :mapView="props.mapView" />
+                </div>
+
             </div>
         </div>
 
@@ -192,7 +198,7 @@ import Otsu from './ToolsView/Otsu.vue'
 import RandomPoints from './ToolsView/RandomPoints.vue'
 import ExtractValues from './ToolsView/ExtractValues.vue'
 import CannyEdge from './ToolsView/CannyEdge.vue'
-
+import Tif2Vec from './ToolsView/Tif2Vec.vue'
 const props = defineProps({
     mapView: {
         type: Object,
@@ -240,6 +246,9 @@ const randomPointsRef = ref(null)
 const extractValuesRef = ref(null)
 // Canny 边缘检测组件
 const cannyEdgeRef = ref(null)
+// TIF to Vector 组件
+const tif2VecRef = ref(null)
+
 
 // 添加 toolParams 计算属性
 const toolParams = computed(() => {
@@ -270,6 +279,8 @@ const toolParams = computed(() => {
             return extractValuesRef.value?.getParams() || {}
         case TOOL_IDS.RASTER_OPERATION.CANNY:
             return cannyEdgeRef.value?.getParams() || {}
+        case TOOL_IDS.RASTER_OPERATION.TIF2VECTOR:
+            return tif2VecRef.value?.getParams() || {}
         default:
             return null
     }

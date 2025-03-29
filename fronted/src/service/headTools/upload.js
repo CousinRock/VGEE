@@ -56,7 +56,7 @@ export const onHandleAssetSelect = async (data, selectedAsset) => {
         console.log('upload.js - onHandleAssetSelect - selected asset:', data)
     } catch (error) {
         console.error('upload.js - Error selecting asset:', error)
-        ElMessage.error('选择资产失败')
+        ElMessage.error('Failed to select asset')
     }
 }
 
@@ -64,7 +64,7 @@ export const onHandleAssetSelect = async (data, selectedAsset) => {
 export const onConfirmAssetSelect = async (selectedAsset, showAssetsDialog, isLoadingAssets, mapView) => {
     try {
         if (!selectedAsset.value) {
-            ElMessage.warning('请选择一个资产')
+            ElMessage.warning('Please select an asset')
             return
         }
 
@@ -76,33 +76,33 @@ export const onConfirmAssetSelect = async (selectedAsset, showAssetsDialog, isLo
         if (selectedAsset.value.type === 'TABLE') {
             // 处理矢量数据
             const loadingMessage = ElMessage({
-                message: '正在添加矢量图层...',
+                message: 'Adding vector layer...',
                 type: 'info',
                 duration: 0
             })
             const success = await handleVectorAsset(selectedAsset.value, mapView)
             loadingMessage.close()  // 只关闭加载消息
             if (success) {
-                ElMessage.success(`已添加矢量图层: ${selectedAsset.value.name}`)
+                ElMessage.success(`Vector layer added: ${selectedAsset.value.name}`)
             }
         } else if (selectedAsset.value.type === 'IMAGE') {
             // 处理栅格影像
             const loadingMessage = ElMessage({
-                message: '正在添加栅格图层...',
+                message: 'Adding raster layer...',
                 type: 'info',
                 duration: 0
             })
             const success = await handleImageAsset(selectedAsset.value, mapView)
             loadingMessage.close()  // 只关闭加载消息
             if (success) {
-                ElMessage.success(`已添加栅格图层: ${selectedAsset.value.name}`)
+                ElMessage.success(`Raster layer added: ${selectedAsset.value.name}`)
             }
         }
 
         // showAssetsDialog.value = false
     } catch (error) {
         console.error('upload.js - Error confirming asset selection:', error)
-        ElMessage.error('添加图层失败')
+        ElMessage.error('Failed to add layer')
     } finally {
         // 清除加载状态
         isLoadingAssets.value = false
@@ -173,7 +173,7 @@ const handleVectorAsset = async (selectedAsset, mapView) => {
         return true
     } catch (error) {
         console.error('Error adding vector asset:', error)
-        ElMessage.error('添加矢量图层失败')
+        ElMessage.error('Failed to add vector layer')
         return false
     }
 }
@@ -250,7 +250,7 @@ const handleImageAsset = async (selectedAsset, mapView) => {
         return true
     } catch (error) {
         console.error('Error adding image asset:', error)
-        ElMessage.error('添加栅格图层失败')
+        ElMessage.error('Failed to add raster layer')
         return false
     }
 }
@@ -258,7 +258,7 @@ const handleImageAsset = async (selectedAsset, mapView) => {
 // 修改为通用的时间序列提交方法
 export const onSubmitTimeseries = async (form, mapView, showTimeseriesDialog, isSubmitting, toolId) => {
     if (!form.value.startDate || !form.value.endDate) {
-        ElMessage.warning('请选择时间范围')
+        ElMessage.warning('Please select a time range')
         return
     }
 
@@ -352,7 +352,7 @@ export const onSubmitTimeseries = async (form, mapView, showTimeseriesDialog, is
         }
     } catch (error) {
         console.error(`Error submitting ${toolConfig?.label || ''} timeseries:`, error)
-        ElMessage.error('添加时间序列失败')
+        ElMessage.error('Failed to submit timeseries')
         return false
     } finally {
         isSubmitting.value = false

@@ -15,7 +15,7 @@ def get_assets():
         # 从 GEE 认证中获取用户信息
         credentials = ee.data.getAssetRoots()
         if not credentials:
-            raise Exception("未找到 GEE 认证信息")
+            raise Exception("No GEE credentials found")
         print('Tool_routes.py - get_assets-credentials:', credentials)
             
         # 获取所有根文件夹的资产
@@ -386,7 +386,7 @@ def add_landsat_timeseries():
         print('Tool_routes.py - add_landsat_timeseries-collection_size:',collection_size)
 
         if collection_size == 0:
-            raise ValueError("未找到符合条件的影像")
+            raise ValueError("No images found")
 
         # 设置可视化参数
         vis_params = {
@@ -461,11 +461,11 @@ def add_landsat_timeseries():
         annual_images = [img for img in annual_images if img is not None]
 
         if not annual_images:
-            raise ValueError("未找到符合条件的影像")
+            raise ValueError("No images found")
 
         return jsonify({
-            'success': True,
-            'message': f'找到 {len(annual_images)} 幅影像',
+            'success': True,    
+            'message': f'Found {len(annual_images)} images',
             'bounds': bounds['coordinates'][0],
             'collectionSize': len(annual_images),
             'images': annual_images,
@@ -635,7 +635,7 @@ def add_sentinel_timeseries():
         print('Tool_routes.py - add_landsat_timeseries-collection_size:',collection_size)
 
         if collection_size == 0:
-            raise ValueError("未找到符合条件的影像")
+            raise ValueError("No images found")
 
         # 设置可视化参数
         vis_params = {
@@ -710,11 +710,11 @@ def add_sentinel_timeseries():
         annual_images = [img for img in annual_images if img is not None]
 
         if not annual_images:
-            raise ValueError("未找到符合条件的影像")
+            raise ValueError("No images found")
 
         return jsonify({
             'success': True,
-            'message': f'找到 {len(annual_images)} 幅影像',
+            'message': f'Found {len(annual_images)} images',
             'bounds': bounds['coordinates'][0],
             'collectionSize': len(annual_images),
             'images': annual_images,
@@ -736,7 +736,7 @@ def delete_asset():
         print('upload_routes.py - delete_asset-data:', data)
         
         if not asset_id:
-            raise ValueError("未提供资产ID")
+            raise ValueError("No asset ID provided")
 
         def delete_asset_recursive(asset_path):
             try:
@@ -765,7 +765,7 @@ def delete_asset():
         
         return jsonify({
             'success': True,
-            'message': '资产已成功删除'
+            'message': 'Asset deleted successfully'
         })
         
     except Exception as e:

@@ -134,7 +134,7 @@ export const handleStudyArea = {
 
             const data = await response.json();
             if (data.success) {
-                ElMessage.success(`已${layer.isStudyArea ? '设置' : '取消'}${layer.name}${layer.isStudyArea ? '为' : ''}研究区域${layer.isStudyArea ? '' : '设置'}`);
+                ElMessage.success(`${layer.isStudyArea ? 'Set' : 'Removed'} ${layer.name} ${layer.isStudyArea ? 'as' : 'from'} study area`);
             }
         } catch (error) {
             console.error('Error toggling study area:', error);

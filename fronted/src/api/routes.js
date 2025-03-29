@@ -68,6 +68,7 @@ export const API_ROUTES = {
         OTSU:`${BASE_URL}/tools/otsu`,
         EXTRACT: `${BASE_URL}/tools/extract`,
         CANNY: `${BASE_URL}/tools/canny`,
+        TIF2VECTOR: `${BASE_URL}/tools/tif2vector`,
         //terrain operation
         TERRAIN: `${BASE_URL}/tools/terrain`
         

@@ -1296,6 +1296,103 @@ def canny_edge_detection():
         }), 500
 
 
+@tool_bp.route('/tif2vector', methods=['POST'])
+def tif2vector():
+    try:
+        data = request.get_json()
+        layer_ids = data.get('layer_ids', [])
+        params = data.get('params', {})
+        print('Tool_routes.py - tif2vector-data:', data)
 
+        # 创建一个有序字典来存储结果
+        results_dict = {}
+
+        def process_layer(layer_id):
+            try:
+                if layer_id not in datasets:
+                    return None
+
+                i = layer_ids.index(layer_id)
+                image = ee.Image(datasets[layer_id])
+                
+                # 获取参数，如果没有则使用默认值
+                scale = params.get('scale', 10)  # 默认30米分辨率
+                geometry_type = params.get('geometryType', 'polygon')  # 默认多边形
+                max_pixels = params.get('maxPixels', 1e8)  # 默认1亿像素
+
+                # 使用reduceToVectors将栅格转换为矢量
+                vectors = image.selfMask().reduceToVectors(
+                    geometryType=geometry_type,
+                    geometry=image.geometry(),
+                    reducer=ee.Reducer.countEvery(),  # 计数像素数量
+                    scale=scale,
+                    maxPixels=max_pixels,
+                    eightConnected=params.get('eightConnected', True)  # 默认使用8连通
+                )
+                print('Tool_routes.py - tif2vector-vectors:', vectors.size().getInfo())
+                 # 设置矢量样式
+                ee_style_params = {
+                    'color': '4a80f5',  # 蓝色
+                    'fillColor': '4a80f580',  # 半透明蓝色
+                    'width': 2  # 边框宽度
+                }
+                # 生成唯一的图层ID
+                id = f'vector_{layer_id}_{int(time.time())}'
+                
+                name = f'{datasetsNames.get(layer_id, "Layer")} (vectorized)'
+                # 获取矢量瓦片URL
+                map_id = vectors.getMapId(ee_style_params)
+               
+
+                # 保存数据集以供后续使用
+                save_dataset(id, vectors, name)
+                # 构建结果对象
+                result = {
+                    'layer_id': id,
+                    'type': 'vector',
+                    'name': name,
+                    'tileUrl': map_id['tile_fetcher'].url_format,
+                    'visParams': {
+                        'color': '#4a80f5',
+                        'weight': 2,
+                        'opacity': 1
+                    }
+                }
+                print('Tool_routes.py - tif2vector-result:', result)
+                results_dict[i] = result
+                return result
+
+            except Exception as e:
+                print(f"Error processing layer {layer_id}: {str(e)}")
+                return None
+
+
+        # 使用通用的并行处理函数
+        ParallelProcessor.process_layers(
+            layer_ids=layer_ids,
+            process_func=process_layer,
+            max_workers=maxthread_num
+        )
+
+        # 检查是否有成功的结果
+        if not results_dict:
+            raise ValueError("No successful tif2vector results")
+        # 按原始顺序重建结果列表
+        results = [results_dict[i] for i in range(len(layer_ids))]
+
+        # 返回结果
+        return jsonify({
+            'success': True,
+            'results': results,
+            'names': datasetsNames,
+            'message': 'Vector conversion completed successfully'
+        })
+
+    except Exception as e:
+        print(f"Error in tif2vector: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
 
 

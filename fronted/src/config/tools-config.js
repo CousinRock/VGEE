@@ -57,7 +57,8 @@ export const TOOL_IDS = {
         STATISTICS: 'statistics',
         OTSU:'otsu',
         EXTRACT: 'extract',
-        CANNY: 'canny'
+        CANNY: 'canny',
+        TIF2VECTOR: 'tif2vector'
     },
     TERRAIN_OPERATION: {
         ROOT: 'terrain-operation',
@@ -708,7 +709,27 @@ export const TOOLS_CONFIG = {
                                 })),
                             params: params
                         })
+                    },
+                    tif2vector: {
+                        id: TOOL_IDS.RASTER_OPERATION.TIF2VECTOR,
+                        label: 'TIF to Vector',
+                        icon: 'fas fa-exchange-alt',
+                        component: 'Tif2Vector',
+                        requireLayers: true,
+                        endpoint: API_ROUTES.TOOLS.TIF2VECTOR,
+                        description: 'Convert TIF files to vector files',
+                        processParams: (selectedLayers, mapView, params) => ({
+                            layer_ids: selectedLayers,
+                            vis_params: mapView.layers
+                                .filter(l => selectedLayers.includes(l.id))
+                                .map(l => ({
+                                    id: l.id,
+                                    visParams: l.visParams
+                                })),
+                            params: params
+                        })
                     }
+                
                 }
             },
             terrainOperation: {
