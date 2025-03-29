@@ -12,9 +12,6 @@
         "COPERNICUS/DEM/GLO30",
         "COPERNICUS/S2_SR_HARMONIZED",
         "COPERNICUS/S2_CLOUD_PROBABILITY",
-        "NOAA/CPC/Precipitation",
-        "UCSB-CHG/CHIRPS/DAILY",
-        "MODIS/061/MOD21A1D",
-        "HYCOM/sea_temp_salinity"
+        "COPERNICUS/S5P/NRTI/L3_AER_AI"
     ]
 }

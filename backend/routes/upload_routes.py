@@ -482,7 +482,7 @@ def add_landsat_timeseries():
 @upload_bp.route('/add-sentinel-timeseries', methods=['POST'])
 def add_sentinel_timeseries():
      # Make a dummy image for missing years.
-    bands = ['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2', 'QA60']
+    bands = ['BLUE', 'GREEN', 'RED', 'RED_EDGE1', 'NIR', 'SWIR1', 'SWIR2', 'QA60']
     bandNames = ee.List(bands)
     fillerValues = ee.List.repeat(0, bandNames.size())
     dummyImg = ee.Image.constant(fillerValues).rename(bandNames).selfMask().int16()
@@ -546,7 +546,7 @@ def add_sentinel_timeseries():
         # 重命名 sentinel2 影像的波段名称
         def rename(image):
             return image.select(
-                ['B2', 'B3', 'B4', 'B8', 'B11', 'B12', 'QA60'],
+                ['B2', 'B3', 'B4', 'B5','B8', 'B11', 'B12', 'QA60'],
                 bands
             )
         
