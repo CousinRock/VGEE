@@ -380,7 +380,8 @@ def export_layer_to_cloud():
             
         else:
             if layer_type == 'vector':
-                vector_fc = ee.FeatureCollection(layer_id)
+                layer = map_service.get_dataset(layer_id)
+                vector_fc = ee.FeatureCollection(layer)
                 task = ee.batch.Export.table.toDrive(
                     collection=vector_fc,
                     description=safe_name,
@@ -479,7 +480,8 @@ def export_layer_to_asset():
              
         else:
             if layer_type == 'vector':
-                vector_fc = ee.FeatureCollection(layer_id)
+                layer = map_service.get_dataset(layer_id)
+                vector_fc = ee.FeatureCollection(layer)
                 task = ee.batch.Export.table.toAsset(
                     collection=vector_fc,
                     description=description,
