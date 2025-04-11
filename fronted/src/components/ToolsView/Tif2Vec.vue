@@ -47,7 +47,7 @@
       <el-input-number 
         v-model="params.maxPixels" 
         :min="1000"
-        :max="100000000"
+        :max="10000000000000000000"
         :step="1000"
         size="small"
       />

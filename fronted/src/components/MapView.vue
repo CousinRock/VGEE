@@ -369,6 +369,7 @@
                     <!-- 添加分辨率选择 -->
                     <el-form-item label="Export Resolution">
                         <el-select v-model="exportScale" placeholder="Select Resolution">
+                            <el-option label="1m" :value="1" />
                             <el-option label="10m" :value="10" />
                             <el-option label="20m" :value="20" />
                             <el-option label="30m" :value="30" />

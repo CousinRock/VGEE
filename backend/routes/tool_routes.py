@@ -1249,7 +1249,7 @@ def canny_edge_detection():
                     image=image,
                     threshold=threshold,
                     sigma=sigma
-                )
+                ).toUint8()
                 
                 # 设置可视化参数
                 vis_params = {
@@ -1314,11 +1314,13 @@ def tif2vector():
 
                 i = layer_ids.index(layer_id)
                 image = ee.Image(datasets[layer_id])
+                img_params = params.get(layer_id, {})
                 
                 # 获取参数，如果没有则使用默认值
-                scale = params.get('scale', 10)  # 默认30米分辨率
-                geometry_type = params.get('geometryType', 'polygon')  # 默认多边形
-                max_pixels = params.get('maxPixels', 1e8)  # 默认1亿像素
+                scale = img_params.get('scale', 10)  # 默认30米分辨率
+                geometry_type = img_params.get('geometryType', 'polygon')  # 默认多边形
+                max_pixels = img_params.get('maxPixels', 1e8)  # 默认1亿像素
+                print('Tool_routes.py - tif2vector-max_pixels:', max_pixels)
 
                 # 使用reduceToVectors将栅格转换为矢量
                 vectors = image.selfMask().reduceToVectors(
