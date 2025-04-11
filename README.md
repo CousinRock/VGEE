@@ -27,7 +27,7 @@ A remote sensing image processing system based on Google Earth Engine platform, 
 
 
 ## Deployment (Recommended)
-- Frontend URL: https://vgee-wrjwrjwrjwrjwrjs-projects.vercel.app/
+- Frontend URL: https://vgee-renjiewu-projects.vercel.app/
 - Backend
 - git clone https://github.com/CousinRock/VGEE.git
 - Create a system environment variable named PROJECT with value as GEE project address, e.g. ee-project
