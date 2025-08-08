@@ -38,7 +38,7 @@ source ~/.bashrc
 - **Frontend URL**: https://vgee-renjiewu-projects.vercel.app/
 - **Backend**
 - git clone https://github.com/CousinRock/VGEE.git
-- conda create --name VGEE python=3.10 -y
+- conda create --name VGEE python=3.12 -y
 - conda activate VGEE/VGEE (For Windows, add bin folder to environment variables)
 - cd backend
 - pip install -r requirements.txt
