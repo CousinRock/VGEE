@@ -27,10 +27,17 @@ A remote sensing image processing system based on Google Earth Engine platform, 
 
 
 ## Deployment (Recommended)
+```bash
+Windows (Command Prompt or PowerShell):
+setx PROJECT "your-project-id" /M 
+
+Linux: 
+echo 'export PROJECT="your-project-id"' >> ~/.bashrc
+source ~/.bashrc
+```
 - Frontend URL: https://vgee-renjiewu-projects.vercel.app/
 - Backend
 - git clone https://github.com/CousinRock/VGEE.git
-- Create a system environment variable named PROJECT with value as GEE project address, e.g. ee-project
 - conda create --name VGEE python=3.10 -y
 - conda activate VGEE/VGEE (For Windows, add bin folder to environment variables)
 - cd backend
