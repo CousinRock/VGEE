@@ -1323,7 +1323,7 @@ def tif2vector():
                 print('Tool_routes.py - tif2vector-max_pixels:', max_pixels)
 
                 # 使用reduceToVectors将栅格转换为矢量
-                vectors = image.selfMask().reduceToVectors(
+                vectors = image.toInt().selfMask().reduceToVectors(
                     geometryType=geometry_type,
                     geometry=image.geometry(),
                     reducer=ee.Reducer.countEvery(),  # 计数像素数量

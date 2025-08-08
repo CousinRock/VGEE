@@ -324,6 +324,7 @@ const handleSpecialTool = async (tool) => {
                 break
             case TOOL_IDS.UPLOAD.LANDSAT_TIMESERIES:
             case TOOL_IDS.UPLOAD.SENTINEL2_TIMESERIES:
+            case TOOL_IDS.UPLOAD.MODIS_TIMESERIES:
                 uploadDataRef.value.showTimeseriesDialogMethod(tool.id)
                 break
             case TOOL_IDS.SEARCH.LANDSAT:

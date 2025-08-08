@@ -208,6 +208,8 @@ const showTimeseriesDialogMethod = (toolId) => {
         satelliteType.value = 'Landsat'
     } else if (toolId === TOOL_IDS.UPLOAD.SENTINEL2_TIMESERIES) {
         satelliteType.value = 'Sentinel-2'
+    } else if (toolId === TOOL_IDS.UPLOAD.MODIS_TIMESERIES) {
+        satelliteType.value = 'Modis'
     }
     showTimeseriesDialog.value = true
 }

@@ -8,7 +8,8 @@ export const TOOL_IDS = {
         ROOT: 'upload-vector',
         ASSET: 'upload-asset',
         LANDSAT_TIMESERIES: 'upload-landsat-timeseries',
-        SENTINEL2_TIMESERIES: 'upload-sentinel2-timeseries'
+        SENTINEL2_TIMESERIES: 'upload-sentinel2-timeseries',
+        MODIS_TIMESERIES: 'upload-modis-timeseries',
     },
     SEARCH: {
         ROOT: 'search-data',
@@ -134,6 +135,20 @@ export const TOOLS_CONFIG = {
                         endpoint: API_ROUTES.UPLOAD.ADD_SENTINEL_TIMESERIES,
                         processParams: (params) => ({
                             dataset_type: 'sentinel',
+                            ...params
+                        }),
+                        defaultParams: {
+                            startDate: '',
+                            endDate: ''
+                        }
+                    },
+                    modisTimeseries:{
+                        id: TOOL_IDS.UPLOAD.MODIS_TIMESERIES,
+                        label: 'MODIS Timeseries',
+                        requireLayers: false,
+                        endpoint: API_ROUTES.UPLOAD.ADD_MODIS_TIMESERIES,
+                        processParams: (params) => ({
+                            dataset_type: 'modis',
                             ...params
                         }),
                         defaultParams: {

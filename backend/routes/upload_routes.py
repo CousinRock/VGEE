@@ -728,6 +728,173 @@ def add_sentinel_timeseries():
             'message': str(e)
         }), 500
 
+@upload_bp.route('/add-modis-timeseries', methods=['POST'])
+def add_modis_timeseries():
+    try:
+        data = request.json
+        start_date = data.get('startDate')
+        end_date = data.get('endDate')
+        frequency = data.get('frequency', 'year')
+        interval = data.get('interval', 1)
+
+        # 设定 MODIS 数据集和波段
+        modis_collection = ee.ImageCollection("MODIS/061/MOD09A1")
+        raw_bands = ['sur_refl_b01', 'sur_refl_b02', 'sur_refl_b03',
+                     'sur_refl_b04', 'sur_refl_b05', 'sur_refl_b06', 'sur_refl_b07']
+        renamed_bands = ['RED', 'NIR', 'BLUE', 'GREEN', 'SWIR1', 'SWIR2', 'SWIR3']
+
+        bandNames = ee.List(renamed_bands)
+        dummyImg = ee.Image.constant(ee.List.repeat(0, bandNames.size())).rename(bandNames).selfMask().int16()
+
+        # 提取起止年和月日
+        start_year, start_month, start_day = map(int, start_date.split('-'))
+        end_year, end_month, end_day = map(int, end_date.split('-'))
+
+        # 计算天数跨度
+        def days_between(d1, d2):
+            d1 = datetime.datetime.strptime(d1, "%Y-%m-%d")
+            d2 = datetime.datetime.strptime(d2, "%Y-%m-%d")
+            return abs((d2 - d1).days)
+
+        n_days = days_between(f"{start_year}-{start_month:02d}-{start_day:02d}",
+                              f"{start_year}-{end_month:02d}-{end_day:02d}")
+
+        roi = get_study_areas()
+        if not roi:
+            roi = ee.Geometry.Polygon([
+                [[-115.471773, 35.892718],
+                 [-115.471773, 36.409454],
+                 [-114.271283, 36.409454],
+                 [-114.271283, 35.892718],
+                 [-115.471773, 35.892718]]
+            ])
+        else:
+            roi = ee.Geometry.MultiPolygon([area['coordinates'] for area in roi])
+
+        def rename(image):
+            return image.select(raw_bands, renamed_bands)
+
+        def prep(image):
+            return rename(image).divide(10000).copyProperties(image, image.propertyNames())
+
+        def filter_collection(start, end):
+            return modis_collection.filterBounds(roi).filterDate(start, end).map(prep)
+
+        def getAnnualComp(year):
+            startDate = ee.Date.fromYMD(ee.Number(year), start_month, start_day)
+            endDate = startDate.advance(n_days, 'day')
+            collection = filter_collection(startDate, endDate)
+            composite = collection.median()
+            composite = ee.Image(ee.Algorithms.If(composite.bandNames().size(), composite, dummyImg))
+            return composite.set({
+                'system:time_start': startDate.millis(),
+                'year': year
+            })
+
+        def getMonthlyComp(startDate):
+            startDate = ee.Date(startDate)
+            endDate = startDate.advance(1, "month")
+            collection = filter_collection(startDate, endDate)
+            composite = collection.median()
+            composite = ee.Image(ee.Algorithms.If(composite.bandNames().size(), composite, dummyImg))
+            return composite.set({
+                'system:time_start': startDate.millis(),
+                'system:date': startDate.format("YYYY-MM-dd")
+            })
+
+        if frequency == 'year':
+            years = ee.List.sequence(start_year, end_year, interval)
+            composites = years.map(getAnnualComp)
+        else:
+            months = date_sequence(
+                f"{start_year}-{start_month:02d}-{start_day:02d}",
+                f"{end_year}-{end_month:02d}-{end_day:02d}",
+                "month",
+                "YYYY-MM-dd",
+                interval
+            )
+            composites = months.map(getMonthlyComp)
+
+        collection = ee.ImageCollection.fromImages(composites)
+        collection_size = collection.size().getInfo()
+
+        if collection_size == 0:
+            raise ValueError("No MODIS images found.")
+
+        vis_params = {
+            'bands': ['SWIR1', 'NIR', 'RED'],
+            'min': 0,
+            'max': 0.4,
+            'gamma': 1.2
+        }
+
+        bounds = roi.getInfo()
+
+        def process_layer(date_str, **kwargs):
+            try:
+                collection = kwargs.get('collection')
+                roi = kwargs.get('roi')
+                vis_params = kwargs.get('vis_params')
+
+                if frequency == 'year':
+                    year = int(date_str)
+                    images = collection.filter(ee.Filter.eq('year', year))
+                    name = f"MODIS {year}"
+                    collection_id = f"modis_{year}_{int(time.time())}"
+                    save_name = f"MODIS_{year}"
+                else:
+                    images = collection.filter(ee.Filter.eq('system:date', date_str))
+                    name = f"MODIS {date_str}"
+                    collection_id = f"modis_{date_str}_{int(time.time())}"
+                    save_name = f"MODIS_{date_str}"
+
+                image = images.median().clip(roi).set('date', date_str)
+                map_id = image.getMapId(vis_params)
+
+                save_dataset(collection_id, image, save_name)
+
+                return {
+                    'date': date_str,
+                    'tileUrl': map_id['tile_fetcher'].url_format,
+                    'id': collection_id,
+                    'name': name,
+                    'bandInfo': renamed_bands,
+                    'visParams': vis_params,
+                    'type': 'Raster'
+                }
+            except Exception as e:
+                print(f"MODIS processing error: {str(e)}")
+                return None
+
+        dates = years.getInfo() if frequency == "year" else months.getInfo()
+
+        modis_images = ParallelProcessor.process_layers(
+            layer_ids=dates,
+            process_func=process_layer,
+            max_workers=4,
+            collection=collection,
+            roi=roi,
+            vis_params=vis_params
+        )
+
+        modis_images = [img for img in modis_images if img is not None]
+
+        if not modis_images:
+            raise ValueError("All MODIS image processing failed.")
+
+        return jsonify({
+            'success': True,
+            'message': f'Found {len(modis_images)} MODIS composites',
+            'bounds': bounds['coordinates'][0],
+            'collectionSize': len(modis_images),
+            'images': modis_images,
+            'type': 'Raster'
+        })
+
+    except Exception as e:
+        print(f"Error in add_modis_timeseries: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @upload_bp.route('/delete-asset', methods=['POST'])
 def delete_asset():
     try:
