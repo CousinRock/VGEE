@@ -36,7 +36,7 @@ echo 'export PROJECT="your-project-id"' >> ~/.bashrc
 source ~/.bashrc
 ```
 - Frontend URL: https://vgee-renjiewu-projects.vercel.app/
-- **Backend
+- Backend
 - git clone https://github.com/CousinRock/VGEE.git
 - conda create --name VGEE python=3.10 -y
 - conda activate VGEE/VGEE (For Windows, add bin folder to environment variables)
